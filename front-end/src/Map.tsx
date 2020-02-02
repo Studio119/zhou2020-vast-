@@ -192,14 +192,14 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 box.push({
                     lng: cx + _r * Math.sin(angle),
                     lat: cy + _r / 1.8 * Math.cos(angle),
-                    value: i / amount //_r / r//Math.random()
+                    value: Math.random()
                 });
             } else {
                 const a = Math.floor(Math.random() * i);
                 box.push({
                     lng: box[a].lng + _r * rate * Math.sin(angle),
                     lat: box[a].lat + _r * rate / 1.8 * Math.cos(angle),
-                    value: i / amount //_r / r//Math.random()
+                    value: Math.random()
                 });
             }
         }
