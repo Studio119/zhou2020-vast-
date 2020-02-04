@@ -58,7 +58,7 @@ export class Container extends Component<ContainerProps, any, React.ReactNode | 
                         background: ColorThemes[this.props.theme].OuterBackground,
                         borderBottom: "1px solid " + ColorThemes[this.props.theme].Border,
                         color: ColorThemes[this.props.theme].OuterColor,
-                        padding: 3,
+                        padding: "3px 0px",
                         fontWeight: 'bold',
                         ...this.props.titleStyle
                     }}>
@@ -66,7 +66,18 @@ export class Container extends Component<ContainerProps, any, React.ReactNode | 
                     </div>
                 }
                 {
-                    this.props.children
+                    <div className="ComponentContainerBody"
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        background: ColorThemes[this.props.theme].InnerBackground,
+                        // borderBottom: "1px solid " + ColorThemes[this.props.theme].Border,
+                        color: ColorThemes[this.props.theme].InnerColor,
+                        padding: "0px",
+                        ...this.props.style
+                    }}>
+                        { this.props.children }
+                    </div>
                 }
             </div>
         );

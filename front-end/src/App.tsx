@@ -37,8 +37,8 @@ class App extends Component<{}, {}, {}> {
   public componentDidMount(): void {
     // TODO: 加载数据
     (this.refs["map"] as Map).setState({
-      // data: (this.refs["map"] as Map).random(-2.31, 53.56, 2, 5e5, 0.8)
-      data: (this.refs["map"] as Map).random(-2.31, 53.56, 2, 1e3, 0.8)
+      // data: (this.refs["map"] as Map).random(-2.31, 53.56, 2, 5e5, 2, 0.2)
+      data: (this.refs["map"] as Map).random(-2.31, 53.56, 2, 1e4, 2, 0.2)
     });
   }
 }

@@ -134,7 +134,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
             this.state.data.forEach((d: { lng: number, lat: number, value: number }, index: number) => {
                 if (d.lat >= 0 || d.lat < 0 || d.lng >= 0 || d.lng < 0) {
                     this.ready[index % nParts].push([d.lng, d.lat, Color.interpolate(
-                        Color.Nippon.Ruri, Color.Nippon.Syozyohi, d.value
+                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, d.value
                     )]);
                 }
             });
@@ -178,7 +178,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         this.ctx!.fillRect(x, y, 1, 1);
     }
 
-    public random(cx: number, cy: number, r: number, amount: number, gamma: number = 1): Array<{
+    public random(cx: number, cy: number, r: number, amount: number, gamma: number = 1, diff: number = 0.3): Array<{
         lng: number;
         lat: number;
         value: number;
@@ -196,10 +196,12 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 });
             } else {
                 const a = Math.floor(Math.random() * i);
+                const valueMin = box[a].value * (1 - diff);
+                const valueMax = box[a].value * (1 + diff) / Math.max(1, box[a].value * (1 + diff));
                 box.push({
                     lng: box[a].lng + _r * rate * Math.sin(angle),
                     lat: box[a].lat + _r * rate / 1.8 * Math.cos(angle),
-                    value: Math.random()
+                    value: valueMin + Math.random() * (valueMax - valueMin)
                 });
             }
         }

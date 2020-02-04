@@ -482,21 +482,15 @@ const Color = {
     },
 }
 
-export interface TypeColorTheme {
-    Border: string,
-    OuterBackground: string,
-    OuterColor: string,
-    InnerBackground: string,
-    InnerColor: string
-};
-
-export const ColorThemes: {[name: string]: TypeColorTheme} = {
+export const ColorThemes = {
     NakiriAyame: {
         OuterBackground: '#FCFBFC',
         Border: '#D2394A',
         OuterColor: '#D2394A',
         InnerBackground: '#2A282B',
-        InnerColor: '#FCD3AE'
+        InnerColor: '#FCD3AE',
+        Red: '#AD2138',
+        Green: '#52826D'
     }
 };
 

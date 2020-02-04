@@ -6,8 +6,9 @@
  */
 
 import React, { Component } from "react";
-import { TreeNode } from "./TypeLib";
-import { Container } from "./prototypes/Container";
+import $ from 'jquery';
+import { TreeNode, Snapshot } from "./TypeLib";
+import Color, { ColorThemes } from "./preference/Color";
 
 export interface TreeProps {
     id?: string;
@@ -15,11 +16,9 @@ export interface TreeProps {
     height: number | string;
 };
 
-interface TreeNodeSnapshot {
-    width: number | string;
-};
-
 export class Tree extends Component<TreeProps, TreeNode, null> {
+    private snapshots: {[id: number]: Snapshot.TreeNode};
+
     public constructor(props: TreeProps) {
         super(props);
         this.state = {
@@ -29,17 +28,56 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
             parent: null,
             children: []
         };
+        this.snapshots = {};
     }
 
     public render(): JSX.Element {
+        let maxLevel: number = 1;
+        this.each("LRD", this.state, (n: TreeNode) => {
+            maxLevel = Math.max(maxLevel, n.level + 1);
+            n.leaves = 0;
+            n.value = n.children.length ? 0 : n.value;
+            n.children.forEach((child: TreeNode) => {
+                n.leaves! += child.leaves!;
+                n.value += n.children.length ? child.value : 0;
+            });
+            n.leaves = Math.max(n.leaves, 1);
+            n.value /= Math.max(n.children.length, 1);
+        });
+
+        const unitWidthStep: number = 100 / this.state.leaves!;
+        const unitHeightStep: number = 100 / maxLevel;
+
+        this.snapshots = {};
+
+        this.snapshots[this.state.id] = {
+            x: 0, y: 0, width: 100, height: 100
+        };
+
+        this.each("DLR", this.state, (n: TreeNode) => {
+            const parentSnapshot: Snapshot.TreeNode = this.snapshots[n.id];
+            let offset: number = parentSnapshot.x;
+            n.children.forEach((child: TreeNode) => {
+                const width: number = unitWidthStep * child.leaves!;
+                this.snapshots[child.id] = {
+                    x: offset,
+                    y: parentSnapshot.y + unitHeightStep,
+                    width: width,
+                    height: unitHeightStep * (maxLevel - child.level)
+                };
+                offset += width;
+            })
+        });
+
         return (
-            <Container theme="NakiriAyame" width={ this.props.width } height={ this.props.height }>
+            <svg ref="svg" width={ this.props.width } height={ this.props.height }
+            style={{
+                marginBottom: '-6px'
+            }} >
                 {
-                    this.toXML(this.state, {
-                        width: "100%"
-                    })
+                    this.toSVG(this.state, maxLevel)
                 }
-            </Container>
+            </svg>
         );
     }
 
@@ -71,25 +109,113 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
         return node;
     }
 
-    private toXML(node: TreeNode, snapshot: TreeNodeSnapshot): React.ReactNode | null | undefined {
+    private highlight(node: TreeNode, status: "on" | "off"): void {
+        this.each("DLR", node, (n: TreeNode) => {
+            $(this.refs["rect_" + n.id]).css(
+                "fill", status === "on" ? Color.setLightness(
+                                                ColorThemes.NakiriAyame.InnerBackground,
+                                                0.2 / node.leaves! + 0.2 + (n.id === node.id ? 0.1 : 0)
+                                            )
+                                        : ColorThemes.NakiriAyame.InnerBackground
+            );
+        });
+    }
+
+    private toSVG(node: TreeNode, maxLevel: number): React.ReactNode | null | undefined {
+        const value: number = node.value * 0.5;
+        const innerHeight: number = 100 / maxLevel * value;
+
         return (
-            <Container theme="NakiriAyame" title={ node.id.toString() } key={ node.id }
-            width={ snapshot.width } height={ "100%" }>
-                <p
+            <g className="TreeNodeContainer" key={ "g_" + node.id }>
+                <rect className="TreeNode" ref={ "rect_" + node.id } key={ "rect_" + node.id }
+                x={ this.snapshots[node.id].x + "%" } y={ this.snapshots[node.id].y + "%" }
+                width={ this.snapshots[node.id].width + "%" } height={ this.snapshots[node.id].height + "%" }
                 style={{
-                    margin: "auto",
-                    height: node.children.length ? "" : "100%"
-                }}>
-                    { node.value.toFixed(3) }
-                </p>
-                {
-                    node.children.map((n: TreeNode) => {
-                        return this.toXML(n, {
-                            width: `${ 100 / node.children.length }%`
-                        });
-                    })
+                    fill: ColorThemes.NakiriAyame.InnerBackground
+                }}
+                onMouseOver={
+                    () => {
+                        this.highlight(node, "on");
+                    }
                 }
-            </Container>
+                onMouseOut={
+                    () => {
+                        this.highlight(node, "off");
+                    }
+                } />
+                <text className="TreeNode" key={ "label_" + node.id }
+                x={ (this.snapshots[node.id].x + this.snapshots[node.id].width / 2) + "%" }
+                y={ this.snapshots[node.id].y + 30 / maxLevel + "%" }
+                textAnchor="middle"
+                style={{
+                    fill: ColorThemes.NakiriAyame.Green
+                }} >
+                    { node.id }
+                </text>
+                <rect className="TreeNodeValueBar" ref={ "value_" + node.id } key={ "value_" + node.id }
+                x={ this.snapshots[node.id].x + "%" }
+                y={ (this.snapshots[node.id].y + (100 / maxLevel * (1 - value))) + "%" }
+                width={ this.snapshots[node.id].width + "%" }
+                height={ innerHeight + "%" }
+                style={{
+                    fill: Color.interpolate(
+                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value * 2
+                    ),
+                    stroke: Color.setLightness(
+                        Color.interpolate(
+                            Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value * 2
+                        ), 0.2
+                    ),
+                    strokeWidth: 3
+                }}
+                onMouseOver={
+                    () => {
+                        this.highlight(node, "on");
+                    }
+                }
+                onMouseOut={
+                    () => {
+                        this.highlight(node, "off");
+                    }
+                } />
+                <rect className="TreeNode" key={ "border_" + node.id }
+                x={ this.snapshots[node.id].x + "%" } y={ this.snapshots[node.id].y + "%" }
+                width={ this.snapshots[node.id].width + "%" } height={ this.snapshots[node.id].height + "%" }
+                style={{
+                    fill: 'none',
+                    stroke: ColorThemes.NakiriAyame.InnerColor,
+                    strokeWidth: 2,
+                    pointerEvents: 'none'
+                }} />
+                <g className="TreeNodeChildrenContainer" key={ "children_" + node.id }>
+                    {
+                        node.children.map((child: TreeNode) => {
+                            return this.toSVG(child, maxLevel);
+                        })
+                    }
+                </g>
+            </g>
         );
+    }
+
+    /**
+     * @private
+     * @param {("DLR" | "LRD")} order 遍历顺序（前序/后序）
+     * @param {TreeNode} node 遍历子树的根节点
+     * @param {(n: TreeNode) => void} callback 执行的回调函数
+     * @memberof Tree
+     */
+    private each(order: "DLR" | "LRD", node: TreeNode, callback: (n: TreeNode) => void): void {
+        if (order === "DLR") {
+            callback(node);
+            node.children.forEach((n: TreeNode) => {
+                this.each(order, n, callback);
+            });
+        } else {
+            node.children.forEach((n: TreeNode) => {
+                this.each(order, n, callback);
+            });
+            callback(node);
+        }
     }
 };
