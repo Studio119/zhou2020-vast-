@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-10-24 17:47:11 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-01 18:30:04
+ * @Last Modified time: 2020-02-05 13:39:27
  */
 
 
@@ -482,6 +482,9 @@ const Color = {
     },
 }
 
+
+export type ColorThemeKey = "NakiriAyame";
+
 export const ColorThemes = {
     NakiriAyame: {
         OuterBackground: '#FCFBFC',
@@ -490,7 +493,8 @@ export const ColorThemes = {
         InnerBackground: '#2A282B',
         InnerColor: '#FCD3AE',
         Red: '#AD2138',
-        Green: '#52826D'
+        Green: '#52826D',
+        Grey: '#D3C1BE'
     }
 };
 

@@ -2,12 +2,13 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-01-16 22:39:10
+ * @Last Modified time: 2020-02-05 19:55:17
  */
 import React, { Component } from 'react';
-import $ from 'jquery';
 import MapBox from './react-mapbox/MapBox';
 import Color from './preference/Color';
+import { DataItem } from './TypeLib';
+import { System } from './Globe';
 
 
 export interface MapViewProps {
@@ -19,6 +20,7 @@ export interface MapViewProps {
     options?: any;
     width: number;
     height: number;
+    scaleType: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick";
     style?: React.CSSProperties;
 }
 
@@ -28,7 +30,6 @@ export interface MapViewState<T> {
         lat: number;
         value: T;
     }>;
-    sampled: Array<number>;
 }
 
 export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
@@ -45,7 +46,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     public constructor(props: MapViewProps) {
         super(props);
         this.mounted = false;
-        this.state = { data: [], sampled: [] };
+        this.state = { data: [] };
         this.canvas = null;
         this.ctx = null;
         this.timers = [];
@@ -108,10 +109,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
 
     public componentDidUpdate(): void {
         this.ready = [];
-        if (this.state.sampled.length === 0) {
-            this.redraw();
-            $("#map_layer_canvas").css('opacity', 1);
-        }
+        this.redraw();
     }
 
     public componentWillUnmount(): void {
@@ -132,11 +130,12 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 this.ready.push([]);
             }
             this.state.data.forEach((d: { lng: number, lat: number, value: number }, index: number) => {
-                if (d.lat >= 0 || d.lat < 0 || d.lng >= 0 || d.lng < 0) {
-                    this.ready[index % nParts].push([d.lng, d.lat, Color.interpolate(
-                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, d.value
-                    )]);
+                if (isNaN(d.lat) || isNaN(d.lng) || !System.active[index]) {
+                    return;
                 }
+                this.ready[index % nParts].push([d.lng, d.lat, Color.interpolate(
+                    Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, d.value
+                )]);
             });
         }
         this.ready.forEach((list: Array<[number, number, string]>, index: number) => {
@@ -176,6 +175,28 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         x = this.fx(x) - 0.5;
         y = this.fy(y) - 0.5;
         this.ctx!.fillRect(x, y, 1, 1);
+    }
+
+    public load(data: Array<DataItem>): void {
+        System.maxValue = Math.max(System.maxValue, ...data.map((d: DataItem) => d.value));
+        this.setState({
+            data: data.map((d: DataItem) => {
+                return {
+                    lat: d.lat,
+                    lng: d.lng,
+                    value: this.props.scaleType === "linear" ? d.value / System.maxValue
+                        : this.props.scaleType === "log2" ? Math.log2(1 + d.value / System.maxValue * 1)
+                        : this.props.scaleType === "log" ? Math.log(1 + d.value / System.maxValue * (Math.E - 1))
+                        : this.props.scaleType === "log10" ? Math.log10(1 + d.value / System.maxValue * 9)
+                        // : this.props.scaleType === "quick" ? Math.pow(
+                        //     d.value / System.maxValue, 1 / Math.log10(System.maxValue)
+                        // )
+                        : this.props.scaleType === "quick" ? Math.log(1 + d.value / System.maxValue * 2.6)
+                                                                / Math.log(3.6)
+                        : Math.sqrt(d.value / System.maxValue)
+                };
+            })
+        })
     }
 
     public random(cx: number, cy: number, r: number, amount: number, gamma: number = 1, diff: number = 0.3): Array<{

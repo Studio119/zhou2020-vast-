@@ -2,11 +2,11 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-01 15:33:28 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-02 17:46:10
+ * @Last Modified time: 2020-02-05 13:40:09
  */
 
 import React, { Component } from "react";
-import { ColorThemes } from "../preference/Color";
+import { ColorThemes, ColorThemeKey } from "../preference/Color";
 
 /**
  * Component Container: props required when instantiating a Container object
@@ -18,7 +18,7 @@ export interface ContainerProps {
     style?: React.CSSProperties;
     titleStyle?: React.CSSProperties;
     selectableText?: boolean;
-    theme: "NakiriAyame";
+    theme: ColorThemeKey;
     title?: string;
     width?: string | number;
 };
