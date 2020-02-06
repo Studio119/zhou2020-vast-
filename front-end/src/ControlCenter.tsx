@@ -2,17 +2,19 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-05 12:39:22
+ * @Last Modified time: 2020-02-06 23:50:39
  */
 
 import React, { Component } from "react";
 import { ColorThemes } from "./preference/Color";
 import { SyncButton } from "./prototypes/SyncButton";
 
+
 export interface ControlCenterProps {
     width: number;
     height: number;
     padding: [number, number];
+    apply: () => Promise<void>;
 };
 
 export class ControlCenter extends Component<ControlCenterProps, {}, null> {
@@ -36,7 +38,7 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                     }} >
                         Part A
                     </header>
-                    <SyncButton theme="NakiriAyame" text={ "apply" } />
+                    <SyncButton theme="NakiriAyame" text={ "apply" } callback={ this.props.apply } />
                 </div>
             </div>
         );

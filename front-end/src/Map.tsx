@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-05 19:55:17
+ * @Last Modified time: 2020-02-06 23:48:51
  */
 import React, { Component } from 'react';
 import MapBox from './react-mapbox/MapBox';
@@ -22,6 +22,7 @@ export interface MapViewProps {
     height: number;
     scaleType: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick";
     style?: React.CSSProperties;
+    allowInteraction?: boolean;
 }
 
 export interface MapViewState<T> {
@@ -42,6 +43,8 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     private ctx: null | CanvasRenderingContext2D;
     private ready: Array<Array<[number, number, string]>>;
     private timers: Array<NodeJS.Timeout>;
+    private cloneObserver: Array<Map>;
+    private recursiveLock: boolean;
 
     public constructor(props: MapViewProps) {
         super(props);
@@ -51,6 +54,8 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         this.ctx = null;
         this.timers = [];
         this.ready = [];
+        this.cloneObserver = [];
+        this.recursiveLock = false;
     }
 
     public render(): JSX.Element {
@@ -71,6 +76,9 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     {
                         this.mounted
                             ? <MapBox
+                                allowInteraction = {
+                                    this.props.allowInteraction === void(0) || this.props.allowInteraction
+                                }
                                 accessToken={ "pk.eyJ1IjoiaWNoZW4tYW50b2luZSIsImEiOiJjazF5bDh5eWUwZ2tiM2NsaXQ3bnFvNGJ1In0.sFDwirFIqR4UEjFQoKB8uA" }
                                 styleURL={"mapbox://styles/ichen-antoine/ck1504bas09eu1cs1op2eqsnu"}
                                 containerID={ this.props.id + ">>" } center={ this.props.center } zoom={ this.props.zoom }
@@ -87,8 +95,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     left: '0px',
                     top: '-100%'
                 }} >
-                    {/* 这个画布用于展现全部的点 */}
-                    <canvas key="1" id="map_layer_canvas" ref="canvas"
+                    <canvas key="1" id={ this.props.id + "_canvas" } ref="canvas"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
                         position: 'initial',
                         top: '-100%',
@@ -101,7 +108,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
 
     public componentDidMount(): void {
         this.mounted = true;
-        this.canvas = document.getElementById("map_layer_canvas") as HTMLCanvasElement;
+        this.canvas = document.getElementById(this.props.id + "_canvas") as HTMLCanvasElement;
         this.ctx = this.canvas!.getContext("2d");
         this.ctx!.globalAlpha = 0.5;
         this.forceUpdate();
@@ -149,14 +156,42 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         });
     }
 
+    public synchronize(clone: Map): void {
+        this.cloneObserver.push(clone);
+        clone.cloneObserver.push(this);
+    }
+
     private onDragEnd(bounds: [[number, number], [number, number]]): void {
         this.bounds = bounds;
+        this.applySynchronizedBounds();
         this.redraw();
     }
 
     private onZoomEnd(bounds: [[number, number], [number, number]]): void {
         this.bounds = bounds;
+        this.applySynchronizedBounds();
         this.redraw();
+    }
+
+    public applySynchronizedBounds(): void {
+        console.log("traggered by", this.props.id);
+        if (this.recursiveLock) {
+            this.recursiveLock = false;
+            console.log("Unlock", this.props.id);
+            return;
+        }
+        const map: MapBox = this.refs["map"] as MapBox;
+        if (!map) {
+            return;
+        }
+        this.cloneObserver.forEach((clone: Map) => {
+            const mapcl: MapBox = clone.refs["map"] as MapBox;
+            if (mapcl) {
+                clone.recursiveLock = true;
+                console.log("Lock", clone.props.id);
+                mapcl.fitBounds(map);
+            }
+        });
     }
 
     private fx(d: number): number {
@@ -172,12 +207,21 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
 
     private addPoint(x: number, y: number, style: string): void {
         this.ctx!.fillStyle = style;
-        x = this.fx(x) - 0.5;
-        y = this.fy(y) - 0.5;
-        this.ctx!.fillRect(x, y, 1, 1);
+        x = this.fx(x) - 0.7;//0.5;
+        y = this.fy(y) - 0.7;//0.5;
+        this.ctx!.fillRect(x, y, 1.4, 1.4);//1, 1);
     }
 
     public load(data: Array<DataItem>): void {
+        if (!this.mounted) {
+            let count: number = 3;
+            setTimeout(() => {
+                if (count--) {
+                    this.load(data);                    
+                }
+            }, 2000);
+            return;
+        }
         System.maxValue = Math.max(System.maxValue, ...data.map((d: DataItem) => d.value));
         this.setState({
             data: data.map((d: DataItem) => {
@@ -191,8 +235,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                         // : this.props.scaleType === "quick" ? Math.pow(
                         //     d.value / System.maxValue, 1 / Math.log10(System.maxValue)
                         // )
-                        : this.props.scaleType === "quick" ? Math.log(1 + d.value / System.maxValue * 2.6)
-                                                                / Math.log(3.6)
+                        : this.props.scaleType === "quick" ? Math.pow(d.value / System.maxValue, 0.34)
                         : Math.sqrt(d.value / System.maxValue)
                 };
             })
@@ -228,5 +271,13 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         }
 
         return box;
+    }
+
+    public get width() : number {
+        return this.props.width;
+    }
+    
+    public get height() : number {
+        return this.props.height;
     }
 }

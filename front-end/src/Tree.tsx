@@ -252,8 +252,7 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
                     : this.props.scaleType === "log" ? Math.log(1 + node.value * (Math.E - 1))
                     : this.props.scaleType === "log10" ? Math.log10(1 + node.value * 9)
                     // : this.props.scaleType === "quick" ? Math.pow(value, 1 / Math.log10(System.maxValue))
-                    : this.props.scaleType === "quick" ? Math.log(1 + node.value * 2.6)
-                                                        / Math.log(3.6)
+                    : this.props.scaleType === "quick" ? Math.pow(node.value, 0.34)
                     : Math.sqrt(node.value)
         ) * 0.5;
         const innerHeight: number = 200 / maxLevel * value;

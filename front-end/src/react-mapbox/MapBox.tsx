@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:20 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-01-16 22:39:36
+ * @Last Modified time: 2020-02-06 23:33:41
  */
 
 import React, {Component} from 'react';
@@ -24,6 +24,7 @@ export interface MapProps {
     bearing?: number;
     onDragEnd: (bounds: [[number, number], [number, number]]) => void | null | undefined;
     onZoomEnd: (bounds: [[number, number], [number, number]]) => void | null | undefined;
+    allowInteraction: boolean;
 }
 
 
@@ -46,7 +47,7 @@ class MapBox extends Component<MapProps, {}, {}> {
 
         this.map = new mapboxgl.Map({
             attributionControl: false,
-            interactive: true,
+            interactive: this.props.allowInteraction,
             style: this.props.styleURL ? this.props.styleURL : 'mapbox://styles/mapbox/streets-v10',
             center: [this.props.center[0], this.props.center[1]],
             zoom: this.props.zoom,
@@ -72,26 +73,6 @@ class MapBox extends Component<MapProps, {}, {}> {
                     [this.map!.getBounds().getWest(), this.map!.getBounds().getEast()]
                 ]);
             })
-            .on('zoom', () => {
-                if (((new Date()).getMilliseconds() >= 10 && (new Date()).getMilliseconds() < 500)
-                        || ((new Date()).getMilliseconds() >= 510 && (new Date()).getMilliseconds() < 1000)) {
-                    return;
-                }
-                this.props.onDragEnd([
-                    [this.map!.getBounds().getNorth(), this.map!.getBounds().getSouth()],
-                    [this.map!.getBounds().getWest(), this.map!.getBounds().getEast()]
-                ]);
-            })
-            .on('drag', () => {
-                if (((new Date()).getMilliseconds() >= 10 && (new Date()).getMilliseconds() < 500)
-                        || ((new Date()).getMilliseconds() >= 510 && (new Date()).getMilliseconds() < 1000)) {
-                    return;
-                }
-                this.props.onDragEnd([
-                    [this.map!.getBounds().getNorth(), this.map!.getBounds().getSouth()],
-                    [this.map!.getBounds().getWest(), this.map!.getBounds().getEast()]
-                ]);
-            })
             .on('dragend', () => {
                 this.props.onDragEnd([
                     [this.map!.getBounds().getNorth(), this.map!.getBounds().getSouth()],
@@ -99,6 +80,16 @@ class MapBox extends Component<MapProps, {}, {}> {
                 ]);
             });
         });
+    }
+
+    public getBounds(): mapboxgl.LngLatBounds {
+        return this.map!.getBounds();
+    }
+
+    public fitBounds(target: MapBox): void {
+        if (this.map && target) {
+            this.map.fitBounds(target.getBounds());
+        }
     }
 }
 

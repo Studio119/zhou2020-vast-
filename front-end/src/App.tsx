@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-05 19:59:55
+ * @Last Modified time: 2020-02-07 00:16:00
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -17,18 +17,23 @@ import { System } from './Globe';
 class App extends Component<{}, {}, null> {
   private task?: TaskQueue<null>;
   private map?: Map;
+  private map2?: Map;
   private tree?: Tree;
-  private scale: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick" = "log10";
+  private scale: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick" = "quick";
 
   public render(): JSX.Element {
     return (
       <div className="App">
         <TaskQueue<null> control={ null } ref="task" />
         <Container theme="NakiriAyame" title="CONTROLLER">
-          <ControlCenter width={ 300 } height={ 400 } padding={ [20, 20] } />
+          <ControlCenter width={ 300 } height={ 400 } padding={ [20, 20] } apply={ () => (new Promise<void>(() => {})) } />
         </Container>
-        <Container theme="NakiriAyame" title="MAP VIEW">
+        <Container theme="NakiriAyame" title="MAP VIEW" >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 4.7 } center={[-2.31, 53.56]}
+          width={ 400 } height={ 400 } scaleType={ this.scale } />
+        </Container>
+        <Container theme="NakiriAyame" title="SAMPLED VIEW" >
+          <Map ref="map2" id="map2" minZoom={ 1 } zoom={ 4.7 } center={[-2.31, 53.56]}
           width={ 400 } height={ 400 } scaleType={ this.scale } />
         </Container>
         <br />
@@ -41,13 +46,15 @@ class App extends Component<{}, {}, null> {
 
   public componentDidMount(): void {
     this.map = (this.refs["map"] as Map);
+    this.map2 = (this.refs["map2"] as Map);
+    this.map2.synchronize(this.map);
     this.tree = (this.refs["tree"] as Tree);
     this.task = (this.refs["task"] as TaskQueue<null>);
 
     this.load();
   }
 
-  private load() {
+  private load(): void {
     this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
       System.active = [];
       System.data = jsondata.map((item: {lat: number;lng: number;value: number;}) => {
@@ -73,7 +80,7 @@ class App extends Component<{}, {}, null> {
     });
     this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
       this.tree!.load(jsondata);
-      this.map!.load(System.data);
+      this.map2!.load(System.data);
     });
   }
 }
