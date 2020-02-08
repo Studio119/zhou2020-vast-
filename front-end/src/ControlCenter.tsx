@@ -14,7 +14,7 @@ export interface ControlCenterProps {
     width: number;
     height: number;
     padding: [number, number];
-    apply: () => Promise<void>;
+    apply: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
 };
 
 export class ControlCenter extends Component<ControlCenterProps, {}, null> {
@@ -38,7 +38,7 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                     }} >
                         Part A
                     </header>
-                    <SyncButton theme="NakiriAyame" text={ "apply" } callback={ this.props.apply } />
+                    <SyncButton theme="NakiriAyame" text={ "apply" } executer={ this.props.apply } />
                 </div>
             </div>
         );

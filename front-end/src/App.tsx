@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-07 00:16:00
+ * @Last Modified time: 2020-02-08 15:02:09
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -26,7 +26,7 @@ class App extends Component<{}, {}, null> {
       <div className="App">
         <TaskQueue<null> control={ null } ref="task" />
         <Container theme="NakiriAyame" title="CONTROLLER">
-          <ControlCenter width={ 300 } height={ 400 } padding={ [20, 20] } apply={ () => (new Promise<void>(() => {})) } />
+          <ControlCenter width={ 300 } height={ 400 } padding={ [20, 20] } apply={ this.apply.bind(this) } />
         </Container>
         <Container theme="NakiriAyame" title="MAP VIEW" >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 4.7 } center={[-2.31, 53.56]}
@@ -38,7 +38,8 @@ class App extends Component<{}, {}, null> {
         </Container>
         <br />
         <Container theme="NakiriAyame" title="TREE VIEW" width="100%">
-          <Tree width={ "100%" } height={ 320 } ref="tree" scaleType={ this.scale } />
+          <Tree width={ "100%" } height={ 320 } ref="tree"
+          scaleType={ this.scale } displayOnMap={ this.highlightPoints.bind(this) } />
         </Container>
       </div>
     );
@@ -52,6 +53,23 @@ class App extends Component<{}, {}, null> {
     this.task = (this.refs["task"] as TaskQueue<null>);
 
     this.load();
+  }
+
+  private apply(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
+    try {
+      this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
+        this.tree!.load(jsondata);
+        this.map2!.load(System.data);
+        resolve();
+      });
+    } catch(err) {
+      reject(err);
+    }
+  }
+
+  private highlightPoints(list: Array<number>): void {
+    (this.refs["map"] as Map).highlight(list);
+    (this.refs["map2"] as Map).highlight(list);
   }
 
   private load(): void {
@@ -77,10 +95,6 @@ class App extends Component<{}, {}, null> {
         }
       }
       System.picked = Object.keys(jsondata).map((key: string) => parseInt(key));
-    });
-    this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
-      this.tree!.load(jsondata);
-      this.map2!.load(System.data);
     });
   }
 }

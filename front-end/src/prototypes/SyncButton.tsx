@@ -8,11 +8,11 @@
 import React, { Component } from "react";
 import Color, { ColorThemes, ColorThemeKey } from "../preference/Color";
 
-export interface SyncButtonProps {
+export interface SyncButtonProps<T> {
     text: string | number;
     theme: ColorThemeKey;
     style?: React.CSSProperties;
-    callback: () => Promise<void>;
+    executer: (resolve: (value?: T | PromiseLike<T> | undefined) => void, reject: (reason?: any) => void) => void;
 };
 
 export interface SyncButtonState {
@@ -20,10 +20,10 @@ export interface SyncButtonState {
     busy: boolean;
 };
 
-export class SyncButton extends Component<SyncButtonProps, SyncButtonState, null> {
-    private callback: () => Promise<void>;
+export class SyncButton<T=void> extends Component<SyncButtonProps<T>, SyncButtonState, null> {
+    private callback: () => void;
 
-    public constructor(props: SyncButtonProps) {
+    public constructor(props: SyncButtonProps<T>) {
         super(props);
         this.state = {
             active: true,
@@ -34,13 +34,25 @@ export class SyncButton extends Component<SyncButtonProps, SyncButtonState, null
                 this.setState({
                     busy: true
                 });
-                const finishCode: void = await props.callback();
-                setTimeout(() => {
-                    this.setState({
-                        busy: false
-                    });
-                }, 600);
-                return finishCode;
+                this.forceUpdate();
+                const p = new Promise<T>(this.props.executer);
+                p.then(() => {
+                    setTimeout(() => {
+                        this.setState({
+                            busy: false
+                        });
+                        this.forceUpdate();
+                    }, 100);
+                })
+                .catch(err => {
+                    console.error(err);
+                    setTimeout(() => {
+                        this.setState({
+                            busy: false
+                        });
+                        this.forceUpdate();
+                    }, 100);
+                });
             }
         };
     }

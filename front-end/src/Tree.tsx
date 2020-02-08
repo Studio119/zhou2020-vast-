@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-02 15:29:12 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-05 19:52:11
+ * @Last Modified time: 2020-02-08 15:26:42
  */
 
 import React, { Component } from "react";
@@ -11,11 +11,13 @@ import { TreeNode, Snapshot, FileData } from "./TypeLib";
 import Color, { ColorThemes } from "./preference/Color";
 import { System } from "./Globe";
 
+
 export interface TreeProps {
     id?: string;
     width: number | string;
     height: number | string;
     scaleType: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick";
+    displayOnMap: (list: Array<number>) => void;
 };
 
 export class Tree extends Component<TreeProps, TreeNode, null> {
@@ -265,6 +267,16 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
                 style={{
                     fill: ColorThemes.NakiriAyame.InnerBackground
                 }}
+                onClick={
+                    () => {
+                        this.props.displayOnMap(this.getContaining(node.id));
+                    }
+                }
+                onDoubleClick={
+                    () => {
+                        this.props.displayOnMap([]);
+                    }
+                }
                 onMouseOver={
                     () => {
                         this.highlight(node, "on");
@@ -289,18 +301,9 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
                             Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value * 2
                         ), 0.2
                     ),
-                    strokeWidth: 3
-                }}
-                onMouseOver={
-                    () => {
-                        this.highlight(node, "on");
-                    }
-                }
-                onMouseOut={
-                    () => {
-                        this.highlight(node, "off");
-                    }
-                } />
+                    strokeWidth: 3,
+                    pointerEvents: 'none'
+                }} />
                 <text className="TreeNode" key={ "label_" + node.id }
                 x={ (this.snapshots[node.id].x + this.snapshots[node.id].width / 2) + "%" }
                 y={ this.snapshots[node.id].y + 30 / maxLevel + "%" }

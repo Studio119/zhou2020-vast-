@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:20 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-06 23:33:41
+ * @Last Modified time: 2020-02-08 15:53:02
  */
 
 import React, {Component} from 'react';
@@ -47,21 +47,23 @@ class MapBox extends Component<MapProps, {}, {}> {
 
         this.map = new mapboxgl.Map({
             attributionControl: false,
-            interactive: this.props.allowInteraction,
-            style: this.props.styleURL ? this.props.styleURL : 'mapbox://styles/mapbox/streets-v10',
-            center: [this.props.center[0], this.props.center[1]],
-            zoom: this.props.zoom,
-            minZoom: this.props.minZoom ? this.props.minZoom : this.props.zoom - 3,
-            maxZoom: this.props.maxZoom ? this.props.maxZoom : this.props.zoom + 3,
-            pitch: this.props.pitch ? this.props.pitch : 0,
             bearing: this.props.bearing ? this.props.bearing : 0,
+            center: [this.props.center[0], this.props.center[1]],
             container: this.props.containerID,
+            dragRotate: false,
+            interactive: this.props.allowInteraction,
             maxBounds: this.props.bounds,
-            refreshExpiredTiles: false
+            maxZoom: this.props.maxZoom ? this.props.maxZoom : this.props.zoom + 3,
+            minZoom: this.props.minZoom ? this.props.minZoom : this.props.zoom - 3,
+            pitch: this.props.pitch ? this.props.pitch : 0,
+            pitchWithRotate: false,
+            refreshExpiredTiles: false,
+            style: this.props.styleURL ? this.props.styleURL : 'mapbox://styles/mapbox/streets-v10',
+            zoom: this.props.zoom
         });
 
         this.map.on('load', () => {
-            $('.mapboxgl-canvas').css('opacity', '0.5').css('position', 'relative');//.css('top', '-472px').css('height', '466px');
+            $('.mapboxgl-canvas').css('opacity', '0.5').css('position', 'relative');
             this.props.onDragEnd([
                 [this.map!.getBounds().getNorth(), this.map!.getBounds().getSouth()],
                 [this.map!.getBounds().getWest(), this.map!.getBounds().getEast()]

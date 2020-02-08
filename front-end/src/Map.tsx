@@ -2,11 +2,12 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-06 23:48:51
+ * @Last Modified time: 2020-02-08 17:42:29
  */
 import React, { Component } from 'react';
+import $ from 'jquery';
 import MapBox from './react-mapbox/MapBox';
-import Color from './preference/Color';
+import Color, { ColorThemes } from './preference/Color';
 import { DataItem } from './TypeLib';
 import { System } from './Globe';
 
@@ -33,6 +34,12 @@ export interface MapViewState<T> {
     }>;
 }
 
+export interface Sketch {
+    type: "line";
+    begin: [number, number];
+    end: [number, number];
+};
+
 export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     private originBounds: Readonly<[[number, number], [number, number]]>
         = [[ 50.55349948549696, 22.86881607932105 ], [ -128.14621384226703, -67.85378615773539 ]];
@@ -42,9 +49,19 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     private canvas: null | HTMLCanvasElement;
     private ctx: null | CanvasRenderingContext2D;
     private ready: Array<Array<[number, number, string]>>;
+    private highlighted: Array<number>;
+    private canvas2: null | HTMLCanvasElement;
+    private ctx2: null | CanvasRenderingContext2D;
+    private canvas_s: null | HTMLCanvasElement;
+    private ctx_s: null | CanvasRenderingContext2D;
+    private ready2: Array<Array<[number, number, string]>>;
     private timers: Array<NodeJS.Timeout>;
     private cloneObserver: Array<Map>;
     private recursiveLock: boolean;
+    private keyboardDebounce: boolean;
+    private behavior: "line";
+    private sketchers: Array<Sketch>;
+    private drawing: boolean;
 
     public constructor(props: MapViewProps) {
         super(props);
@@ -54,19 +71,54 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         this.ctx = null;
         this.timers = [];
         this.ready = [];
+        this.highlighted = [];
+        this.canvas2 = null;
+        this.ctx2 = null;
+        this.canvas_s = null;
+        this.ctx_s = null;
+        this.ready2 = [];
         this.cloneObserver = [];
         this.recursiveLock = false;
+        this.keyboardDebounce = false;
+        this.behavior = "line";
+        this.sketchers = [];
+        this.drawing = false;
     }
 
     public render(): JSX.Element {
         return (
-            <div id={ this.props.id }
+            <div id={ this.props.id } ref="container"
             style={{
                 height: `${ this.props.height }px`,
                 width: `${ this.props.width }px`,
                 background: 'white',
                 ...this.props.style
-            }} >
+            }}
+            onKeyDown={
+                (e) => {
+                    if (!this.keyboardDebounce && e.which === 17) {    // Ctrl
+                        if ($(this.refs["cover"]).css("display") === "none") {
+                            $(this.refs["cover"]).show();
+                            $(this.refs["tool-line"]).fadeIn(200);
+                            this.updateSketcher();
+                            setTimeout(() => {
+                                $(this.refs["tool-line"]).fadeOut(200);
+                            }, 1100);
+                            this.keyboardDebounce = true;
+                        }
+                    }
+                }
+            }
+            onKeyUp={
+                () => {
+                    this.keyboardDebounce = false;
+                }
+            }
+            onMouseOver={
+                () => {
+                    $(this.refs["container"]).focus();
+                }
+            } >
                 <div
                 id={ this.props.id + ">>" }
                 style={{
@@ -101,21 +153,105 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                         top: '-100%',
                         pointerEvents: 'none'
                     }} />
+                    <canvas key="2" id={ this.props.id + "_canvas2" } ref="canvas2"
+                    width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        pointerEvents: 'none'
+                    }} />
+                    <canvas key="?" id={ this.props.id + "_canvas_s" } ref="cover"
+                    width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        pointerEvents: 'all',
+                        cursor: 'crosshair',
+                        background: '#000000A0'
+                    }}
+                    onMouseDown={
+                        (e: React.MouseEvent<HTMLCanvasElement>) => {
+                            this.sketch([e.clientX, e.clientY], "begin");
+                            this.drawing = true;
+                        }
+                    }
+                    onMouseMove={
+                        (e: React.MouseEvent<HTMLCanvasElement>) => {
+                            if (!this.drawing) {
+                                return;
+                            }
+                            this.sketch([e.clientX, e.clientY], "drag");
+                        }
+                    }
+                    onMouseUp={
+                        (e: React.MouseEvent<HTMLCanvasElement>) => {
+                            if (!this.drawing) {
+                                return;
+                            }
+                            this.sketch([e.clientX, e.clientY], "end");
+                            this.drawing = false;
+                        }
+                    }
+                    onDoubleClick={
+                        () => {
+                            this.ctx_s!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+                            this.sketchers = [];
+                            this.drawing = false;
+                            $(this.refs["cover"]).hide();
+                            $(this.refs["tool-line"]).hide();
+                        }
+                    }
+                    onMouseOut={
+                        () => {
+                            if (this.drawing) {
+                                this.sketchers.pop();
+                            }
+                            this.drawing = false;
+                        }
+                    } />
+                    <svg key="tool-line" ref="tool-line"
+                    style={{
+                        position: 'absolute',
+                        width: '80px',
+                        height: '28px',
+                        top: '10px',
+                        left: `${ this.props.width / 2 - 40 }px`,
+                        background: ColorThemes.NakiriAyame.Grey,
+                        pointerEvents: 'none'
+                    }} >
+                        <line x1={ 11 } y1={ 6 } x2={ 27 } y2={ 22 }
+                        style={{
+                            stroke: 'rgb(136,115,255)',
+                            strokeWidth: 3
+                        }} />
+                    </svg>
                 </div>
             </div>
         )
     }
 
     public componentDidMount(): void {
+        $(this.refs["cover"]).hide();
+        $(this.refs["tool-line"]).hide();
         this.mounted = true;
         this.canvas = document.getElementById(this.props.id + "_canvas") as HTMLCanvasElement;
         this.ctx = this.canvas!.getContext("2d");
         this.ctx!.globalAlpha = 0.5;
+        this.canvas2 = document.getElementById(this.props.id + "_canvas2") as HTMLCanvasElement;
+        this.ctx2 = this.canvas2!.getContext("2d");
+        this.canvas_s = document.getElementById(this.props.id + "_canvas_s") as HTMLCanvasElement;
+        this.ctx_s = this.canvas_s!.getContext("2d");
         this.forceUpdate();
     }
 
     public componentDidUpdate(): void {
+        this.timers.forEach((timer: NodeJS.Timeout) => {
+            clearTimeout(timer);
+        });
+        this.timers = [];
         this.ready = [];
+        this.ready2 = [];
+        this.sketchers = [];
         this.redraw();
     }
 
@@ -125,35 +261,122 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         });
     }
 
-    private redraw(): void {
-        this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+    private sketch(position: [number, number], event: "begin" | "drag" | "end"): void {
+        position = [
+            position[0] - $(this.refs["cover"]).offset()!.left,
+            position[1] - $(this.refs["cover"]).offset()!.top
+        ];
+        if (this.behavior === "line") {
+            if (event === "begin") {
+                this.sketchers.push({
+                    type: "line",
+                    begin: position,
+                    end: position
+                });
+            } else if (event === "drag") {
+                this.sketchers[this.sketchers.length - 1].end = position;
+            } else {
+                const current: Sketch = this.sketchers[this.sketchers.length - 1];
+                const dist: number = Math.pow(current.begin[0] - current.end[0], 2)
+                                    + Math.pow(current.begin[1] - current.end[1], 2);
+                if (dist < 10000) {
+                    this.sketchers.pop();
+                } else {
+                    this.onSketched(current);
+                }
+            }
+        }
+    }
+
+    private onSketched(s: Sketch): void {
+        console.log(s.begin, s.end);
+    }
+
+    private updateSketcher(): void {
+        this.canvas_s!.height = this.canvas_s!.height;
+        this.sketchers.forEach((s: Sketch) => {
+            if (s.type === "line") {
+                this.ctx_s!.strokeStyle = 'rgb(136,115,255)';
+                this.ctx_s!.lineWidth = 4;
+                this.ctx_s!.moveTo(...s.begin);
+                this.ctx_s!.lineTo(...s.end);
+                this.ctx_s!.stroke();
+            }
+        });
+        if ($(this.refs["cover"]).css("display") !== "none") {
+            setTimeout(this.updateSketcher.bind(this), 40);
+        }
+    }
+
+    private redraw(source: "2" | "all" = "all"): void {
         this.timers.forEach((timer: NodeJS.Timeout) => {
             clearTimeout(timer);
         });
         this.timers = [];
-        if (this.ready.length === 0) {
-            const nParts = Math.max(Math.floor(Math.pow((this.state.data.length - 400) / 100, 0.8)), 1);
-            for (let i: number = 0; i < nParts; i++) {
-                this.ready.push([]);
-            }
-            this.state.data.forEach((d: { lng: number, lat: number, value: number }, index: number) => {
-                if (isNaN(d.lat) || isNaN(d.lng) || !System.active[index]) {
-                    return;
+        if (source === "all") {
+            this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+            if (this.ready.length === 0) {
+                let nParts = Math.floor(Math.pow((this.state.data.length - 400) / 100, 0.8));
+                if (!nParts || nParts < 1) {
+                    nParts = 1;
                 }
-                this.ready[index % nParts].push([d.lng, d.lat, Color.interpolate(
-                    Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, d.value
-                )]);
+                nParts *= (1 + this.cloneObserver.length);
+                for (let i: number = 0; i < nParts; i++) {
+                    this.ready.push([]);
+                }
+                this.state.data.forEach((d: { lng: number, lat: number, value: number }, index: number) => {
+                    if (isNaN(d.lat) || isNaN(d.lng) || !System.active[index]) {
+                        return;
+                    }
+                    this.ready[index % nParts].push([d.lng, d.lat, Color.interpolate(
+                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, d.value
+                    )]);
+                });
+            }
+            this.ready.forEach((list: Array<[number, number, string]>, index: number) => {
+                this.timers.push(
+                    setTimeout(() => {
+                        list.forEach((d: [number, number, string]) => {
+                            this.addPoint(d[0], d[1], d[2], "1");
+                        });
+                    }, index * 10)
+                );
             });
         }
-        this.ready.forEach((list: Array<[number, number, string]>, index: number) => {
-            this.timers.push(
-                setTimeout(() => {
-                    list.forEach((d: [number, number, string]) => {
-                        this.addPoint(d[0], d[1], d[2]);
-                    });
-                }, index * 10)
-            );
-        });
+        this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        if (this.highlighted.length) {
+            $(this.canvas!).css("opacity", 0.33);
+            if (this.ready2.length === 0) {
+                let nParts = Math.floor(Math.pow((this.highlighted.length - 400) / 100, 0.8));
+                if (!nParts || nParts < 1) {
+                    nParts = 1;
+                }
+                nParts *= (1 + this.cloneObserver.length);
+                for (let i: number = 0; i < nParts; i++) {
+                    this.ready2.push([]);
+                }
+                this.highlighted.forEach((id: number, index: number) => {
+                    const d: { lng: number, lat: number, value: number } = this.state.data[id];
+                    if (isNaN(d.lat) || isNaN(d.lng) || !System.active[id]) {
+                        return;
+                    }
+                    this.ready2[index % nParts].push([d.lng, d.lat, Color.interpolate(
+                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, d.value
+                    )]);
+                });
+            }
+            this.ready2.forEach((list: Array<[number, number, string]>, index: number) => {
+                this.timers.push(
+                    setTimeout(() => {
+                        list.forEach((d: [number, number, string]) => {
+                            this.addPoint(d[0], d[1], d[2], "2");
+                        });
+                    }, index * 10)
+                );
+            });
+        } else {
+            $(this.canvas!).css("opacity", 1);
+        }
     }
 
     public synchronize(clone: Map): void {
@@ -173,11 +396,15 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         this.redraw();
     }
 
+    public highlight(list: Array<number>): void {
+        this.highlighted = list;
+        this.ready2 = [];
+        this.redraw("2");
+    }
+
     public applySynchronizedBounds(): void {
-        console.log("traggered by", this.props.id);
         if (this.recursiveLock) {
             this.recursiveLock = false;
-            console.log("Unlock", this.props.id);
             return;
         }
         const map: MapBox = this.refs["map"] as MapBox;
@@ -188,7 +415,6 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
             const mapcl: MapBox = clone.refs["map"] as MapBox;
             if (mapcl) {
                 clone.recursiveLock = true;
-                console.log("Lock", clone.props.id);
                 mapcl.fitBounds(map);
             }
         });
@@ -205,11 +431,16 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         return this.props.height * (d * d * (-0.00025304519602050573) - d * 0.01760550015218513 + 1.5344062688366468);
     }
 
-    private addPoint(x: number, y: number, style: string): void {
-        this.ctx!.fillStyle = style;
+    private addPoint(x: number, y: number, style: string, source: "1" | "2"): void {
         x = this.fx(x) - 0.7;//0.5;
         y = this.fy(y) - 0.7;//0.5;
-        this.ctx!.fillRect(x, y, 1.4, 1.4);//1, 1);
+        if (source === "1") {
+            this.ctx!.fillStyle = style;
+            this.ctx!.fillRect(x, y, 1.4, 1.4);//1, 1);
+        } else {
+            this.ctx2!.fillStyle = style;
+            this.ctx2!.fillRect(x, y, 1.4, 1.4);//1, 1);
+        }
     }
 
     public load(data: Array<DataItem>): void {
