@@ -54,6 +54,8 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     private ctx2: null | CanvasRenderingContext2D;
     private canvas_s: null | HTMLCanvasElement;
     private ctx_s: null | CanvasRenderingContext2D;
+    private canvas_d: null | HTMLCanvasElement;
+    private ctx_d: null | CanvasRenderingContext2D;
     private ready2: Array<Array<[number, number, string]>>;
     private timers: Array<NodeJS.Timeout>;
     private cloneObserver: Array<Map>;
@@ -76,6 +78,8 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         this.ctx2 = null;
         this.canvas_s = null;
         this.ctx_s = null;
+        this.canvas_d = null;
+        this.ctx_d = null;
         this.ready2 = [];
         this.cloneObserver = [];
         this.recursiveLock = false;
@@ -98,6 +102,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 (e) => {
                     if (!this.keyboardDebounce && e.which === 17) {    // Ctrl
                         if ($(this.refs["cover"]).css("display") === "none") {
+                            $(this.refs["detail"]).show();
                             $(this.refs["cover"]).show();
                             $(this.refs["tool-line"]).fadeIn(200);
                             this.updateSketcher();
@@ -105,6 +110,16 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                                 $(this.refs["tool-line"]).fadeOut(200);
                             }, 1100);
                             this.keyboardDebounce = true;
+                            this.cloneObserver.forEach((clone: Map) => {
+                                $(clone.refs["detail"]).show();
+                                $(clone.refs["cover"]).show();
+                                $(clone.refs["tool-line"]).fadeIn(200);
+                                clone.updateSketcher();
+                                setTimeout(() => {
+                                    $(clone.refs["tool-line"]).fadeOut(200);
+                                }, 1100);
+                                clone.keyboardDebounce = true;
+                            });
                         }
                     }
                 }
@@ -160,6 +175,15 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                         left: 0,
                         pointerEvents: 'none'
                     }} />
+                    <canvas key="!" id={ this.props.id + "_canvas_d" } ref="detail"
+                    width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        pointerEvents: 'none',
+                        cursor: 'crosshair',
+                        background: '#000000A0'
+                    }} />
                     <canvas key="?" id={ this.props.id + "_canvas_s" } ref="cover"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
                         position: 'absolute',
@@ -167,7 +191,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                         left: 0,
                         pointerEvents: 'all',
                         cursor: 'crosshair',
-                        background: '#000000A0'
+                        background: 'none'
                     }}
                     onMouseDown={
                         (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -189,16 +213,31 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                                 return;
                             }
                             this.sketch([e.clientX, e.clientY], "end");
+                            this.cloneObserver.forEach((clone: Map) => {
+                                clone.sketchers = this.sketchers.map((item: Sketch) => item);
+                                clone.sketch([e.clientX, e.clientY], "end");
+                            });
                             this.drawing = false;
                         }
                     }
                     onDoubleClick={
                         () => {
                             this.ctx_s!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+                            this.ctx_d!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
                             this.sketchers = [];
                             this.drawing = false;
+                            $(this.refs["detail"]).hide();
                             $(this.refs["cover"]).hide();
                             $(this.refs["tool-line"]).hide();
+                            this.cloneObserver.forEach((clone: Map) => {
+                                clone.ctx_s!.clearRect(-2, -2, clone.props.width + 4, clone.props.height + 4);
+                                clone.ctx_d!.clearRect(-2, -2, clone.props.width + 4, clone.props.height + 4);
+                                clone.sketchers = [];
+                                clone.drawing = false;
+                                $(clone.refs["detail"]).hide();
+                                $(clone.refs["cover"]).hide();
+                                $(clone.refs["tool-line"]).hide();
+                            });
                         }
                     }
                     onMouseOut={
@@ -231,6 +270,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     }
 
     public componentDidMount(): void {
+        $(this.refs["detail"]).hide();
         $(this.refs["cover"]).hide();
         $(this.refs["tool-line"]).hide();
         this.mounted = true;
@@ -241,6 +281,8 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         this.ctx2 = this.canvas2!.getContext("2d");
         this.canvas_s = document.getElementById(this.props.id + "_canvas_s") as HTMLCanvasElement;
         this.ctx_s = this.canvas_s!.getContext("2d");
+        this.canvas_d = document.getElementById(this.props.id + "_canvas_d") as HTMLCanvasElement;
+        this.ctx_d = this.canvas_d!.getContext("2d");
         this.forceUpdate();
     }
 
@@ -289,14 +331,160 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     }
 
     private onSketched(s: Sketch): void {
-        console.log(s.begin, s.end);
+        if (s.type === "line") {
+            const distance: number = 10;
+            /**
+             * 直线参数
+             */
+            const line: { A: number; B: number; C: number; } = {
+                A: s.end[1] - s.begin[1],
+                B: s.begin[0] - s.end[0],
+                C: s.begin[1] * (s.end[0] - s.begin[0]) - s.begin[0] * (s.end[1] - s.begin[1])
+            };
+            const vertical: number = -1 / line.B;
+            const root: number = Math.sqrt(Math.pow(line.A, 2) + Math.pow(line.B, 2));
+            /**
+             * 计算点到直线距离。
+             * @param {{x: number; y: number;}} p 数据点投影坐标
+             * @returns {number} 距离（像素）
+             */
+            const dist = (p: {x: number; y: number;}): number => {
+                return Math.abs(
+                    (line.A * p.x + line.B * p.y + line.C) / root
+                );
+            };
+            /**
+             * 计算点到直线距离。
+             * @param {{x: number; y: number;}} p 数据点投影坐标
+             * @returns {number} 距离起点的一维长度（比例）
+             */
+            const projection = (p: {x: number; y: number;}): number => {
+                const C: number = 0 - line.A * p.x - vertical * p.y;
+                const y: number = (C - line.C) / (line.B - vertical);
+                if (Math.abs(s.begin[0] - s.end[0]) > Math.abs(s.begin[1] - s.end[1])) {
+                    // y 坐标相差更大，比较 y 坐标
+                    return (y - s.begin[1]) / (s.end[1] - s.begin[1]);
+                } else {
+                    // x 坐标相差更大，比较 x 坐标
+                    const x: number = (-line.C - line.B * y) / line.A;
+                    return (x - s.begin[0]) / (s.end[0] - s.begin[0]);
+                }
+            }
+            let box: Array<{pos: number; value: number;}> = [];
+            let min: number = 0;
+            let max: number = 1;
+            let n_max: number = 1;
+            this.state.data.forEach((d: {lng: number; lat: number; value: number;}, index: number) => {
+                if (isNaN(d.lat) || isNaN(d.lng) || !System.active[index]) {
+                    return;
+                }
+                const cord: {x: number; y: number;} = {
+                    x: this.fx(d.lng),
+                    y: this.fy(d.lat)
+                };
+                const _dis: number = dist(cord);
+                if (_dis <= distance) {
+                    // 放入
+                    const proj: number = projection(cord);
+                    if (proj < min) {
+                        min = proj;
+                    } else if (proj > max) {
+                        max = proj;
+                    }
+                    box.push({
+                        pos: proj,
+                        value: d.value
+                    });
+                }
+            });
+            // 拆分成 n_pieces 份
+            const n_pieces: number = 500;
+            let spans: Array<{value: number; count: number;}> = [];
+            for (let i: number = 0; i < n_pieces; i++) {
+                spans.push({
+                    value: 0,
+                    count: 0
+                });
+            }
+            box.forEach((p: {pos: number; value: number}) => {
+                const index: number = Math.floor(n_pieces * (p.pos - min) / (max - min));
+                try {
+                    if (index < 0) {
+                        spans[0].value += p.value;
+                        spans[0].count++;
+                        n_max = Math.max(n_max, spans[0].count);
+                    } else if (index >= n_pieces) {
+                        spans[n_pieces - 1].value += p.value;
+                        spans[n_pieces - 1].count++;
+                        n_max = Math.max(n_max, spans[n_pieces - 1].count);
+                    } else {
+                        spans[index].value += p.value;
+                        spans[index].count++;
+                        n_max = Math.max(n_max, spans[index].count);
+                    }
+                } catch {
+                    console.warn(index);
+                }
+            });
+            const width: number = Math.sqrt(
+                Math.pow(s.end[0] - s.begin[0], 2) + Math.pow(s.end[1] - s.begin[1], 2)
+            ) * (max - min) / n_pieces;
+            const maxHeight: number = 16;
+            // 填充背景
+            this.ctx_d!.fillStyle = "#fff";
+            const x0: number = s.begin[0] + (s.end[0] - s.begin[0]) / 2 + 2 * line.A / root;
+            const y0: number = s.begin[1] + (s.end[1] - s.begin[1]) / 2 + 2 * line.B / root;
+            const x1: number = s.begin[0] + (s.end[0] - s.begin[0]) / 2 + (2 + maxHeight) * line.A / root;
+            const y1: number = s.begin[1] + (s.end[1] - s.begin[1]) / 2 + (2 + maxHeight) * line.B / root;
+            this.ctx_d!.beginPath();
+            this.ctx_d!.moveTo(x0 - width * n_pieces / 2 * line.B / root, y0 + width * n_pieces / 2 * line.A / root);
+            this.ctx_d!.lineTo(x0 + width * n_pieces / 2 * line.B / root, y0 - width * n_pieces / 2 * line.A / root);
+            this.ctx_d!.lineTo(x1 + width * n_pieces / 2 * line.B / root, y1 - width * n_pieces / 2 * line.A / root);
+            this.ctx_d!.lineTo(x1 - width * n_pieces / 2 * line.B / root, y1 + width * n_pieces / 2 * line.A / root);
+            this.ctx_d!.fill();
+            // 每个小矩形块
+            spans.forEach((span: {value: number; count: number}, i: number) => {
+                if (span.count) {
+                    const value: number = span.value / span.count;
+                    const x0: number = s.begin[0] + (i + 0.5) * (s.end[0] - s.begin[0]) / n_pieces
+                                        + 2 * line.A / root;
+                    const y0: number = s.begin[1] + (i + 0.5) * (s.end[1] - s.begin[1]) / n_pieces
+                                        + 2 * line.B / root;
+                    const x1: number = s.begin[0] + (i + 0.5) * (s.end[0] - s.begin[0]) / n_pieces
+                                        + (2 + span.count / n_max * maxHeight) * line.A / root;
+                    const y1: number = s.begin[1] + (i + 0.5) * (s.end[1] - s.begin[1]) / n_pieces
+                                        + (2 + span.count / n_max * maxHeight) * line.B / root;
+                    const xm: number = s.begin[0] + (i + 0.5) * (s.end[0] - s.begin[0]) / n_pieces
+                                        + (2 + maxHeight) * line.A / root;
+                    const ym: number = s.begin[1] + (i + 0.5) * (s.end[1] - s.begin[1]) / n_pieces
+                                        + (2 + maxHeight) * line.B / root;
+                    this.ctx_d!.fillStyle = Color.interpolate(
+                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value
+                    );
+                    this.ctx_d!.globalAlpha = 0.3;
+                    this.ctx_d!.beginPath();
+                    this.ctx_d!.moveTo(x0 - width / 2 * line.B / root, y0 + width / 2 * line.A / root);
+                    this.ctx_d!.lineTo(x0 + width / 2 * line.B / root, y0 - width / 2 * line.A / root);
+                    this.ctx_d!.lineTo(xm + width / 2 * line.B / root, ym - width / 2 * line.A / root);
+                    this.ctx_d!.lineTo(xm - width / 2 * line.B / root, ym + width / 2 * line.A / root);
+                    this.ctx_d!.fill();
+                    this.ctx_d!.globalAlpha = 1;
+                    this.ctx_d!.beginPath();
+                    this.ctx_d!.moveTo(x0 - width / 2 * line.B / root, y0 + width / 2 * line.A / root);
+                    this.ctx_d!.lineTo(x0 + width / 2 * line.B / root, y0 - width / 2 * line.A / root);
+                    this.ctx_d!.lineTo(x1 + width / 2 * line.B / root, y1 - width / 2 * line.A / root);
+                    this.ctx_d!.lineTo(x1 - width / 2 * line.B / root, y1 + width / 2 * line.A / root);
+                    this.ctx_d!.fill();
+                }
+            });
+        }
     }
 
     private updateSketcher(): void {
         this.canvas_s!.height = this.canvas_s!.height;
         this.sketchers.forEach((s: Sketch) => {
             if (s.type === "line") {
-                this.ctx_s!.strokeStyle = 'rgb(136,115,255)';
+                this.ctx_s!.strokeStyle = Color.setLightness('rgb(136,115,255)', 0.9);
                 this.ctx_s!.lineWidth = 4;
                 this.ctx_s!.moveTo(...s.begin);
                 this.ctx_s!.lineTo(...s.end);
