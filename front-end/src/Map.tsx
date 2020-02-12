@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-08 17:42:29
+ * @Last Modified time: 2020-02-12 17:49:35
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -24,6 +24,7 @@ export interface MapViewProps {
     scaleType: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick";
     style?: React.CSSProperties;
     allowInteraction?: boolean;
+    filter: boolean;
 }
 
 export interface MapViewState<T> {
@@ -35,7 +36,7 @@ export interface MapViewState<T> {
 }
 
 export interface Sketch {
-    type: "line";
+    type: "line" | "circle";
     begin: [number, number];
     end: [number, number];
 };
@@ -61,7 +62,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     private cloneObserver: Array<Map>;
     private recursiveLock: boolean;
     private keyboardDebounce: boolean;
-    private behavior: "line";
+    private behavior: "line" | "circle";
     private sketchers: Array<Sketch>;
     private drawing: boolean;
 
@@ -99,25 +100,19 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 ...this.props.style
             }}
             onKeyDown={
-                (e) => {
+                (e: React.KeyboardEvent<HTMLDivElement>) => {
                     if (!this.keyboardDebounce && e.which === 17) {    // Ctrl
                         if ($(this.refs["cover"]).css("display") === "none") {
                             $(this.refs["detail"]).show();
                             $(this.refs["cover"]).show();
                             $(this.refs["tool-line"]).fadeIn(200);
                             this.updateSketcher();
-                            setTimeout(() => {
-                                $(this.refs["tool-line"]).fadeOut(200);
-                            }, 1100);
                             this.keyboardDebounce = true;
                             this.cloneObserver.forEach((clone: Map) => {
                                 $(clone.refs["detail"]).show();
                                 $(clone.refs["cover"]).show();
                                 $(clone.refs["tool-line"]).fadeIn(200);
                                 clone.updateSketcher();
-                                setTimeout(() => {
-                                    $(clone.refs["tool-line"]).fadeOut(200);
-                                }, 1100);
                                 clone.keyboardDebounce = true;
                             });
                         }
@@ -175,15 +170,6 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                         left: 0,
                         pointerEvents: 'none'
                     }} />
-                    <canvas key="!" id={ this.props.id + "_canvas_d" } ref="detail"
-                    width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        pointerEvents: 'none',
-                        cursor: 'crosshair',
-                        background: '#000000A0'
-                    }} />
                     <canvas key="?" id={ this.props.id + "_canvas_s" } ref="cover"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
                         position: 'absolute',
@@ -191,7 +177,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                         left: 0,
                         pointerEvents: 'all',
                         cursor: 'crosshair',
-                        background: 'none'
+                        background: '#000000A0'
                     }}
                     onMouseDown={
                         (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -224,11 +210,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                         () => {
                             this.ctx_s!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
                             this.ctx_d!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
-                            this.sketchers = [];
-                            this.drawing = false;
-                            $(this.refs["detail"]).hide();
-                            $(this.refs["cover"]).hide();
-                            $(this.refs["tool-line"]).hide();
+                            this.closeSketcher();
                             this.cloneObserver.forEach((clone: Map) => {
                                 clone.ctx_s!.clearRect(-2, -2, clone.props.width + 4, clone.props.height + 4);
                                 clone.ctx_d!.clearRect(-2, -2, clone.props.width + 4, clone.props.height + 4);
@@ -248,6 +230,15 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                             this.drawing = false;
                         }
                     } />
+                    <canvas key="!" id={ this.props.id + "_canvas_d" } ref="detail"
+                    width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        pointerEvents: 'none',
+                        cursor: 'crosshair',
+                        background: 'none'
+                    }} />
                     <svg key="tool-line" ref="tool-line"
                     style={{
                         position: 'absolute',
@@ -258,10 +249,40 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                         background: ColorThemes.NakiriAyame.Grey,
                         pointerEvents: 'none'
                     }} >
-                        <line x1={ 11 } y1={ 6 } x2={ 27 } y2={ 22 }
+                        <rect key="btn-line" ref="btn-line" x={ 7 } y={ 2 } width={ 24 } height={ 24 }
+                        style={{
+                            fill: 'none',
+                            stroke: 'black',
+                            strokeWidth: 1,
+                            pointerEvents: 'all'
+                        }}
+                        onClick={
+                            () => {
+                                this.setSketchType("line");
+                            }
+                        } />
+                        <line key="line" x1={ 11 } y1={ 6 } x2={ 27 } y2={ 22 }
                         style={{
                             stroke: 'rgb(136,115,255)',
                             strokeWidth: 3
+                        }} />
+                        <rect key="btn-circle" ref="btn-circle" x={ 45 } y={ 2 } width={ 24 } height={ 24 }
+                        style={{
+                            fill: 'none',
+                            stroke: 'black',
+                            strokeWidth: 1,
+                            pointerEvents: 'all'
+                        }}
+                        onClick={
+                            () => {
+                                this.setSketchType("circle");
+                            }
+                        } />
+                        <circle key="circle" cx={ 57 } cy={ 14 } r={ 8 }
+                        style={{
+                            stroke: 'rgb(136,115,255)',
+                            strokeWidth: 2.4,
+                            fill: 'none'
                         }} />
                     </svg>
                 </div>
@@ -284,6 +305,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         this.canvas_d = document.getElementById(this.props.id + "_canvas_d") as HTMLCanvasElement;
         this.ctx_d = this.canvas_d!.getContext("2d");
         this.forceUpdate();
+        this.setSketchType("line");
     }
 
     public componentDidUpdate(): void {
@@ -303,6 +325,14 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
         });
     }
 
+    public closeSketcher(): void {
+        this.sketchers = [];
+        this.drawing = false;
+        $(this.refs["detail"]).hide();
+        $(this.refs["cover"]).hide();
+        $(this.refs["tool-line"]).hide();
+    }
+
     private sketch(position: [number, number], event: "begin" | "drag" | "end"): void {
         position = [
             position[0] - $(this.refs["cover"]).offset()!.left,
@@ -315,24 +345,61 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     begin: position,
                     end: position
                 });
-            } else if (event === "drag") {
-                this.sketchers[this.sketchers.length - 1].end = position;
-            } else {
-                const current: Sketch = this.sketchers[this.sketchers.length - 1];
-                const dist: number = Math.pow(current.begin[0] - current.end[0], 2)
-                                    + Math.pow(current.begin[1] - current.end[1], 2);
-                if (dist < 10000) {
-                    this.sketchers.pop();
+            } else if (this.sketchers.length) {
+                if (event === "drag") {
+                    this.sketchers[this.sketchers.length - 1].end = position;
                 } else {
-                    this.onSketched(current);
+                    const current: Sketch = this.sketchers[this.sketchers.length - 1];
+                    const dist: number = Math.pow(current.begin[0] - current.end[0], 2)
+                                        + Math.pow(current.begin[1] - current.end[1], 2);
+                    if (dist < 10000) {
+                        this.sketchers.pop();
+                    } else {
+                        this.onSketched(current);
+                    }
+                }
+            }
+        } else if (this.behavior === "circle") {
+            if (event === "begin") {
+                this.sketchers.push({
+                    type: "circle",
+                    begin: position,
+                    end: position
+                });
+            } else if (this.sketchers.length) {
+                if (event === "drag") {
+                    this.sketchers[this.sketchers.length - 1].end = position;
+                } else {
+                    const current: Sketch = this.sketchers[this.sketchers.length - 1];
+                    const radius2: number = Math.pow(current.begin[0] - current.end[0], 2)
+                                        + Math.pow(current.begin[1] - current.end[1], 2);
+                    if (radius2 < 1000) {
+                        this.sketchers.pop();
+                    } else {
+                        this.onSketched(current);
+                    }
                 }
             }
         }
     }
 
+    private setSketchType(type: "line" | "circle"): void {
+        this.behavior = type;
+        if (type === "line") {
+            $(this.refs["btn-line"]).css("stroke", "red").css("stroke-width", 2);
+            $(this.refs["btn-circle"]).css("stroke", "black").css("stroke-width", 1);
+        } else if (type === "circle") {
+            $(this.refs["btn-line"]).css("stroke", "black").css("stroke-width", 1);
+            $(this.refs["btn-circle"]).css("stroke", "red").css("stroke-width", 2);
+        }
+    }
+
     private onSketched(s: Sketch): void {
         if (s.type === "line") {
-            const distance: number = 10;
+            /**
+             * 点到直线距离上限
+             */
+            const distance: number = Infinity;
             /**
              * 直线参数
              */
@@ -375,7 +442,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
             let max: number = 1;
             let n_max: number = 1;
             this.state.data.forEach((d: {lng: number; lat: number; value: number;}, index: number) => {
-                if (isNaN(d.lat) || isNaN(d.lng) || !System.active[index]) {
+                if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
                     return;
                 }
                 const cord: {x: number; y: number;} = {
@@ -429,7 +496,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
             const width: number = Math.sqrt(
                 Math.pow(s.end[0] - s.begin[0], 2) + Math.pow(s.end[1] - s.begin[1], 2)
             ) * (max - min) / n_pieces;
-            const maxHeight: number = 16;
+            const maxHeight: number = 32;
             // 填充背景
             this.ctx_d!.fillStyle = "#fff";
             const x0: number = s.begin[0] + (s.end[0] - s.begin[0]) / 2 + 2 * line.A / root;
@@ -477,17 +544,105 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     this.ctx_d!.fill();
                 }
             });
+        } else if (s.type === "circle") {
+            const x: number = s.begin[0];
+            const y: number = s.begin[1];
+            /**
+             * 圆的半径
+             */
+            const radius2: number = Math.pow(s.end[0] - x, 2) + Math.pow(s.end[1] - y, 2);
+            let pies: Array<number> = [];
+            const n_pieces: number = 360;
+            // 扩展
+            const stretch: number = 10;
+            for (let i: number = 0; i < n_pieces; i++) {
+                pies.push(0);
+            }
+            let max: number = 1;
+            this.state.data.forEach((d: {lng: number; lat: number; value: number;}, index: number) => {
+                if (isNaN(d.lng) || isNaN(d.lat) || (this.props.filter && !System.active[index])) {
+                    return;
+                }
+                const dist2: number = Math.pow(this.fx(d.lng) - x, 2) + Math.pow(this.fy(d.lat) - y, 2);
+                if (dist2 > radius2) {
+                    return;
+                }
+                const i: number = Math.floor(d.value * n_pieces);
+                if (i >= n_pieces) {
+                    pies[n_pieces - 1]++;
+                    if (pies[n_pieces - 1] > max) {
+                        max = pies[n_pieces - 1];
+                    }
+                } else {
+                    pies[i]++;
+                    if (pies[i] > max) {
+                        max = pies[i];
+                    }
+                }
+                for (let t: number = - stretch; t <= stretch; t++) {
+                    const idx: number = n_pieces + i + t;
+                    if (t === 0) {
+                        continue;
+                    }
+                    pies[idx % n_pieces] += 0.6 * (1 - (Math.abs(t) - 1) / stretch);
+                    if (pies[idx % n_pieces] > max) {
+                        max += pies[idx % n_pieces];
+                    }
+                }
+            });
+            const radius: number = Math.sqrt(radius2) - 2;
+            // 背景
+            this.ctx_d!.globalAlpha = 1.0;
+            this.ctx_d!.fillStyle = "#ffffff80";
+            this.ctx_d!.beginPath();
+            this.ctx_d!.arc(x, y, radius, 0, Math.PI * 2);
+            this.ctx_d!.fill();
+            // 绘制扇形
+            pies.forEach((pie: number, i: number) => {
+                if (pie === 0) {
+                    return;
+                }
+                const r: number = radius * pie / max;
+                const x1: number = x + Math.sin(i / n_pieces * 2 * Math.PI) * r
+                const y1: number = y + Math.cos(i / n_pieces * 2 * Math.PI) * r;
+                const x2: number = x + Math.sin((i + 1) / n_pieces * 2 * Math.PI) * r;
+                const y2: number = y + Math.cos((i + 1) / n_pieces * 2 * Math.PI) * r;
+                this.ctx_d!.beginPath();
+                this.ctx_d!.fillStyle = Color.interpolate(
+                    Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, i / (n_pieces - 1)
+                );
+                this.ctx_d!.moveTo(x, y);
+                this.ctx_d!.lineTo(x1, y1);
+                this.ctx_d!.lineTo(x2, y2);
+                this.ctx_d!.fill();
+            });
         }
     }
 
     private updateSketcher(): void {
         this.canvas_s!.height = this.canvas_s!.height;
-        this.sketchers.forEach((s: Sketch) => {
+        this.sketchers.forEach((s: Sketch, i: number) => {
             if (s.type === "line") {
                 this.ctx_s!.strokeStyle = Color.setLightness('rgb(136,115,255)', 0.9);
                 this.ctx_s!.lineWidth = 4;
                 this.ctx_s!.moveTo(...s.begin);
                 this.ctx_s!.lineTo(...s.end);
+                this.ctx_s!.stroke();
+            } else if (s.type === "circle") {
+                const radius: number = Math.sqrt(Math.pow(s.end[0] - s.begin[0], 2) + Math.pow(s.end[1] - s.begin[1], 2));
+                if (this.drawing && i === this.sketchers.length - 1) {
+                    this.ctx_s!.strokeStyle = 'rgb(136,115,255)';
+                    this.ctx_s!.lineWidth = 2;
+                    this.ctx_s!.moveTo(...s.begin);
+                    this.ctx_s!.lineTo(...s.end);
+                    this.ctx_s!.stroke();
+                }
+                this.ctx_s!.fillStyle = Color.setLightness('rgb(136,115,255)', 0.9);
+                this.ctx_s!.fillRect(s.begin[0] - 3, s.begin[1] - 3, 6, 6);
+                this.ctx_s!.strokeStyle = Color.setLightness('rgb(136,115,255)', 0.9);
+                this.ctx_s!.lineWidth = 3;
+                this.ctx_s!.beginPath();
+                this.ctx_s!.arc(s.begin[0], s.begin[1], radius, 0, Math.PI * 2);
                 this.ctx_s!.stroke();
             }
         });
@@ -513,7 +668,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     this.ready.push([]);
                 }
                 this.state.data.forEach((d: { lng: number, lat: number, value: number }, index: number) => {
-                    if (isNaN(d.lat) || isNaN(d.lng) || !System.active[index]) {
+                    if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
                         return;
                     }
                     this.ready[index % nParts].push([d.lng, d.lat, Color.interpolate(
@@ -545,7 +700,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 }
                 this.highlighted.forEach((id: number, index: number) => {
                     const d: { lng: number, lat: number, value: number } = this.state.data[id];
-                    if (isNaN(d.lat) || isNaN(d.lng) || !System.active[id]) {
+                    if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
                         return;
                     }
                     this.ready2[index % nParts].push([d.lng, d.lat, Color.interpolate(
