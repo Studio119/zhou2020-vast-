@@ -385,6 +385,11 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
 
     private setSketchType(type: "line" | "circle"): void {
         this.behavior = type;
+        this.cloneObserver.forEach((clone: Map) => {
+            if (clone.behavior !== type) {
+                clone.setSketchType(type);
+            }
+        });
         if (type === "line") {
             $(this.refs["btn-line"]).css("stroke", "red").css("stroke-width", 2);
             $(this.refs["btn-circle"]).css("stroke", "black").css("stroke-width", 1);
@@ -396,50 +401,52 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
 
     private onSketched(s: Sketch): void {
         if (s.type === "line") {
-            /**
-             * 点到直线距离上限
-             */
-            const distance: number = Infinity;
+            // /**
+            //  * 点到直线距离上限
+            //  */
+            // const distance: number = Infinity;
             /**
              * 直线参数
              */
             const line: { A: number; B: number; C: number; } = {
                 A: s.end[1] - s.begin[1],
                 B: s.begin[0] - s.end[0],
-                C: s.begin[1] * (s.end[0] - s.begin[0]) - s.begin[0] * (s.end[1] - s.begin[1])
+                C: s.begin[0] * (s.begin[1] - s.end[1]) + s.begin[1] * (s.end[0] - s.begin[0])
             };
-            const vertical: number = -1 / line.B;
+            const vertical: number = -(line.A * line.A) / line.B;
             const root: number = Math.sqrt(Math.pow(line.A, 2) + Math.pow(line.B, 2));
-            /**
-             * 计算点到直线距离。
-             * @param {{x: number; y: number;}} p 数据点投影坐标
-             * @returns {number} 距离（像素）
-             */
-            const dist = (p: {x: number; y: number;}): number => {
-                return Math.abs(
-                    (line.A * p.x + line.B * p.y + line.C) / root
-                );
-            };
+            // /**
+            //  * 计算点到直线距离。
+            //  * @param {{x: number; y: number;}} p 数据点投影坐标
+            //  * @returns {number} 距离（像素）
+            //  */
+            // const dist = (p: {x: number; y: number;}): number => {
+            //     return Math.abs(
+            //         (line.A * p.x + line.B * p.y + line.C) / root
+            //     );
+            // };
             /**
              * 计算点到直线距离。
              * @param {{x: number; y: number;}} p 数据点投影坐标
              * @returns {number} 距离起点的一维长度（比例）
              */
-            const projection = (p: {x: number; y: number;}): number => {
+            const projection = Math.abs(s.begin[0] - s.end[0]) < Math.abs(s.begin[1] - s.end[1])
+            ? // y 坐标相差更大，比较 y 坐标
+            (p: {x: number; y: number;}): number => {
                 const C: number = 0 - line.A * p.x - vertical * p.y;
                 const y: number = (C - line.C) / (line.B - vertical);
-                if (Math.abs(s.begin[0] - s.end[0]) > Math.abs(s.begin[1] - s.end[1])) {
-                    // y 坐标相差更大，比较 y 坐标
-                    return (y - s.begin[1]) / (s.end[1] - s.begin[1]);
-                } else {
-                    // x 坐标相差更大，比较 x 坐标
-                    const x: number = (-line.C - line.B * y) / line.A;
-                    return (x - s.begin[0]) / (s.end[0] - s.begin[0]);
-                }
+                return (y - s.begin[1]) / (s.end[1] - s.begin[1]);
             }
+            : // x 坐标相差更大，比较 x 坐标
+            (p: {x: number; y: number;}): number => {
+                const C: number = 0 - line.A * p.x - vertical * p.y;
+                const y: number = (C - line.C) / (line.B - vertical);
+                const x: number = (-line.C - line.B * y) / line.A;
+                return (x - s.begin[0]) / (s.end[0] - s.begin[0]);
+            };
             let box: Array<{pos: number; value: number;}> = [];
-            let min: number = 0;
-            let max: number = 1;
+            let min: number = 1;
+            let max: number = 0;
             let n_max: number = 1;
             this.state.data.forEach((d: {lng: number; lat: number; value: number;}, index: number) => {
                 if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
@@ -449,20 +456,30 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     x: this.fx(d.lng),
                     y: this.fy(d.lat)
                 };
-                const _dis: number = dist(cord);
-                if (_dis <= distance) {
-                    // 放入
-                    const proj: number = projection(cord);
-                    if (proj < min) {
-                        min = proj;
-                    } else if (proj > max) {
-                        max = proj;
-                    }
-                    box.push({
-                        pos: proj,
-                        value: d.value
-                    });
+                // const _dis: number = dist(cord);
+                // if (_dis <= distance) {
+                //     // 放入
+                //     const proj: number = projection(cord);
+                //     if (proj < min) {
+                //         min = proj;
+                //     } else if (proj > max) {
+                //         max = proj;
+                //     }
+                //     box.push({
+                //         pos: proj,
+                //         value: d.value
+                //     });
+                // }
+                const proj: number = projection(cord);
+                if (proj < min) {
+                    min = proj;
+                } else if (proj > max) {
+                    max = proj;
                 }
+                box.push({
+                    pos: proj,
+                    value: d.value
+                });
             });
             // 拆分成 n_pieces 份
             const n_pieces: number = 500;
@@ -493,54 +510,103 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     console.warn(index);
                 }
             });
+            // 实际的开始和结束坐标
+            const beginX: number = s.begin[0] + (s.end[0] - s.begin[0]) * min;
+            const beginY: number = s.begin[1] + (s.end[1] - s.begin[1]) * min;
+            const endX: number = s.begin[0] + (s.end[0] - s.begin[0]) * max;
+            const endY: number = s.begin[1] + (s.end[1] - s.begin[1]) * max;
             const width: number = Math.sqrt(
-                Math.pow(s.end[0] - s.begin[0], 2) + Math.pow(s.end[1] - s.begin[1], 2)
-            ) * (max - min) / n_pieces;
+                Math.pow(endX - beginX, 2) + Math.pow(endY - beginY, 2)
+            ) / n_pieces;
             const maxHeight: number = 32;
             // 填充背景
             this.ctx_d!.fillStyle = "#fff";
-            const x0: number = s.begin[0] + (s.end[0] - s.begin[0]) / 2 + 2 * line.A / root;
-            const y0: number = s.begin[1] + (s.end[1] - s.begin[1]) / 2 + 2 * line.B / root;
-            const x1: number = s.begin[0] + (s.end[0] - s.begin[0]) / 2 + (2 + maxHeight) * line.A / root;
-            const y1: number = s.begin[1] + (s.end[1] - s.begin[1]) / 2 + (2 + maxHeight) * line.B / root;
+            const x0: number = beginX + (endX - beginX) / 2 + 2 * line.A / root;
+            const y0: number = beginY + (endY - beginY) / 2 + 2 * line.B / root;
+            const x1: number = beginX + (endX - beginX) / 2 + (2 + maxHeight) * line.A / root;
+            const y1: number = beginY + (endY - beginY) / 2 + (2 + maxHeight) * line.B / root;
             this.ctx_d!.beginPath();
-            this.ctx_d!.moveTo(x0 - width * n_pieces / 2 * line.B / root, y0 + width * n_pieces / 2 * line.A / root);
-            this.ctx_d!.lineTo(x0 + width * n_pieces / 2 * line.B / root, y0 - width * n_pieces / 2 * line.A / root);
-            this.ctx_d!.lineTo(x1 + width * n_pieces / 2 * line.B / root, y1 - width * n_pieces / 2 * line.A / root);
-            this.ctx_d!.lineTo(x1 - width * n_pieces / 2 * line.B / root, y1 + width * n_pieces / 2 * line.A / root);
+            this.ctx_d!.moveTo(
+                x0 - width * n_pieces / 2 * line.B / root,
+                y0 + width * n_pieces / 2 * line.A / root
+            );
+            this.ctx_d!.lineTo(
+                x0 + width * n_pieces / 2 * line.B / root,
+                y0 - width * n_pieces / 2 * line.A / root
+            );
+            this.ctx_d!.lineTo(
+                x1 + width * n_pieces / 2 * line.B / root,
+                y1 - width * n_pieces / 2 * line.A / root
+            );
+            this.ctx_d!.lineTo(
+                x1 - width * n_pieces / 2 * line.B / root,
+                y1 + width * n_pieces / 2 * line.A / root
+            );
             this.ctx_d!.fill();
+            const rootV: number = Math.sqrt(Math.pow(line.A, 2) + Math.pow(vertical, 2));
+            const w: number = width / (s.end[0] - s.begin[0] + s.end[1] - s.begin[1]) * root;
             // 每个小矩形块
             spans.forEach((span: {value: number; count: number}, i: number) => {
                 if (span.count) {
                     const value: number = span.value / span.count;
-                    const x0: number = s.begin[0] + (i + 0.5) * (s.end[0] - s.begin[0]) / n_pieces
+                    const x0: number = beginX
+                                        + (endX - beginX) * (i + 0.5) / n_pieces
                                         + 2 * line.A / root;
-                    const y0: number = s.begin[1] + (i + 0.5) * (s.end[1] - s.begin[1]) / n_pieces
+                    const y0: number = beginY
+                                        + (endY - beginY) * (i + 0.5) / n_pieces
                                         + 2 * line.B / root;
-                    const x1: number = s.begin[0] + (i + 0.5) * (s.end[0] - s.begin[0]) / n_pieces
+                    const x1: number = beginX
+                                        + (endX - beginX) * (i + 0.5) / n_pieces
                                         + (2 + span.count / n_max * maxHeight) * line.A / root;
-                    const y1: number = s.begin[1] + (i + 0.5) * (s.end[1] - s.begin[1]) / n_pieces
+                    const y1: number = beginY
+                                        + (endY - beginY) * (i + 0.5) / n_pieces
                                         + (2 + span.count / n_max * maxHeight) * line.B / root;
-                    const xm: number = s.begin[0] + (i + 0.5) * (s.end[0] - s.begin[0]) / n_pieces
+                    const xm: number = beginX
+                                        + (endX - beginX) * (i + 0.5) / n_pieces
                                         + (2 + maxHeight) * line.A / root;
-                    const ym: number = s.begin[1] + (i + 0.5) * (s.end[1] - s.begin[1]) / n_pieces
+                    const ym: number = beginY
+                                        + (endY - beginY) * (i + 0.5) / n_pieces
                                         + (2 + maxHeight) * line.B / root;
                     this.ctx_d!.fillStyle = Color.interpolate(
                         Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value
                     );
                     this.ctx_d!.globalAlpha = 0.3;
                     this.ctx_d!.beginPath();
-                    this.ctx_d!.moveTo(x0 - width / 2 * line.B / root, y0 + width / 2 * line.A / root);
-                    this.ctx_d!.lineTo(x0 + width / 2 * line.B / root, y0 - width / 2 * line.A / root);
-                    this.ctx_d!.lineTo(xm + width / 2 * line.B / root, ym - width / 2 * line.A / root);
-                    this.ctx_d!.lineTo(xm - width / 2 * line.B / root, ym + width / 2 * line.A / root);
+                    this.ctx_d!.moveTo(
+                        x0 - w / 2 * line.A / rootV,
+                        y0 + w / 2 * vertical / rootV
+                    );
+                    this.ctx_d!.lineTo(
+                        x0 + w / 2 * line.A / rootV,
+                        y0 - w / 2 * vertical / rootV
+                    );
+                    this.ctx_d!.lineTo(
+                        xm + w / 2 * line.A / rootV,
+                        ym - w / 2 * vertical / rootV
+                    );
+                    this.ctx_d!.lineTo(
+                        xm - w / 2 * line.A / rootV,
+                        ym + w / 2 * vertical / rootV
+                    );
                     this.ctx_d!.fill();
                     this.ctx_d!.globalAlpha = 1;
                     this.ctx_d!.beginPath();
-                    this.ctx_d!.moveTo(x0 - width / 2 * line.B / root, y0 + width / 2 * line.A / root);
-                    this.ctx_d!.lineTo(x0 + width / 2 * line.B / root, y0 - width / 2 * line.A / root);
-                    this.ctx_d!.lineTo(x1 + width / 2 * line.B / root, y1 - width / 2 * line.A / root);
-                    this.ctx_d!.lineTo(x1 - width / 2 * line.B / root, y1 + width / 2 * line.A / root);
+                    this.ctx_d!.moveTo(
+                        x0 - w / 2 * line.A / rootV,
+                        y0 + w / 2 * vertical / rootV
+                    );
+                    this.ctx_d!.lineTo(
+                        x0 + w / 2 * line.A / rootV,
+                        y0 - w / 2 * vertical / rootV
+                    );
+                    this.ctx_d!.lineTo(
+                        x1 + w / 2 * line.A / rootV,
+                        y1 - w / 2 * vertical / rootV
+                    );
+                    this.ctx_d!.lineTo(
+                        x1 - w / 2 * line.A / rootV,
+                        y1 + w / 2 * vertical / rootV
+                    );
                     this.ctx_d!.fill();
                 }
             });
@@ -554,7 +620,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
             let pies: Array<number> = [];
             const n_pieces: number = 360;
             // 扩展
-            const stretch: number = 10;
+            const stretch: number = 18;
             for (let i: number = 0; i < n_pieces; i++) {
                 pies.push(0);
             }
@@ -584,9 +650,9 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     if (t === 0) {
                         continue;
                     }
-                    pies[idx % n_pieces] += 0.6 * (1 - (Math.abs(t) - 1) / stretch);
+                    pies[idx % n_pieces] += 0.8 / Math.abs(t);
                     if (pies[idx % n_pieces] > max) {
-                        max += pies[idx % n_pieces];
+                        max = pies[idx % n_pieces];
                     }
                 }
             });
@@ -604,9 +670,9 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 }
                 const r: number = radius * pie / max;
                 const x1: number = x + Math.sin(i / n_pieces * 2 * Math.PI) * r
-                const y1: number = y + Math.cos(i / n_pieces * 2 * Math.PI) * r;
+                const y1: number = y - Math.cos(i / n_pieces * 2 * Math.PI) * r;
                 const x2: number = x + Math.sin((i + 1) / n_pieces * 2 * Math.PI) * r;
-                const y2: number = y + Math.cos((i + 1) / n_pieces * 2 * Math.PI) * r;
+                const y2: number = y - Math.cos((i + 1) / n_pieces * 2 * Math.PI) * r;
                 this.ctx_d!.beginPath();
                 this.ctx_d!.fillStyle = Color.interpolate(
                     Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, i / (n_pieces - 1)
@@ -700,7 +766,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 }
                 this.highlighted.forEach((id: number, index: number) => {
                     const d: { lng: number, lat: number, value: number } = this.state.data[id];
-                    if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
+                    if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[id])) {
                         return;
                     }
                     this.ready2[index % nParts].push([d.lng, d.lat, Color.interpolate(
@@ -740,7 +806,12 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     }
 
     public highlight(list: Array<number>): void {
-        this.highlighted = list;
+        this.highlighted = [];
+        list.forEach((id: number) => {
+            if (!this.props.filter || System.active[id]) {
+                this.highlighted.push(id);
+            }
+        });
         this.ready2 = [];
         this.redraw("2");
     }

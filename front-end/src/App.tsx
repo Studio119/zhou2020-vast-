@@ -38,7 +38,7 @@ class App extends Component<{}, {}, null> {
         </Container>
         <br />
         <Container theme="NakiriAyame" title="TREE VIEW" width="100%">
-          <Tree width={ "100%" } height={ 320 } ref="tree"
+          <Tree width={ "100%" } height={ 402 } ref="tree"
           scaleType={ this.scale } displayOnMap={ this.highlightPoints.bind(this) } />
         </Container>
       </div>
@@ -59,7 +59,7 @@ class App extends Component<{}, {}, null> {
     try {
       (this.refs["map"] as Map).closeSketcher();
       (this.refs["map2"] as Map).closeSketcher();
-      this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
+      this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_3.5.json", (jsondata: FileData.Tree) => {
         this.tree!.load(jsondata);
         this.map2!.load(System.data);
         resolve();
@@ -86,7 +86,7 @@ class App extends Component<{}, {}, null> {
       });
       this.map!.load(System.data);
     });
-    this.task!.open("./data/neu_huisu_sampled_2.5_17_0.2_0.1_0.0025.json", (jsondata: FileData.Sampled) => {
+    this.task!.open("./data/neu1_huisu_sampled_2.5_38_0.2_0.1_0.0025.json", (jsondata: FileData.Sampled) => {
       System.active.fill(false, 0, System.active.length);
       for (const key in jsondata) {
         if (jsondata.hasOwnProperty(key)) {
