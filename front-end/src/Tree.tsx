@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-02 15:29:12 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-08 15:26:42
+ * @Last Modified time: 2020-02-15 18:24:13
  */
 
 import React, { Component } from "react";
@@ -18,6 +18,7 @@ export interface TreeProps {
     height: number | string;
     scaleType: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick";
     displayOnMap: (list: Array<number>) => void;
+    rank: (node: TreeNode) => void;
 };
 
 export class Tree extends Component<TreeProps, TreeNode, null> {
@@ -114,6 +115,11 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
                             transform: "translateY(24px)",
                             fill: ColorThemes.NakiriAyame.InnerColor
                         }} />
+                        <text ref="detailAccuText" key="detailAccuText" x={ 0 } y={ 0 }
+                        style={{
+                            transform: "translateY(24px)",
+                            fill: ColorThemes.NakiriAyame.InnerColor
+                        }} />
                     </g>
                 </svg>
                 <div ref="test" key="test"
@@ -126,7 +132,7 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
         );
     }
 
-    private getContaining(id: number): Array<number> {
+    public getContaining(id: number): Array<number> {
         return this.snapshots[id].node.containning || this.snapshots[id].node.children.map((child: TreeNode) => {
             return this.getContaining(child.id);
         }).flat()
@@ -149,7 +155,8 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
         value /= count;
         const html: string = `<p>node_id=${ id }</p>`
             + `<p>n_containing=${ count }(${ (100 * count / containning.length).toFixed(2) }%)`
-            + `, value=${ value.toFixed(3) }(${ this.snapshots[id].node.value.toFixed(3) })</p>`;
+            + `, value=${ value.toFixed(3) }(${ this.snapshots[id].node.value.toFixed(3) })</p>`
+            + `<p>accuracy=${ (this.getAccuracy(snapshot.node) * 100).toFixed(2) }%</p>`;
         const test: JQuery<React.ReactInstance> = $(this.refs["test"]);
         test.html(html);
         const g: JQuery<React.ReactInstance> = $(this.refs["detailView"]);
@@ -159,6 +166,9 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
         const bodyText: JQuery<React.ReactInstance> = $(this.refs["detailBodyText"]).text(
             `n_containing=${ count }(${ (100 * count / containning.length).toFixed(2) }%), `
             + `value=${ value.toFixed(3) }(${ this.snapshots[id].node.value.toFixed(3) })`
+        );
+        const accuText: JQuery<React.ReactInstance> = $(this.refs["detailAccuText"]).text(
+            `accuracy=${ (this.getAccuracy(snapshot.node) * 100).toFixed(2) }%`
         );
         const width: number = test.width()! + 30;
         if (snapshot.x <= 50) {
@@ -177,6 +187,9 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
             bodyText.attr("x", snapshot.x + "%")
                 .attr("y", snapshot.y + "%")
                 .css("transform", "translate(15px, 44px)");
+            accuText.attr("x", snapshot.x + "%")
+                .attr("y", snapshot.y + "%")
+                .css("transform", "translate(15px, 70px)");
         } else {
             head.attr("x", snapshot.x + snapshot.width + "%")
                 .attr("y", snapshot.y + "%")
@@ -193,6 +206,9 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
             bodyText.attr("x", snapshot.x + snapshot.width + "%")
                 .attr("y", snapshot.y + "%")
                 .css("transform", `translate(${ 15 - width }px, 44px)`);
+            accuText.attr("x", snapshot.x + snapshot.width + "%")
+                .attr("y", snapshot.y + "%")
+                .css("transform", `translate(${ 15 - width }px, 70px)`);
         }
         g.show();
     }
@@ -269,11 +285,13 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
                 }}
                 onClick={
                     () => {
+                        this.props.rank(node);
                         this.props.displayOnMap(this.getContaining(node.id));
                     }
                 }
                 onDoubleClick={
                     () => {
+                        this.props.rank(node);
                         this.props.displayOnMap([]);
                     }
                 }
@@ -338,6 +356,45 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
                 </g>
             </g>
         );
+    }
+
+    private getAccuracy(node: TreeNode): number {
+        if (this.snapshots[node.id].accuracy) {
+            return this.snapshots[node.id].accuracy!;
+        }
+        if (node.leaves === 1) {
+            return 1;
+        }
+        let rankings: {[id: number]: {before: number; after: number;}} = {};
+        this.each("DLR", node, (n: TreeNode) => {
+            if (n.children.length === 0 && n.containning) {
+                let valueAfter: number = 0;
+                let countAfter: number = 0;
+                n.containning.forEach((i: number) => {
+                    if (System.active[i]) {
+                        valueAfter += System.data[i].value;
+                        countAfter++;
+                    }
+                });
+                rankings[n.id] = {
+                    before: this.snapshots[n.id].node.value,
+                    after: valueAfter / countAfter / System.maxValue
+                };
+            }
+        });
+        const list: Array<number> = Object.keys(rankings).map((keyname: string) => parseInt(keyname));
+        const total: number = list.length * (list.length - 1);
+        let mistake: number = 0;
+        for (let a: number = 0; a < list.length - 1; a++) {
+            for (let b: number = a + 1; b < list.length; b++) {
+                if (Math.sign(rankings[list[a]].before - rankings[list[b]].before)
+                        !== Math.sign(rankings[list[a]].after - rankings[list[b]].after)) {
+                    mistake++;
+                }
+            }
+        }
+        this.snapshots[node.id].accuracy = (1 - mistake / total);
+        return (1 - mistake / total);
     }
 
     /**

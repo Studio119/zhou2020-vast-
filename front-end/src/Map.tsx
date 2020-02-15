@@ -481,6 +481,9 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     value: d.value
                 });
             });
+            if (max === 0 && min === 1) {
+                [min, max] = [max, min];    // 交换二者的值
+            }
             // 拆分成 n_pieces 份
             const n_pieces: number = 500;
             let spans: Array<{value: number; count: number;}> = [];

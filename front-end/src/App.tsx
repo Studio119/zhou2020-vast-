@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-12 17:28:41
+ * @Last Modified time: 2020-02-15 17:52:46
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -11,8 +11,9 @@ import { Container } from './prototypes/Container';
 import { Tree } from './Tree';
 import { ControlCenter } from './ControlCenter';
 import TaskQueue from './tools/TaskQueue';
-import { FileData } from './TypeLib';
+import { FileData, TreeNode } from './TypeLib';
 import { System } from './Globe';
+import { RankingView } from './RankingView';
 
 class App extends Component<{}, {}, null> {
   private task?: TaskQueue<null>;
@@ -36,10 +37,14 @@ class App extends Component<{}, {}, null> {
           <Map ref="map2" id="map2" minZoom={ 1 } zoom={ 4.7 } center={[-2.31, 53.56]}
           width={ 400 } height={ 400 } scaleType={ this.scale } filter={ true } />
         </Container>
+        <Container theme="NakiriAyame" title="RANKING VIEW">
+          <RankingView ref="RankingView" width={ 435 } height={ 400 }
+          scaleType={ this.scale } displayOnMap={ this.highlightPointsInGroup.bind(this) } />
+        </Container>
         <br />
         <Container theme="NakiriAyame" title="TREE VIEW" width="100%">
           <Tree width={ "100%" } height={ 402 } ref="tree"
-          scaleType={ this.scale } displayOnMap={ this.highlightPoints.bind(this) } />
+          scaleType={ this.scale } displayOnMap={ this.highlightPoints.bind(this) } rank={ this.rank.bind(this) } />
         </Container>
       </div>
     );
@@ -69,9 +74,17 @@ class App extends Component<{}, {}, null> {
     }
   }
 
+  private rank(node: TreeNode): void {
+    (this.refs["RankingView"] as RankingView).activate(node);
+  }
+
   private highlightPoints(list: Array<number>): void {
     (this.refs["map"] as Map).highlight(list);
     (this.refs["map2"] as Map).highlight(list);
+  }
+
+  private highlightPointsInGroup(id: number): void {
+    this.highlightPoints((this.refs["tree"] as Tree).getContaining(id));
   }
 
   private load(): void {

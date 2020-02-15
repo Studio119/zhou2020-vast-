@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:41:22 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-05 19:22:21
+ * @Last Modified time: 2020-02-15 18:23:14
  */
 
 export namespace Snapshot {
@@ -13,6 +13,7 @@ export namespace Snapshot {
         height: number;
         node: _treenode;
         value: number;
+        accuracy?: number;
     };
 };
 
