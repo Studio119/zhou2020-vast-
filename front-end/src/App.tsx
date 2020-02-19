@@ -27,7 +27,8 @@ class App extends Component<{}, {}, null> {
       <div className="App">
         <TaskQueue<null> control={ null } ref="task" />
         <Container theme="NakiriAyame" title="CONTROLLER">
-          <ControlCenter width={ 300 } height={ 400 } padding={ [20, 20] } apply={ this.apply.bind(this) } />
+          <ControlCenter width={ 300 } height={ 400 } padding={ [20, 20] }
+          apply={ this.apply.bind(this) } randomSample={ this.randomSample.bind(this) } />
         </Container>
         <Container theme="NakiriAyame" title="MAP VIEW" >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 4.7 } center={[-2.31, 53.56]}
@@ -64,7 +65,7 @@ class App extends Component<{}, {}, null> {
     try {
       (this.refs["map"] as Map).closeSketcher();
       (this.refs["map2"] as Map).closeSketcher();
-      this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_3.5.json", (jsondata: FileData.Tree) => {
+      this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
         this.tree!.load(jsondata);
         this.map2!.load(System.data);
         resolve();
@@ -87,6 +88,29 @@ class App extends Component<{}, {}, null> {
     this.highlightPoints((this.refs["tree"] as Tree).getContaining(id));
   }
 
+  private randomSample(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
+    try {
+      (this.refs["map"] as Map).closeSketcher();
+      (this.refs["map2"] as Map).closeSketcher();
+      System.active.fill(false, 0, System.active.length);
+      let count: number = 0;
+      while (count < 10077) {
+        const r: number = Math.floor(Math.random() * System.active.length);
+        if (System.active[r]) {
+          continue;
+        } else {
+          System.active[r] = true;
+          count++;
+        }
+      }
+      System.picked = [];
+      this.map2!.load(System.data);
+      resolve();
+    } catch(err) {
+      reject(err);
+    }
+  }
+
   private load(): void {
     this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
       System.active = [];
@@ -99,7 +123,7 @@ class App extends Component<{}, {}, null> {
       });
       this.map!.load(System.data);
     });
-    this.task!.open("./data/neu1_huisu_sampled_2.5_38_0.2_0.1_0.0025.json", (jsondata: FileData.Sampled) => {
+    this.task!.open("./data/sampled_9.17_10070_1.0_0.json", (jsondata: FileData.Sampled) => {
       System.active.fill(false, 0, System.active.length);
       for (const key in jsondata) {
         if (jsondata.hasOwnProperty(key)) {

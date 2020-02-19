@@ -15,6 +15,7 @@ export interface ControlCenterProps {
     height: number;
     padding: [number, number];
     apply: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
+    randomSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
 };
 
 export class ControlCenter extends Component<ControlCenterProps, {}, null> {
@@ -26,7 +27,7 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                 height: this.props.height - this.props.padding[0] * 2,
                 padding: `${ this.props.padding[0] }px ${ this.props.padding[1] }px`
             }} >
-                <div key="partA"
+                <div key="render"
                 style={{
                     width: this.props.width - this.props.padding[1] * 2,
                     height: 100,
@@ -36,9 +37,25 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                     style={{
                         padding: "6px"
                     }} >
-                        Part A
+                        Render
                     </header>
-                    <SyncButton theme="NakiriAyame" text={ "apply" } executer={ this.props.apply } />
+                    <SyncButton theme="NakiriAyame" text={ "apply" }
+                    executer={ this.props.apply } />
+                </div>
+                <div key="RapidSample"
+                style={{
+                    width: this.props.width - this.props.padding[1] * 2,
+                    height: 100,
+                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green
+                }} >
+                    <header
+                    style={{
+                        padding: "6px"
+                    }} >
+                        RapidSample
+                    </header>
+                    <SyncButton theme="NakiriAyame" text={ "sample" }
+                    executer={ this.props.randomSample } />
                 </div>
             </div>
         );
