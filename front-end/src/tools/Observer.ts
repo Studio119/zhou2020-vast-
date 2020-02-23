@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-22 17:02:50 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-22 18:24:25
+ * @Last Modified time: 2020-02-22 18:36:30
  */
 
 
@@ -104,7 +104,13 @@ export class Subscribable<T> {
  * @template T - 状态的数据类型
  */
 export class Observer<T> {
+    public saveSnapshot: "always" | "never" | "oninformed";
+    
+    public clearSnapshot: "always" | "never";
+
     protected shouldUpdate: (prevState: T, nextState: T) => boolean;
+
+    protected snapshot: T | null;
 
     /**
      * 订阅者列表
@@ -125,9 +131,12 @@ export class Observer<T> {
     * @memberof Observer
     */
     public constructor(state: T) {
+        this.saveSnapshot = "always";
+        this.clearSnapshot = "never";
         this.shouldUpdate = () => true;
         this.submitters = [];
         this.state = state;
+        this.snapshot = null;
     }
 
     /**
@@ -149,11 +158,24 @@ export class Observer<T> {
     public setState(nextState: Partial<T>): void {
         const snapshot: T = { ...this.state };
         this.state = { ...this.state, ...nextState };
+        if (this.saveSnapshot === "always") {
+            this.snapshot = snapshot;
+        }
         if (this.shouldUpdate(snapshot, this.state)) {
+            if (this.saveSnapshot === "oninformed") {
+                this.snapshot = snapshot;
+            }
             this.submitters.forEach((s: Subscribable<T>) => {
                 s.onInformed(this.state);
             });
         }
+        if (this.clearSnapshot === "always") {
+            this.snapshot = null;
+        }
+    }
+
+    public get getSnapshot(): T | null {
+        return this.snapshot;
     }
 
     /**
