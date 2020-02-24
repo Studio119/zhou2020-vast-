@@ -1,36 +1,18 @@
 #!/usr/bin/env python3
 from random import random as rand
+import matplotlib.pyplot as plt
 import math
+import copy
+import tqdm
 
 
 class Sampler:
-    def __init__(self, hash_precision=32, max_iter=10, n_stacks=10000):
+    def __init__(self, hash_precision=32, max_iter=10, n_stacks=100):
         self.hash_precision = hash_precision
         self.max_iter = max_iter
         self.n_stacks = n_stacks
+        self._n_sampled = []
         return
-
-
-    """
-    * Clusters data points by hash codes
-    * @param {Array<{code: number; index: number; value: number;}>} group
-    * @returns {Array<Array<{index: number; value: number;}>>}
-    """
-    def _cluster(self, group):
-        # Sort them by z-order
-        group.sort(key=lambda e: e["code"])
-        n_stacks = int(min(self.n_stacks, len(group) / 10)) | 1
-
-        stacks = [[] for i in range(n_stacks)]
-        step = int(len(group) / n_stacks)
-        for i in range(n_stacks):
-            for d in group[step * i: step * (i + 1)]:
-                stacks[i].append({
-                    "index": d["index"],
-                    "value": d["value"]
-                })
-
-        return stacks
 
 
     """
@@ -72,113 +54,194 @@ class Sampler:
 
 
     """
-    * Make data grouped by label
     * @param {Array<{lat: number; lng: number; value: number; label: number;}>} data
-    * @returns {{[label: number]: Array<{code: number; index: number; value: number;}>}}
+    * @returns {Array<{[label: number]: Array<{index: number; value: number;}>}>}
     """
     def _group(self, data):
-        groups = {}
+        groups = []
+
+        """
+        * @param {Array<{index: number; code: string; label: number; value: number;}>}
+        """
+        after_hash = []
+
+        label_count = {}
+
         for i in range(len(data)):
             d = data[i]
-            if d["label"] not in groups:
-                groups[d["label"]] = []
-            # Get geo-code
-            geo_code = self._geo_hash(d["lat"], d["lng"])
-            groups[d["label"]].append({
-                "code": geo_code,
+            label_count[d["label"]] = True
+            after_hash.append({
                 "index": i,
+                "code": self._geo_hash(d["lat"], d["lng"]),
+                "label": d["label"],
                 "value": d["value"]
             })
+
+        after_hash.sort(key=lambda d: d["code"])
+
+        n_stack = int(min(len(after_hash) / 100, self.n_stacks) / len(label_count)) | 1
+
+        step = int(len(after_hash) / n_stack)
+
+        hash_sorted = [{
+            "index": d["index"],
+            "label": d["label"],
+            "value": d["value"]
+        } for d in after_hash]
+
+        """
+        * @param {Array<Array<{index: number; label: number; value: number;}>>}
+        """
+        stacks = [after_hash[i * step: (i + 1) * step] for i in range(n_stack)]
+        if n_stack * step < len(after_hash):
+            stacks[-1].extend(after_hash[n_stack * step: len(after_hash)])
+
+        for s in stacks:
+            groups.append({})
+            for d in s:
+                label = d["label"]
+                if label not in groups[-1]:
+                    groups[-1][label] = []
+                groups[-1][label].append({
+                    "index": d["index"],
+                    "value": d["value"]
+                })
+
         return groups
 
 
     """
-    * @param {Array<{lat: number; lng: number; value: number; label: number;}>} data
-    * @returns {{[label: number]: Array<number>}}
+    * @param {Array<{index: number; value: number;}>} item_list
+    * @returns {{index: number; value: number;} | null}
     """
-    def sample(self, data, delta=1):
+    def _random_select(self, item_list):
+        l = len(item_list)
+        if l == 0:
+            return None
+        else:
+            return item_list.pop(int(rand() * l))
+
+
+
+    """
+    * @param {Array<{lat: number; lng: number; value: number; label: number;}>} data
+    * @returns {Array<number>}
+    """
+    def sample(self, data, delta=0.05, C=0.1):
+        self._n_sampled = []
+
         # Make groups of points by label
         groups = self._group(data)
 
-        s = {}
+        s = []
 
-        # Apply sampling by each group
-        for label in groups:
-            columns = self._cluster(groups[label])
+        # count population
+        population = {}
 
-            contained = [[] for _ in columns]
+        _i = 0
 
-            for t in range(self.max_iter):
-                if t > 0:
-                    columns = contained.copy()
-                    contained = [[] for _ in columns]
-                    pass
-                # Mark the sample
-                s[label] = []
-                
-                # Mark the estimates
-                v = [None for _ in columns]
+        # Apply sampling to all groups, while take each label-gathered data as a column
+        for group in groups:
+            for label in group:
+                self._n_sampled.append([len(group[label])])
+                population[_i] = group[label]
+                _i += 1
 
-                for i in range(len(columns)):
-                    g = columns[i]
-                    idx = int(rand() * len(g))
-                    s[label].append(g[idx]["index"])
-                    contained[i].append(g[idx])
-                    v[i] = g[idx]["value"]
-                    del g[idx]
-                
-                # Initialize
-                m = 1
-                A = [i for i in range(len(columns))]
+        # mark indexes of samples by column
+        sampled = {}
 
-                # Sample complexity
-                C = 1
+        # Iteration
+        for t in tqdm.trange(self.max_iter, ncols=10, leave=True):
+            if t > 0:
+                # Update population and samples
+                population = copy.deepcopy(sampled)
+                sampled = {}
+                pass
+            
+            for index in population:
+                sampled[index] = []
+            
+            # Mark the estimates
+            v = {}
+            for index in population:
+                v[index] = None
 
-                k = len(columns)
-                base = math.log(k)
+            # indexes of sets
+            sets = []
 
-                if base <= 0:
-                    continue
+            # Take the first sample of each set
+            for index in population:
+                res = self._random_select(population[index])
+                if res:
+                    v[index] = res["value"]
+                    sampled[index].append(res)
+                    sets.append(index)
 
-                while len(A) > 0 and len([i for i in A if len(columns[i]) > 0]) > 0:
-                    m += 1
-                    epsilon = C * math.sqrt(
-                        (1 - (m / k - 1) / max([len(l) for l in columns]))
-                        * (2 * math.log(math.log(m) / base) + math.log(math.pi ** 2 * k / 3 / delta))
-                    )
+            k = len(sets)
 
-                    for i in [i for i in A if len(columns[i]) > 0]:
-                        idx = int(rand() * len(columns[i]))
-                        v[i] = v[i] * (m - 1) / m + columns[i][idx]["value"] / m
-                        s[label].append(columns[i][idx]["index"])
-                        contained[i].append(columns[i][idx])
-                        del columns[i][idx]
+            if k == 0:
+                break
+            elif k == 1 and len(population[sets[0]]) > 0:
+                # take the one clearest to the average
+                aver = 0
+                for d in population[sets[0]]:
+                    aver += d["value"]
+                aver /= len(population[sets[0]])
+                population[sets[0]].sort(key=lambda d: math.fabs(population[sets[0]] - aver))
+                res = population[sets[0]].pop(0)
+                sampled[sets[0]].append(res)
+                break
 
-                    safe = []
+            base = math.log(k)
 
-                    for i in A:
-                        # Confidence Interval
-                        ci = (v[i] - epsilon, v[i] + epsilon)
-                        overlap = False
-                        for j in [j for j in A if j > i]:
-                            if ci[0] >= v[j] + epsilon or ci[1] <= v[j] - epsilon:
-                                pass
-                            else:
-                                overlap = True
-                                break
+            # Initialize
+            m = 1
 
-                        if not overlap:
-                            safe.append(i)
-                        
-                    A = [i for i in A if i not in safe]
-                    pass
-                sd = []
-                for i in s[0]:
-                    sd.append(i)
-                print(len(sd), len(sd) / 100000)
+            while len(sets) > 0:
+                m += 1
+                epsilon = C * math.sqrt(
+                    (1 - (m / k - 1) / max([len(population[index]) for index in population]))
+                    * (2 * math.log(math.log(m) / base) + math.log(math.pi ** 2 * k / 3 / delta))
+                )
+
+                for index in [i for i in sets if len(population[i]) > 0]:
+                    res = self._random_select(population[index])
+                    v[index] = v[index] * (m - 1) / m + res["value"] / m
+                    sampled[index].append(res)
+
+                safe = []
+
+                for i in sets:
+                    # Confidence Interval
+                    ci = (v[i] - epsilon, v[i] + epsilon)
+                    overlap = False
+                    for j in [j for j in sets if j > i]:
+                        if ci[0] >= v[j] + epsilon or ci[1] <= v[j] - epsilon:
+                            pass
+                        else:
+                            overlap = True
+                            break
+
+                    if not overlap:
+                        safe.append(i)
+                    
+                sets = [index for index in sets if index not in safe and len(population[index]) > 0]
                 pass
 
-            return s
+            for index in sampled:
+                self._n_sampled[index].append(len(sampled[index]))
+            pass
+
+        for index in sampled:
+            s.extend(sampled[index])
+
+        return s
+
+    
+    def show(self):
+        for res in self._n_sampled:
+            plt.plot([i for i in range(len(res))][0:], res[0:], color='#FF000040', linestyle='-')
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -186,14 +249,14 @@ if __name__ == '__main__':
 
     n_sample = 100000
 
-    s = Sampler(n_stacks=100, max_iter=40)
-    res = s.sample([{
+    population = [{
         "lat": 45.0 + g_r() * 30,
         "lng": -15.0 + g_r() * 50,
         "value": rand(),
-        "label": 0
-    } for i in range(n_sample)])
-    sd = []
-    for i in res[0]:
-        sd.append(i)
-    print(len(sd), len(sd) / n_sample)
+        "label": int(rand() * 4)
+    } for _ in range(n_sample)]
+
+    s = Sampler(max_iter=100, n_stacks=100)
+    res = s.sample(population)
+    print(len(res), len(res) / n_sample)
+    s.show()
