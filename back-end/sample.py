@@ -55,9 +55,10 @@ class Sampler:
 
     """
     * @param {Array<{lat: number; lng: number; value: number; label: number;}>} data
+    * @param {"average"|"bycode"|"bycount"}
     * @returns {Array<{[label: number]: Array<{index: number; value: number;}>}>}
     """
-    def _group(self, data):
+    def _group(self, data, mode="average"):
         groups = []
 
         """
@@ -127,7 +128,7 @@ class Sampler:
     * @param {Array<{lat: number; lng: number; value: number; label: number;}>} data
     * @returns {Array<number>}
     """
-    def sample(self, data, delta=0.05, C=0.1):
+    def sample(self, data, delta=0.05, C=0.1, kappa=2):
         self._n_sampled = []
 
         # Make groups of points by label
@@ -192,16 +193,15 @@ class Sampler:
                 sampled[sets[0]].append(res)
                 break
 
-            base = math.log(k)
-
             # Initialize
             m = 1
 
             while len(sets) > 0:
                 m += 1
+                
                 epsilon = C * math.sqrt(
-                    (1 - (m / k - 1) / max([len(population[index]) for index in population]))
-                    * (2 * math.log(math.log(m) / base) + math.log(math.pi ** 2 * k / 3 / delta))
+                    (1 - (m / kappa - 1) / max([len(population[index]) for index in population]))
+                    * (2 * math.log(math.log(m, kappa)) + math.log(math.pi ** 2 * len(population) / 3 / delta)) / (2 * m / kappa)
                 )
 
                 for index in [i for i in sets if len(population[i]) > 0]:
@@ -215,12 +215,11 @@ class Sampler:
                     # Confidence Interval
                     ci = (v[i] - epsilon, v[i] + epsilon)
                     overlap = False
-                    for j in [j for j in sets if j > i]:
+                    for j in [j for j in sets if j != i]:
                         if ci[0] >= v[j] + epsilon or ci[1] <= v[j] - epsilon:
                             pass
                         else:
                             overlap = True
-                            break
 
                     if not overlap:
                         safe.append(i)
@@ -235,13 +234,84 @@ class Sampler:
         for index in sampled:
             s.extend(sampled[index])
 
-        return s
+        return [d["index"] for d in s]
 
     
     def show(self):
         for res in self._n_sampled:
-            plt.plot([i for i in range(len(res))][0:], res[0:], color='#FF000040', linestyle='-')
+            # print(res)
+            plt.plot([i for i in range(len(res))][1:], res[1:], color='#FF000040', linestyle='-')
         plt.show()
+
+
+    def diff(self, population, sample):
+        # Make groups of points by label
+        groups = self._group(population)
+
+        s = []
+
+        # count population - before
+        population_groups = {}
+
+        # count population - after
+        sample_groups = {}
+
+        _i = 0
+
+        # Apply sampling to all groups, while take each label-gathered data as a column
+        for group in groups:
+            for label in group:
+                population_groups[_i] = [d["value"] for d in group[label]]
+                sample_groups[_i] = []
+                for d in group[label]:
+                    if d["index"] in sample:
+                        sample_groups[_i].append(d["value"])
+                # print(len(sample_groups[_i]), len(population_groups[_i]))
+                _i += 1
+
+        ranging = []
+
+        for group in population_groups:
+            aver = 0
+            for d in population_groups[group]:
+                aver += d
+            aver /= len(population_groups[group])
+            ranging.append({
+                'index': group,
+                'before': aver
+            })
+
+        for group in sample_groups:
+            aver = 0
+            for d in sample_groups[group]:
+                aver += d
+            aver /= len(sample_groups[group])
+            for r in ranging:
+                if r["index"] == group:
+                    r["after"] = aver
+                    break
+
+        count = 0
+        mistake = 0
+
+        ranging.sort(key=lambda d: d["before"])
+
+        for i in range(len(ranging)):
+            ranging[i]["before"] = i
+
+        ranging.sort(key=lambda d: d["after"])
+
+        for i in range(len(ranging)):
+            ranging[i]["after"] = i
+
+        for b in range(len(ranging) - 1):
+            # print(ranging[b])
+            for a in range(b + 1, len(ranging)):
+                count += 1
+                if (ranging[a]["after"] - ranging[b]["after"]) * (ranging[a]["before"] - ranging[b]["before"]) < 0:
+                    mistake += 1
+
+        return 1 - mistake / count
 
 
 if __name__ == '__main__':
@@ -253,10 +323,26 @@ if __name__ == '__main__':
         "lat": 45.0 + g_r() * 30,
         "lng": -15.0 + g_r() * 50,
         "value": rand(),
-        "label": int(rand() * 4)
+        "label": int(rand() * 3)
     } for _ in range(n_sample)]
 
-    s = Sampler(max_iter=100, n_stacks=100)
-    res = s.sample(population)
+    s = Sampler(max_iter=1, n_stacks=10)
+    res = s.sample(population, C=.01)
     print(len(res), len(res) / n_sample)
+    print(s.diff(population, res))
     s.show()
+
+
+"""
+  
+     █████▒█    ██  ▄████▄   ██ ▄█▀       ██████╗ ██╗   ██╗ ██████╗
+   ▓██   ▒ ██  ▓██▒▒██▀ ▀█   ██▄█▒        ██╔══██╗██║   ██║██╔════╝
+   ▒████ ░▓██  ▒██░▒▓█    ▄ ▓███▄░        ██████╔╝██║   ██║██║  ███╗
+   ░▓█▒  ░▓▓█  ░██░▒▓▓▄ ▄██▒▓██ █▄        ██╔══██╗██║   ██║██║   ██║
+   ░▒█░   ▒▒█████▓ ▒ ▓███▀ ░▒██▒ █▄       ██████╔╝╚██████╔╝╚██████╔╝
+    ▒ ░   ░▒▓▒ ▒ ▒ ░ ░▒ ▒  ░▒ ▒▒ ▓▒       ╚═════╝  ╚═════╝  ╚═════╝
+    ░     ░░▒░ ░ ░   ░  ▒   ░ ░▒ ▒░
+    ░ ░    ░░░ ░ ░ ░        ░ ░░ ░
+             ░     ░ ░      ░  ░
+
+"""
