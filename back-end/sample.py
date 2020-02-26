@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
+import random
 from random import random as rand
 import matplotlib.pyplot as plt
 import math
 import copy
 import tqdm
+import logging
 
 
 class Sampler:
-    def __init__(self, hash_precision=32, max_iter=10, n_stacks=100):
+    def __init__(self, hash_precision=32, max_iter=10, min_accuracy=0.9, n_stacks=100):
         self.hash_precision = hash_precision
         self.max_iter = max_iter
+        self.min_accuracy = min_accuracy
         self.n_stacks = n_stacks
         self._n_sampled = []
         return
@@ -80,15 +83,9 @@ class Sampler:
 
         after_hash.sort(key=lambda d: d["code"])
 
-        n_stack = int(min(len(after_hash) / 100, self.n_stacks) / len(label_count)) | 1
+        n_stack = int(self.n_stacks / len(label_count)) | 1
 
         step = int(len(after_hash) / n_stack)
-
-        hash_sorted = [{
-            "index": d["index"],
-            "label": d["label"],
-            "value": d["value"]
-        } for d in after_hash]
 
         """
         * @param {Array<Array<{index: number; label: number; value: number;}>>}
@@ -117,24 +114,131 @@ class Sampler:
     """
     def _random_select(self, item_list):
         l = len(item_list)
-        if l == 0:
-            return None
-        else:
-            return item_list.pop(int(rand() * l))
+        return item_list.pop(int(rand() * l))
 
 
+    def _rapid_sample(self, data, kappa, delta, C):
+        """
+        每个类及其所对应的未被采样的点
+        @type {{[column_index: number]: Array<{value: number; index: number;}>}}
+        """
+        groups = copy.deepcopy(data)
+
+        """
+        估计值
+        @type {{[column_id]: number}}
+        """
+        v = {}
+
+        """
+        置信区间
+        @type {{[column_id]: [number, number]}}
+        """
+        confidence_interval = {}
+        
+        """
+        被采样到的点
+        @type {{[column_id]: Array<index: number>}}
+        """
+        sample = {}
+        
+        """
+        还需继续采样的柱子 id
+        @type {Array<column_index: number>}
+        """
+        active_labels = [index for index in groups]
+        
+        # 预先从各个类别中采集一个样本
+        for i in range(len(active_labels)):
+            b = random.randint(0, len(groups[active_labels[i]]) - 1)
+            v[active_labels[i]] = groups[active_labels[i]][b]["value"]
+            sample[active_labels[i]] = [groups[active_labels[i]][b]]
+            groups[active_labels[i]].pop(b)
+        sample_num = len(active_labels)
+        
+        """
+        迭代变量
+        @type {number}
+        """
+        m = 1
+
+        # 继续选点
+        while active_labels:
+            """
+            当前继续采样的柱子 id
+            @type {Array<column_index: number>}
+            """
+            cur_labels = copy.deepcopy(active_labels)
+
+            m += 1
+
+            # 去掉已经没有点的柱子
+            for i in range(len(active_labels)-1, -1, -1):
+                if len(groups[active_labels[i]]) == 0:
+                    cur_labels.pop(i)
+
+            temp_length_list = [len(groups[cur_labels[i]]) for i in range(len(cur_labels))]
+
+            if temp_length_list:
+                pass
+            else:
+                break
+
+            alpha = 1 - (m / kappa - 1) / max(temp_length_list)
+            if alpha < 0:
+                logging.info('无法计算 epsilon 值')
+                break
+            mi = (2 * math.log(math.log(m, kappa)) + math.log(math.pi ** 2 * len(groups) / (3 * delta))) / (2 * m / kappa)
+            epsilon = C * math.sqrt(alpha * mi)
+            
+            active_labels = cur_labels
+
+            for i in range(len(active_labels)):
+                b = random.randint(0, len(groups[active_labels[i]]) - 1)
+                v[active_labels[i]] = (m - 1) / m * v[active_labels[i]] + groups[active_labels[i]][b]["value"] / m
+                sample[active_labels[i]].append(groups[active_labels[i]][b])
+                groups[active_labels[i]].pop(b)
+                sample_num += 1
+
+            # 更新置信区间
+            for index in active_labels:
+                confidence_interval[index] = (v[index] - epsilon, v[index] + epsilon)
+
+            """
+            置信区间已经独立的柱子的索引
+            @type {number}
+            """
+            isoluted = []
+
+            # 判断重叠
+            for i in active_labels:
+                overlap = False
+                for j in [index for index in active_labels if index != i]:
+                    if confidence_interval[i][0] > confidence_interval[j][1] or confidence_interval[i][1] < confidence_interval[j][0]:
+                        pass
+                    else:
+                        overlap = True
+                        break                
+                if not overlap:
+                    isoluted.append(i)
+
+            active_labels = [index for index in active_labels if index not in isoluted]
+            
+        return sample
 
     """
     * @param {Array<{lat: number; lng: number; value: number; label: number;}>} data
     * @returns {Array<number>}
     """
     def sample(self, data, delta=0.05, C=0.1, kappa=2):
+        if kappa > 10:
+            math.log(-1)
+            exit(0)
+
         self._n_sampled = []
 
         # Make groups of points by label
         groups = self._group(data)
-
-        s = []
 
         # count population
         population = {}
@@ -151,158 +255,92 @@ class Sampler:
         # mark indexes of samples by column
         sampled = {}
 
+        tr = tqdm.trange(self.max_iter, ncols=10, leave=True)
+        # tr = range(self.max_iter)
+
         # Iteration
-        for t in tqdm.trange(self.max_iter, ncols=10, leave=True):
-            if t > 0:
-                # Update population and samples
-                population = copy.deepcopy(sampled)
-                sampled = {}
-                pass
-            
+        for _ in tr:
+            result = self._rapid_sample(population, kappa=kappa, delta=delta, C=C)
+            _dif, _rate = self.diff(data, population)
+            least = (1.97 + self.min_accuracy) / 3
+            _c = C
+            while _dif < least:
+                try:
+                    least = self.min_accuracy + (least - self.min_accuracy) ** 2
+                    _c += math.log(1 + _c) * least
+                    result = self._rapid_sample(population, kappa=kappa, delta=delta, C=_c)
+                    _dif, _rate = self.diff(data, population)
+                except KeyboardInterrupt:
+                    population = result
+                    for index in population:
+                        self._n_sampled[index].append(len(population[index]))
+                    tqdm.tqdm.write("Interrupted at " + str(_dif) + "\t" + str(_rate))
+
+                    return population
+            population = result
             for index in population:
-                sampled[index] = []
-            
-            # Mark the estimates
-            v = {}
-            for index in population:
-                v[index] = None
+                self._n_sampled[index].append(len(population[index]))
+            # tqdm.tqdm.write(str(_))
+            tqdm.tqdm.write(str(_dif) + "\t" + str(_rate))
+            # print(str(_), str(self.diff(data, population)))
 
-            # indexes of sets
-            sets = []
-
-            # Take the first sample of each set
-            for index in population:
-                res = self._random_select(population[index])
-                if res:
-                    v[index] = res["value"]
-                    sampled[index].append(res)
-                    sets.append(index)
-
-            k = len(sets)
-
-            if k == 0:
-                break
-            elif k == 1 and len(population[sets[0]]) > 0:
-                # take the one clearest to the average
-                aver = 0
-                for d in population[sets[0]]:
-                    aver += d["value"]
-                aver /= len(population[sets[0]])
-                population[sets[0]].sort(key=lambda d: math.fabs(population[sets[0]] - aver))
-                res = population[sets[0]].pop(0)
-                sampled[sets[0]].append(res)
-                break
-
-            # Initialize
-            m = 1
-
-            while len(sets) > 0:
-                m += 1
-                
-                epsilon = C * math.sqrt(
-                    (1 - (m / kappa - 1) / max([len(population[index]) for index in population]))
-                    * (2 * math.log(math.log(m, kappa)) + math.log(math.pi ** 2 * len(population) / 3 / delta)) / (2 * m / kappa)
-                )
-
-                for index in [i for i in sets if len(population[i]) > 0]:
-                    res = self._random_select(population[index])
-                    v[index] = v[index] * (m - 1) / m + res["value"] / m
-                    sampled[index].append(res)
-
-                safe = []
-
-                for i in sets:
-                    # Confidence Interval
-                    ci = (v[i] - epsilon, v[i] + epsilon)
-                    overlap = False
-                    for j in [j for j in sets if j != i]:
-                        if ci[0] >= v[j] + epsilon or ci[1] <= v[j] - epsilon:
-                            pass
-                        else:
-                            overlap = True
-
-                    if not overlap:
-                        safe.append(i)
-                    
-                sets = [index for index in sets if index not in safe and len(population[index]) > 0]
-                pass
-
-            for index in sampled:
-                self._n_sampled[index].append(len(sampled[index]))
-            pass
-
-        for index in sampled:
-            s.extend(sampled[index])
-
-        return [d["index"] for d in s]
-
+        return population
+    
     
     def show(self):
         for res in self._n_sampled:
-            # print(res)
             plt.plot([i for i in range(len(res))][1:], res[1:], color='#FF000040', linestyle='-')
         plt.show()
 
 
-    def diff(self, population, sample):
-        # Make groups of points by label
-        groups = self._group(population)
-
-        s = []
-
-        # count population - before
+    def diff(self, population, sample_groups):
         population_groups = {}
-
-        # count population - after
-        sample_groups = {}
 
         _i = 0
 
+        count_before = 0
+        count_after = 0
+
         # Apply sampling to all groups, while take each label-gathered data as a column
-        for group in groups:
+        for group in self._group(population):
             for label in group:
-                population_groups[_i] = [d["value"] for d in group[label]]
-                sample_groups[_i] = []
-                for d in group[label]:
-                    if d["index"] in sample:
-                        sample_groups[_i].append(d["value"])
-                # print(len(sample_groups[_i]), len(population_groups[_i]))
+                count_before += len(group[label])
+                population_groups[_i] = group[label]
                 _i += 1
 
-        ranging = []
+        ranging = {}
 
-        for group in population_groups:
+        for index in range(len(population_groups)):
             aver = 0
-            for d in population_groups[group]:
-                aver += d
-            aver /= len(population_groups[group])
-            ranging.append({
-                'index': group,
+            for d in population_groups[index]:
+                aver += d["value"]
+            aver /= len(population_groups[index])
+            ranging[index] = {
                 'before': aver
-            })
+            }
 
-        for group in sample_groups:
+        for index in sample_groups:
             aver = 0
-            for d in sample_groups[group]:
-                aver += d
-            aver /= len(sample_groups[group])
-            for r in ranging:
-                if r["index"] == group:
-                    r["after"] = aver
-                    break
+            count_after += len(sample_groups[index])
+            for d in sample_groups[index]:
+                aver += d["value"]
+            aver /= len(sample_groups[index])
+            ranging[index]['after'] = aver
+
+        ranging = [ranging[d] for d in ranging]
 
         count = 0
         mistake = 0
 
-        ranging.sort(key=lambda d: d["before"])
+        # ranging.sort(key=lambda d: d["before"])
 
-        for i in range(len(ranging)):
-            ranging[i]["before"] = i
+        # for i in range(len(ranging)):
+        #     ranging[i]["before"] = i
 
-        ranging.sort(key=lambda d: d["after"])
+        # ranging.sort(key=lambda d: d["after"])
 
-        for i in range(len(ranging)):
-            ranging[i]["after"] = i
+        # for i in range(len(ranging)):
+        #     ranging[i]["after"] = i
 
         for b in range(len(ranging) - 1):
             # print(ranging[b])
@@ -311,38 +349,30 @@ class Sampler:
                 if (ranging[a]["after"] - ranging[b]["after"]) * (ranging[a]["before"] - ranging[b]["before"]) < 0:
                     mistake += 1
 
-        return 1 - mistake / count
+        # for r in ranging:
+        #     print(r)
+        # print(mistake, count)
+
+        return 1 - mistake / count, count_after / count_before
+
 
 
 if __name__ == '__main__':
     g_r = lambda : (rand() + rand() + rand() + rand() + rand() + rand()) / 6
 
-    n_sample = 100000
+    n_sample = 80000
 
     population = [{
         "lat": 45.0 + g_r() * 30,
         "lng": -15.0 + g_r() * 50,
         "value": rand(),
-        "label": int(rand() * 3)
+        "label": int(rand() * 4)
     } for _ in range(n_sample)]
 
-    s = Sampler(max_iter=1, n_stacks=10)
-    res = s.sample(population, C=.01)
-    print(len(res), len(res) / n_sample)
-    print(s.diff(population, res))
+    for p in population:
+        p["value"] = p["label"] * 0.1 + p["value"] * 0.7
+
+    s = Sampler(max_iter=10, n_stacks=40, min_accuracy=0.92)
+    res = s.sample(population, C=0.5, delta=0.001, kappa=3)
+    # print(s.diff(population, res))
     s.show()
-
-
-"""
-  
-     █████▒█    ██  ▄████▄   ██ ▄█▀       ██████╗ ██╗   ██╗ ██████╗
-   ▓██   ▒ ██  ▓██▒▒██▀ ▀█   ██▄█▒        ██╔══██╗██║   ██║██╔════╝
-   ▒████ ░▓██  ▒██░▒▓█    ▄ ▓███▄░        ██████╔╝██║   ██║██║  ███╗
-   ░▓█▒  ░▓▓█  ░██░▒▓▓▄ ▄██▒▓██ █▄        ██╔══██╗██║   ██║██║   ██║
-   ░▒█░   ▒▒█████▓ ▒ ▓███▀ ░▒██▒ █▄       ██████╔╝╚██████╔╝╚██████╔╝
-    ▒ ░   ░▒▓▒ ▒ ▒ ░ ░▒ ▒  ░▒ ▒▒ ▓▒       ╚═════╝  ╚═════╝  ╚═════╝
-    ░     ░░▒░ ░ ░   ░  ▒   ░ ░▒ ▒░
-    ░ ░    ░░░ ░ ░ ░        ░ ░░ ░
-             ░     ░ ░      ░  ░
-
-"""
