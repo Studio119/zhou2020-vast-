@@ -27,21 +27,6 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                 height: this.props.height - this.props.padding[0] * 2,
                 padding: `${ this.props.padding[0] }px ${ this.props.padding[1] }px`
             }} >
-                <div key="render"
-                style={{
-                    width: this.props.width - this.props.padding[1] * 2,
-                    height: 100,
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green
-                }} >
-                    <header
-                    style={{
-                        padding: "6px"
-                    }} >
-                        Render
-                    </header>
-                    <SyncButton theme="NakiriAyame" text={ "apply" }
-                    executer={ this.props.apply } />
-                </div>
                 <div key="RapidSample"
                 style={{
                     width: this.props.width - this.props.padding[1] * 2,
@@ -53,6 +38,21 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                         padding: "6px"
                     }} >
                         RapidSample
+                    </header>
+                    <SyncButton theme="NakiriAyame" text={ "apply" }
+                    executer={ this.props.apply } />
+                </div>
+                <div key="randomSample"
+                style={{
+                    width: this.props.width - this.props.padding[1] * 2,
+                    height: 100,
+                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green
+                }} >
+                    <header
+                    style={{
+                        padding: "6px"
+                    }} >
+                        RandomSample
                     </header>
                     <SyncButton theme="NakiriAyame" text={ "sample" }
                     executer={ this.props.randomSample } />

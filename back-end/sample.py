@@ -6,6 +6,7 @@ import math
 import copy
 import tqdm
 import logging
+import json
 
 
 class Sampler:
@@ -243,6 +244,9 @@ class Sampler:
         # count population
         population = {}
 
+        g = []
+        gc = []
+
         _i = 0
 
         # Apply sampling to all groups, while take each label-gathered data as a column
@@ -250,7 +254,22 @@ class Sampler:
             for label in group:
                 self._n_sampled.append([len(group[label])])
                 population[_i] = group[label]
+                g.append({
+                    "id": _i,
+                    "parent": -1,
+                    "children": [],
+                    "containedpoint": [d["index"] for d in group[label]]
+                })
+                gc.extend([d["index"] for d in group[label]])
                 _i += 1
+
+        with open("../front-end/public/data/tree.json", mode='w', encoding='utf8') as f:
+            json.dump({
+                "id": -1,
+                "parent": None,
+                "children": g,
+                "containedpoint": gc
+            }, f)
 
         # mark indexes of samples by column
         sampled = {}
@@ -261,19 +280,16 @@ class Sampler:
         # Iteration
         for _ in tr:
             result = self._rapid_sample(population, kappa=kappa, delta=delta, C=C)
-            _dif, _rate = self.diff(data, population)
+            _dif, _rate = self.diff(data, result)
             least = (1.97 + self.min_accuracy) / 3
             _c = C
             while _dif < least:
                 try:
                     least = self.min_accuracy + (least - self.min_accuracy) ** 2
-                    _c += math.log(1 + _c) * least
+                    _c += 0.01 * least
                     result = self._rapid_sample(population, kappa=kappa, delta=delta, C=_c)
-                    _dif, _rate = self.diff(data, population)
+                    _dif, _rate = self.diff(data, result)
                 except KeyboardInterrupt:
-                    population = result
-                    for index in population:
-                        self._n_sampled[index].append(len(population[index]))
                     tqdm.tqdm.write("Interrupted at " + str(_dif) + "\t" + str(_rate))
 
                     return population
@@ -357,22 +373,90 @@ class Sampler:
 
 
 
+def random_sample(cx, cy, r, amount, n_labels=1, gamma=1, diff=0.3):
+    box = []
+    rate = min(0.02, r / math.sqrt(100 / gamma))
+    for i in range(amount):
+        angle = rand() * 2 * math.pi
+        _r = rand() * r
+        if i == 0 or rand() < gamma / math.sqrt(i):
+            box.append({
+                "lng": cx + _r * math.sin(angle),
+                "lat": cy + _r / 1.8 * math.cos(angle),
+                "value": rand(),
+                "label": int(rand() * n_labels)
+            })
+        else:
+            a = int(rand() * i)
+            valueMin = box[a]["value"] * (1 - diff)
+            valueMax = box[a]["value"] * (1 + diff) / max(1, box[a]["value"] * (1 + diff))
+            box.append({
+                "lng": box[a]["lng"] + _r * rate * math.sin(angle),
+                "lat": box[a]["lat"] + _r * rate / 1.8 * math.cos(angle),
+                "value": valueMin + rand() * (valueMax - valueMin),
+                "label": int(rand() * n_labels)
+            })
+
+    return box
+
+
+def random_groups(cx, cy, r, amount, n_labels=1, diff=0.3, n_groups=4):
+    box = []
+    for i in range(amount):
+        angle = rand() * 2 * math.pi
+        _r = (rand() + rand() + rand() + rand() + rand() + rand()) / 12 * r
+        if i < n_groups:
+            box.append({
+                "lng": cx + _r * math.sin(angle),
+                "lat": cy + _r / 1.8 * math.cos(angle),
+                "value": rand(),
+                "label": int(rand() * n_labels)
+            })
+        else:
+            a = int(rand() * i)
+            valueMin = box[a]["value"] * (1 - diff)
+            valueMax = box[a]["value"] * (1 + diff) / max(1, box[a]["value"] * (1 + diff))
+            box.append({
+                "lng": box[a]["lng"] + _r / 4.8 * math.sin(angle),
+                "lat": box[a]["lat"] + _r / 8.64 * math.cos(angle),
+                "value": valueMin + rand() * (valueMax - valueMin),
+                "label": int(rand() * n_labels)
+            })
+
+    return box
+
+
 if __name__ == '__main__':
     g_r = lambda : (rand() + rand() + rand() + rand() + rand() + rand()) / 6
 
-    n_sample = 80000
+    n_sample = 20000
 
-    population = [{
-        "lat": 45.0 + g_r() * 30,
-        "lng": -15.0 + g_r() * 50,
-        "value": rand(),
-        "label": int(rand() * 4)
-    } for _ in range(n_sample)]
+    # population = [{
+    #     "lat": 45.0 + g_r() * 30,
+    #     "lng": -15.0 + g_r() * 50,
+    #     "value": rand(),
+    #     "label": int(rand() * 8)
+    # } for _ in range(n_sample)]
+
+    population = random_groups(-98, 36, 22, n_sample, n_labels=4, diff=0.2, n_groups=4)
+    # population = random_sample(-98, 36, 22, n_sample, n_labels=4, gamma=0.2, diff=0.2)
 
     for p in population:
-        p["value"] = p["label"] * 0.1 + p["value"] * 0.7
+        p["value"] = p["label"] * 0.02 + p["value"] * 0.86
+        p["code"] = "NONE"
+        
+    with open("../front-end/public/data/population.json", encoding='utf8', mode='r') as f:
+        # json.dump(population, f)
+        population = json.load(f)
 
-    s = Sampler(max_iter=10, n_stacks=40, min_accuracy=0.92)
+
+    s = Sampler(max_iter=10, n_stacks=40, min_accuracy=0.95)
     res = s.sample(population, C=0.5, delta=0.001, kappa=3)
     # print(s.diff(population, res))
-    s.show()
+    # s.show()
+
+    with open("../front-end/public/data/population_sampled.json", encoding='utf8', mode='w') as f:
+        r = {}
+        for w in res:
+            r[w] = [d["index"] for d in res[w]]
+        json.dump(r, f)
