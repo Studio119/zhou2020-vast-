@@ -7,7 +7,6 @@ import copy
 import tqdm
 import logging
 import json
-import numpy as np
 
 
 class Sampler:
@@ -17,8 +16,6 @@ class Sampler:
         self.min_accuracy = min_accuracy
         self.n_stacks = n_stacks
         self._n_sampled = []
-        self.groups = []
-        self.tree = {}
         return
 
 
@@ -66,8 +63,7 @@ class Sampler:
     * @returns {Array<{[label: number]: Array<{index: number; value: number;}>}>}
     """
     def _group(self, data, mode="average"):
-        self.groups = []
-        self.tree = {}
+        groups = []
 
         """
         * @param {Array<{index: number; code: string; label: number; value: number;}>}
@@ -78,11 +74,15 @@ class Sampler:
 
         for i in range(len(data)):
             d = data[i]
-            label_count[d["label"]] = True
+            if "label" in d:
+                label = d["label"]
+            else:
+                label = 0
+            label_count[label] = True
             after_hash.append({
                 "index": i,
                 "code": self._geo_hash(d["lat"], d["lng"]),
-                "label": d["label"],
+                "label": label,
                 "value": d["value"]
             })
 
@@ -100,17 +100,17 @@ class Sampler:
             stacks[-1].extend(after_hash[n_stack * step: len(after_hash)])
 
         for s in stacks:
-            self.groups.append({})
+            groups.append({})
             for d in s:
                 label = d["label"]
-                if label not in self.groups[-1]:
-                    self.groups[-1][label] = []
-                self.groups[-1][label].append({
+                if label not in groups[-1]:
+                    groups[-1][label] = []
+                groups[-1][label].append({
                     "index": d["index"],
                     "value": d["value"]
                 })
 
-        return self.groups
+        return groups
 
 
     """
@@ -122,8 +122,7 @@ class Sampler:
         return item_list.pop(int(rand() * l))
 
 
-    @staticmethod
-    def _rapid_sample(data, kappa, delta, C):
+    def _rapid_sample(self, data, kappa, delta, C):
         """
         每个类及其所对应的未被采样的点
         @type {{[column_index: number]: Array<{value: number; index: number;}>}}
@@ -232,7 +231,6 @@ class Sampler:
             
         return sample
 
-
     """
     * @param {Array<{lat: number; lng: number; value: number; label: number;}>} data
     * @returns {Array<number>}
@@ -269,12 +267,13 @@ class Sampler:
                 gc.extend([d["index"] for d in group[label]])
                 _i += 1
 
-        self.tree = {
-            "id": -1,
-            "parent": None,
-            "children": g,
-            "containedpoint": gc
-        }
+        with open("../front-end/public/data/tree.json", mode='w', encoding='utf8') as f:
+            json.dump({
+                "id": -1,
+                "parent": None,
+                "children": g,
+                "containedpoint": gc
+            }, f)
 
         # mark indexes of samples by column
         sampled = {}
@@ -323,7 +322,7 @@ class Sampler:
         count_after = 0
 
         # Apply sampling to all groups, while take each label-gathered data as a column
-        for group in self.groups:
+        for group in self._group(population):
             for label in group:
                 count_before += len(group[label])
                 population_groups[_i] = group[label]
@@ -377,133 +376,19 @@ class Sampler:
         return 1 - mistake / count, count_after / count_before
 
 
-    @staticmethod
-    def spatial_analyse(population, sample_groups):
-        origin = []
-        sampled = []
-
-        for d in population:
-            origin.append([d["lat"], d["lng"]])
-
-        id_list = []
-
-        for index in sample_groups:
-            for d in sample_groups[index]:
-                sampled.append([population[d["index"]]["lat"], population[d["index"]]["lng"]])
-                id_list.append(d["index"])
-
-        X_0 = np.array(origin)
-        X_1 = np.array(sampled)
-
-        from sklearn.neighbors import kde
-
-        kde = kde.KernelDensity(kernel='gaussian', bandwidth=0.2).fit(X_0)
-        predict_0 = np.exp(kde.score_samples(X_0))
-
-        kde.fit(X_1)
-        predict_1 = np.exp(kde.score_samples(X_1))
-
-        d_max = max([predict_0[id_list[x]] - predict_1[x] for x in range(len(predict_1))])
-        d_aver = 0
-
-        for i in range(len(predict_1)):
-            d = math.fabs(predict_0[id_list[i]] - predict_1[i])
-            d_aver += d
-
-        return d_max, d_aver / len(predict_0)
-
-
-
-def random_sample(cx, cy, r, amount, n_labels=1, gamma=1, diff=0.3):
-    box = []
-    rate = min(0.02, r / math.sqrt(100 / gamma))
-    for i in range(amount):
-        angle = rand() * 2 * math.pi
-        _r = rand() * r
-        if i == 0 or rand() < gamma / math.sqrt(i):
-            box.append({
-                "lng": cx + _r * math.sin(angle),
-                "lat": cy + _r / 1.8 * math.cos(angle),
-                "value": rand(),
-                "label": int(rand() * n_labels)
-            })
-        else:
-            a = int(rand() * i)
-            valueMin = box[a]["value"] * (1 - diff)
-            valueMax = box[a]["value"] * (1 + diff) / max(1, box[a]["value"] * (1 + diff))
-            box.append({
-                "lng": box[a]["lng"] + _r * rate * math.sin(angle),
-                "lat": box[a]["lat"] + _r * rate / 1.8 * math.cos(angle),
-                "value": valueMin + rand() * (valueMax - valueMin),
-                "label": int(rand() * n_labels)
-            })
-
-    return box
-
-
-def random_groups(cx, cy, r, amount, n_labels=1, diff=0.3, n_groups=4):
-    box = []
-    for i in range(amount):
-        angle = rand() * 2 * math.pi
-        _r = (rand() + rand() + rand() + rand() + rand() + rand()) / 12 * r
-        if i < n_groups:
-            box.append({
-                "lng": cx + _r * math.sin(angle),
-                "lat": cy + _r / 1.8 * math.cos(angle),
-                "value": rand(),
-                "label": int(rand() * n_labels)
-            })
-        else:
-            a = int(rand() * i)
-            valueMin = box[a]["value"] * (1 - diff)
-            valueMax = box[a]["value"] * (1 + diff) / max(1, box[a]["value"] * (1 + diff))
-            box.append({
-                "lng": box[a]["lng"] + _r / 4.8 * math.sin(angle),
-                "lat": box[a]["lat"] + _r / 8.64 * math.cos(angle),
-                "value": valueMin + rand() * (valueMax - valueMin),
-                "label": int(rand() * n_labels)
-            })
-
-    return box
-
-
 if __name__ == '__main__':
     g_r = lambda : (rand() + rand() + rand() + rand() + rand() + rand()) / 6
 
-    n_sample = 20000
-
-    # population = [{
-    #     "lat": 45.0 + g_r() * 30,
-    #     "lng": -15.0 + g_r() * 50,
-    #     "value": rand(),
-    #     "label": int(rand() * 8)
-    # } for _ in range(n_sample)]
-
-    # population = random_groups(-98, 36, 22, n_sample, n_labels=4, diff=0.8, n_groups=4)
-    # # population = random_sample(-98, 36, 22, n_sample, n_labels=4, gamma=0.2, diff=0.2)
-
-    # for p in population:
-    #     p["value"] = p["label"] * 0.02 + p["value"] * 0.86
-    #     p["code"] = "NONE"
-        
-    with open("../front-end/public/data/population.json", encoding='utf8', mode='r') as f:
-    # with open("../front-end/public/data/population.json", encoding='utf8', mode='w') as f:
-        # json.dump(population, f)
+    with open("../front-end/public/data/industry_data.json", encoding='utf8', mode='r') as f:
         population = json.load(f)
 
-
-    s = Sampler(max_iter=10, n_stacks=12, min_accuracy=1.0)
+    s = Sampler(max_iter=10, n_stacks=100, min_accuracy=0.97)
     res = s.sample(population, C=0.5, delta=0.001, kappa=3)
-
-    print(s.spatial_analyse(population, res))
-    # print(s.diff(population, res))
-    s.show()
-
-    with open("../front-end/public/data/tree3.json", mode='w', encoding='utf8') as f:
-        json.dump(s.tree, f)
-
-    with open("../front-end/public/data/population_sampled3.json", encoding='utf8', mode='w') as f:
+    
+    with open("../front-end/public/data/industry_sampled.json", encoding='utf8', mode='w') as f:
         r = {}
         for w in res:
             r[w] = [d["index"] for d in res[w]]
         json.dump(r, f)
+
+    s.show()

@@ -65,8 +65,22 @@ class App extends Component<{}, {}, null> {
     try {
       (this.refs["map"] as Map).closeSketcher();
       (this.refs["map2"] as Map).closeSketcher();
+      // this.task!.open("./data/sampled_9.17_10070_1.0_0.json", (jsondata: FileData.Sampled) => {
+      this.task!.open("./data/population_sampled3.json", (jsondata: FileData.Sampled) => {
+        // this.task!.open("./data/industry_sampled.json", (jsondata: FileData.Sampled) => {
+          System.active.fill(false, 0, System.active.length);
+          for (const key in jsondata) {
+            if (jsondata.hasOwnProperty(key)) {
+              const list: Array<number> = jsondata[key];
+              list.forEach((i: number) => {
+                System.active[i] = true;
+              });
+            }
+          }
+          System.picked = Object.keys(jsondata).map((key: string) => parseInt(key));
+        });
       // this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
-      this.task!.open("./data/tree.json", (jsondata: FileData.Tree) => {
+      this.task!.open("./data/tree3.json", (jsondata: FileData.Tree) => {
         this.tree!.load(jsondata);
         this.map2!.load(System.data);
         resolve();
@@ -93,9 +107,15 @@ class App extends Component<{}, {}, null> {
     try {
       (this.refs["map"] as Map).closeSketcher();
       (this.refs["map2"] as Map).closeSketcher();
+      let target: number = 0;
+      System.active.forEach((value: boolean) => {
+        if (value) {
+          target++;
+        }
+      });
       System.active.fill(false, 0, System.active.length);
       let count: number = 0;
-      while (count < 1408) {
+      while (count < target) {
         const r: number = Math.floor(Math.random() * System.active.length);
         if (System.active[r]) {
           continue;
@@ -106,6 +126,7 @@ class App extends Component<{}, {}, null> {
       }
       System.picked = [];
       this.map2!.load(System.data);
+      this.tree!.forceUpdate();
       resolve();
     } catch(err) {
       reject(err);
@@ -113,6 +134,7 @@ class App extends Component<{}, {}, null> {
   }
 
   private load(): void {
+    // this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
     this.task!.open("./data/population.json", (jsondata: FileData.Origin) => {
       System.active = [];
       System.data = jsondata.map((item: {lat: number;lng: number;value: number;}) => {
@@ -123,19 +145,6 @@ class App extends Component<{}, {}, null> {
         };
       });
       this.map!.load(System.data);
-    });
-    // this.task!.open("./data/sampled_9.17_10070_1.0_0.json", (jsondata: FileData.Sampled) => {
-    this.task!.open("./data/population_sampled.json", (jsondata: FileData.Sampled) => {
-      System.active.fill(false, 0, System.active.length);
-      for (const key in jsondata) {
-        if (jsondata.hasOwnProperty(key)) {
-          const list: Array<number> = jsondata[key];
-          list.forEach((i: number) => {
-            System.active[i] = true;
-          });
-        }
-      }
-      System.picked = Object.keys(jsondata).map((key: string) => parseInt(key));
     });
   }
 }

@@ -101,7 +101,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
             }}
             onKeyDown={
                 (e: React.KeyboardEvent<HTMLDivElement>) => {
-                    if (!this.keyboardDebounce && e.which === 17) {    // Ctrl
+                    if (!this.keyboardDebounce && e.which === 49) {    // Key 1
                         if ($(this.refs["cover"]).css("display") === "none") {
                             $(this.refs["detail"]).show();
                             $(this.refs["cover"]).show();

@@ -359,9 +359,9 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
     }
 
     private getAccuracy(node: TreeNode): number {
-        if (this.snapshots[node.id].accuracy) {
-            return this.snapshots[node.id].accuracy!;
-        }
+        // if (this.snapshots[node.id].accuracy) {
+        //     return this.snapshots[node.id].accuracy!;
+        // }
         if (node.leaves === 1) {
             return 1;
         }
@@ -383,10 +383,12 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
             }
         });
         const list: Array<number> = Object.keys(rankings).map((keyname: string) => parseInt(keyname));
-        const total: number = list.length * (list.length - 1);
+        let total: number = 0;
+        // const total: number = list.length * (list.length - 1);
         let mistake: number = 0;
         for (let a: number = 0; a < list.length - 1; a++) {
             for (let b: number = a + 1; b < list.length; b++) {
+                total++;
                 if (Math.sign(rankings[list[a]].before - rankings[list[b]].before)
                         !== Math.sign(rankings[list[a]].after - rankings[list[b]].after)) {
                     mistake++;
