@@ -20,7 +20,7 @@ class App extends Component<{}, {}, null> {
   private map?: Map;
   private map2?: Map;
   private tree?: Tree;
-  private scale: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick" = "quick";
+  private scale: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick" = "linear";
 
   public render(): JSX.Element {
     return (
@@ -83,6 +83,7 @@ class App extends Component<{}, {}, null> {
       this.task!.open("./data/tree3.json", (jsondata: FileData.Tree) => {
         this.tree!.load(jsondata);
         this.map2!.load(System.data);
+        (this.refs["RankingView"] as RankingView).forceUpdate();
         resolve();
       });
     } catch(err) {

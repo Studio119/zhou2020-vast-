@@ -285,15 +285,15 @@ class Sampler:
         # Iteration
         for _ in tr:
             result = self._rapid_sample(population, kappa=kappa, delta=delta, C=C)
-            _dif, _rate = self.diff(data, result)
+            _dif, _rate, _l_dif = self.diff(data, result)
             least = 1
             _c = C
-            while _dif < least or _rate == 1:
+            while _l_dif < 1 or _dif < least or _rate == 1:
                 try:
                     least = self.min_accuracy + (least - self.min_accuracy) ** 2
                     _c += 0.01 * least
                     result = self._rapid_sample(population, kappa=kappa, delta=delta, C=_c)
-                    _dif, _rate = self.diff(data, result)
+                    _dif, _rate, _l_dif = self.diff(data, result)
                 except KeyboardInterrupt:
                     tqdm.tqdm.write("Interrupted at " + str(_dif) + "\t" + str(_rate))
 
@@ -302,7 +302,7 @@ class Sampler:
             for index in population:
                 self._n_sampled[index].append(len(population[index]))
             # tqdm.tqdm.write(str(_))
-            tqdm.tqdm.write(str(_dif) + "\t" + str(_rate))
+            tqdm.tqdm.write(str(_l_dif) + "\t" + str(_dif) + "\t" + str(_rate))
             # print(str(_), str(self.diff(data, population)))
 
         return population
@@ -330,11 +330,21 @@ class Sampler:
                 _i += 1
 
         ranging = {}
+        label_ranging = {}
 
         for index in range(len(population_groups)):
             aver = 0
             for d in population_groups[index]:
                 aver += d["value"]
+            label = population[population_groups[index][0]["index"]]
+            if label not in label_ranging:
+                label_ranging[label] = {
+                    "before": [aver, len(population_groups[index])],
+                    "after": [0, 0]
+                }
+            else:
+                label_ranging[label]["before"][0] += aver
+                label_ranging[label]["before"][1] += len(population_groups[index])
             aver /= len(population_groups[index])
             ranging[index] = {
                 'before': aver
@@ -345,13 +355,23 @@ class Sampler:
             count_after += len(sample_groups[index])
             for d in sample_groups[index]:
                 aver += d["value"]
+            label = population[sample_groups[index][0]["index"]]
+            label_ranging[label]["after"][0] += aver
+            label_ranging[label]["after"][1] += len(sample_groups[index])
             aver /= len(sample_groups[index])
             ranging[index]['after'] = aver
 
         ranging = [ranging[d] for d in ranging]
+        label_ranging = [{
+            "before": label_ranging[d]["before"][0] / label_ranging[d]["before"][1],
+            "after": label_ranging[d]["after"][0] / label_ranging[d]["after"][1]
+        } for d in label_ranging]
 
         count = 0
         mistake = 0
+
+        label_count = 0
+        label_mistake = 0
 
         ranging.sort(key=lambda d: d["before"])
 
@@ -369,12 +389,29 @@ class Sampler:
                 count += 1
                 if (ranging[a]["after"] - ranging[b]["after"]) * (ranging[a]["before"] - ranging[b]["before"]) < 0:
                     mistake += 1
+        
+        label_ranging.sort(key=lambda d: d["before"])
+
+        for i in range(len(label_ranging)):
+            label_ranging[i]["before"] = i
+
+        ranging.sort(key=lambda d: d["after"])
+
+        for i in range(len(label_ranging)):
+            label_ranging[i]["after"] = i
+
+        for b in range(len(label_ranging) - 1):
+            # print(ranging[b])
+            for a in range(b + 1, len(label_ranging)):
+                label_count += 1
+                if (label_ranging[a]["after"] - label_ranging[b]["after"]) * (label_ranging[a]["before"] - label_ranging[b]["before"]) < 0:
+                    label_mistake += 1
 
         # for r in ranging:
         #     print(r)
         # print(mistake, count)
 
-        return 1 - mistake / count, count_after / count_before
+        return 1 - mistake / count, count_after / count_before, 1 - label_mistake / label_count
 
 
     @staticmethod
@@ -492,18 +529,18 @@ if __name__ == '__main__':
         population = json.load(f)
 
 
-    s = Sampler(max_iter=10, n_stacks=12, min_accuracy=1.0)
+    s = Sampler(max_iter=10, n_stacks=39, min_accuracy=0.9)
     res = s.sample(population, C=0.5, delta=0.001, kappa=3)
 
     print(s.spatial_analyse(population, res))
     # print(s.diff(population, res))
     s.show()
 
-    with open("../front-end/public/data/tree3.json", mode='w', encoding='utf8') as f:
-        json.dump(s.tree, f)
+    # with open("../front-end/public/data/tree3.json", mode='w', encoding='utf8') as f:
+    #     json.dump(s.tree, f)
 
-    with open("../front-end/public/data/population_sampled3.json", encoding='utf8', mode='w') as f:
-        r = {}
-        for w in res:
-            r[w] = [d["index"] for d in res[w]]
-        json.dump(r, f)
+    # with open("../front-end/public/data/population_sampled3.json", encoding='utf8', mode='w') as f:
+    #     r = {}
+    #     for w in res:
+    #         r[w] = [d["index"] for d in res[w]]
+    #     json.dump(r, f)

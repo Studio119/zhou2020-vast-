@@ -849,14 +849,14 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     }
 
     private addPoint(x: number, y: number, style: string, source: "1" | "2"): void {
-        x = this.fx(x) - 0.7;//0.5;
-        y = this.fy(y) - 0.7;//0.5;
+        x = this.fx(x) - 1;//0.5;
+        y = this.fy(y) - 1;//0.5;
         if (source === "1") {
             this.ctx!.fillStyle = style;
-            this.ctx!.fillRect(x, y, 1.4, 1.4);//1, 1);
+            this.ctx!.fillRect(x, y, 2, 2);//1, 1);
         } else {
             this.ctx2!.fillStyle = style;
-            this.ctx2!.fillRect(x, y, 1.4, 1.4);//1, 1);
+            this.ctx2!.fillRect(x, y, 2, 2);//1, 1);
         }
     }
 
