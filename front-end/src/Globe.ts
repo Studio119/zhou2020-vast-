@@ -12,11 +12,17 @@ interface SystemType {
     data: Array<DataItem>;
     active: Array<boolean>;
     picked: Array<number>;
+    colorF: (value: number) => string;
 };
 
 export const System: SystemType = {
     maxValue: 1,
     data: [],
     active: [],
-    picked: []
+    picked: [],
+    colorF: (value: number): string => {
+        return [
+            "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6"
+        ][Math.floor(value * (9 - 1e-12))];
+    }
 };

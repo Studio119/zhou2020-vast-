@@ -107,9 +107,7 @@ export class RankingView extends Component<RankingViewProps, RankingViewState, n
                                     width={ (this.width / 2 - 40 - this.span / 2) * value } height={ 16 }
                                     style={{
                                         stroke: ColorThemes.NakiriAyame.InnerColor,
-                                        fill: Color.interpolate(
-                                            Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value
-                                        )
+                                        fill: System.colorF(value)
                                     }} />
                                 </g>
                             );
@@ -151,9 +149,7 @@ export class RankingView extends Component<RankingViewProps, RankingViewState, n
                                     width={ (this.width / 2 - 40 - this.span / 2) * value } height={ 16 }
                                     style={{
                                         stroke: ColorThemes.NakiriAyame.InnerColor,
-                                        fill: Color.interpolate(
-                                            Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value
-                                        )
+                                        fill: System.colorF(value)
                                     }} />
                                 </g>
                             );

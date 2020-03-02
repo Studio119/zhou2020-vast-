@@ -15,12 +15,13 @@ import { FileData, TreeNode } from './TypeLib';
 import { System } from './Globe';
 import { RankingView } from './RankingView';
 
+
 class App extends Component<{}, {}, null> {
   private task?: TaskQueue<null>;
   private map?: Map;
   private map2?: Map;
   private tree?: Tree;
-  private scale: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick" = "linear";
+  private scale: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick" = "sqrt";
 
   public render(): JSX.Element {
     return (
@@ -65,8 +66,8 @@ class App extends Component<{}, {}, null> {
     try {
       (this.refs["map"] as Map).closeSketcher();
       (this.refs["map2"] as Map).closeSketcher();
-      // this.task!.open("./data/sampled_9.17_10070_1.0_0.json", (jsondata: FileData.Sampled) => {
-      this.task!.open("./data/population_sampled3.json", (jsondata: FileData.Sampled) => {
+      this.task!.open("./data/sampled_9.17_10070_1.0_0.json", (jsondata: FileData.Sampled) => {
+      // this.task!.open("./data/population_sampled3.json", (jsondata: FileData.Sampled) => {
         // this.task!.open("./data/industry_sampled.json", (jsondata: FileData.Sampled) => {
           System.active.fill(false, 0, System.active.length);
           for (const key in jsondata) {
@@ -79,8 +80,8 @@ class App extends Component<{}, {}, null> {
           }
           System.picked = Object.keys(jsondata).map((key: string) => parseInt(key));
         });
-      // this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
-      this.task!.open("./data/tree3.json", (jsondata: FileData.Tree) => {
+      this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
+      // this.task!.open("./data/tree3.json", (jsondata: FileData.Tree) => {
         this.tree!.load(jsondata);
         this.map2!.load(System.data);
         (this.refs["RankingView"] as RankingView).forceUpdate();
@@ -135,8 +136,8 @@ class App extends Component<{}, {}, null> {
   }
 
   private load(): void {
-    // this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
-    this.task!.open("./data/population.json", (jsondata: FileData.Origin) => {
+    this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
+    // this.task!.open("./data/population.json", (jsondata: FileData.Origin) => {
       System.active = [];
       System.data = jsondata.map((item: {lat: number;lng: number;value: number;}) => {
         System.active.push(true);

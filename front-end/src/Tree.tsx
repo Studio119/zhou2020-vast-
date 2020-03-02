@@ -311,13 +311,9 @@ export class Tree extends Component<TreeProps, TreeNode, null> {
                 width={ this.snapshots[node.id].width + "%" }
                 height={ innerHeight + "%" }
                 style={{
-                    fill: Color.interpolate(
-                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value * 2
-                    ),
+                    fill: System.colorF(value * 2),
                     stroke: Color.setLightness(
-                        Color.interpolate(
-                            Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value * 2
-                        ), 0.2
+                        System.colorF(value * 2), 0.2
                     ),
                     strokeWidth: 3,
                     pointerEvents: 'none'

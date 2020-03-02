@@ -740,9 +740,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
                         return;
                     }
-                    this.ready[index % nParts].push([d.lng, d.lat, Color.interpolate(
-                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, d.value
-                    )]);
+                    this.ready[index % nParts].push([d.lng, d.lat, System.colorF(d.value)]);
                 });
             }
             this.ready.forEach((list: Array<[number, number, string]>, index: number) => {
@@ -772,9 +770,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[id])) {
                         return;
                     }
-                    this.ready2[index % nParts].push([d.lng, d.lat, Color.interpolate(
-                        Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, d.value
-                    )]);
+                    this.ready2[index % nParts].push([d.lng, d.lat, System.colorF(d.value)]);
                 });
             }
             this.ready2.forEach((list: Array<[number, number, string]>, index: number) => {
