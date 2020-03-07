@@ -136,7 +136,8 @@ class App extends Component<{}, {}, null> {
   }
 
   private load(): void {
-    this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
+    this.task!.open("./data/healthy_output.json", (jsondata: FileData.Origin) => {
+    // this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
     // this.task!.open("./data/population.json", (jsondata: FileData.Origin) => {
       System.active = [];
       System.data = jsondata.map((item: {lat: number;lng: number;value: number;}) => {
