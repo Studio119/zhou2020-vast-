@@ -8,7 +8,7 @@ import React, { Component } from 'react';
 import $ from 'jquery';
 import MapBox from './react-mapbox/MapBox';
 import Color, { ColorThemes } from './preference/Color';
-import { DataItem } from './TypeLib';
+import { DataItem, LISAtype } from './TypeLib';
 import { System } from './Globe';
 
 
@@ -32,6 +32,7 @@ export interface MapViewState<T> {
         lng: number;
         lat: number;
         value: T;
+        projection: number;
     }>;
 }
 
@@ -41,7 +42,7 @@ export interface Sketch {
     end: [number, number];
 };
 
-export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
+export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private originBounds: Readonly<[[number, number], [number, number]]>
         = [[ 50.55349948549696, 22.86881607932105 ], [ -128.14621384226703, -67.85378615773539 ]];
     private bounds: [[number, number], [number, number]]
@@ -448,7 +449,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
             let min: number = 1;
             let max: number = 0;
             let n_max: number = 1;
-            this.state.data.forEach((d: {lng: number; lat: number; value: number;}, index: number) => {
+            this.state.data.forEach((d: {lng: number; lat: number; projection: number;}, index: number) => {
                 if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
                     return;
                 }
@@ -478,7 +479,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 }
                 box.push({
                     pos: proj,
-                    value: d.value
+                    value: d.projection
                 });
             });
             if (max === 0 && min === 1) {
@@ -628,7 +629,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 pies.push(0);
             }
             let max: number = 1;
-            this.state.data.forEach((d: {lng: number; lat: number; value: number;}, index: number) => {
+            this.state.data.forEach((d: {lng: number; lat: number; projection: number;}, index: number) => {
                 if (isNaN(d.lng) || isNaN(d.lat) || (this.props.filter && !System.active[index])) {
                     return;
                 }
@@ -636,7 +637,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 if (dist2 > radius2) {
                     return;
                 }
-                const i: number = Math.floor(d.value * n_pieces);
+                const i: number = Math.floor(d.projection * n_pieces);
                 if (i >= n_pieces) {
                     pies[n_pieces - 1]++;
                     if (pies[n_pieces - 1] > max) {
@@ -736,7 +737,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 for (let i: number = 0; i < nParts; i++) {
                     this.ready.push([]);
                 }
-                this.state.data.forEach((d: { lng: number, lat: number, value: number }, index: number) => {
+                this.state.data.forEach((d: { lng: number; lat: number; value: LISAtype; }, index: number) => {
                     if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
                         return;
                     }
@@ -766,7 +767,7 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                     this.ready2.push([]);
                 }
                 this.highlighted.forEach((id: number, index: number) => {
-                    const d: { lng: number, lat: number, value: number } = this.state.data[id];
+                    const d: { lng: number; lat: number; value: LISAtype; } = this.state.data[id];
                     if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[id])) {
                         return;
                     }
@@ -845,14 +846,14 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
     }
 
     private addPoint(x: number, y: number, style: string, source: "1" | "2"): void {
-        x = this.fx(x) - 1;//0.5;
-        y = this.fy(y) - 1;//0.5;
+        x = this.fx(x) - 1.5;//0.5;
+        y = this.fy(y) - 1.5;//0.5;
         if (source === "1") {
             this.ctx!.fillStyle = style;
-            this.ctx!.fillRect(x, y, 2, 2);//1, 1);
+            this.ctx!.fillRect(x, y, 3, 3);//1, 1);
         } else {
             this.ctx2!.fillStyle = style;
-            this.ctx2!.fillRect(x, y, 2, 2);//1, 1);
+            this.ctx2!.fillRect(x, y, 3, 3);//1, 1);
         }
     }
 
@@ -872,7 +873,8 @@ export class Map extends Component<MapViewProps, MapViewState<number>, {}> {
                 return {
                     lat: d.lat,
                     lng: d.lng,
-                    value: this.props.scaleType === "linear" ? d.value / System.maxValue
+                    value: d.type,
+                    projection: this.props.scaleType === "linear" ? d.value / System.maxValue
                         : this.props.scaleType === "log2" ? Math.log2(1 + d.value / System.maxValue * 1)
                         : this.props.scaleType === "log" ? Math.log(1 + d.value / System.maxValue * (Math.E - 1))
                         : this.props.scaleType === "log10" ? Math.log10(1 + d.value / System.maxValue * 9)

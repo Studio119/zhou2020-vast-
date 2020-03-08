@@ -11,7 +11,7 @@ import { Container } from './prototypes/Container';
 import { Tree } from './Tree';
 import { ControlCenter } from './ControlCenter';
 import TaskQueue from './tools/TaskQueue';
-import { FileData, TreeNode } from './TypeLib';
+import { FileData, TreeNode, DataItem } from './TypeLib';
 import { System } from './Globe';
 import { RankingView } from './RankingView';
 
@@ -140,11 +140,10 @@ class App extends Component<{}, {}, null> {
     // this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
     // this.task!.open("./data/population.json", (jsondata: FileData.Origin) => {
       System.active = [];
-      System.data = jsondata.map((item: {lat: number;lng: number;value: number;}) => {
+      System.data = jsondata.map((item: DataItem) => {
         System.active.push(true);
         return {
-          ...item,
-          label: NaN
+          ...item
         };
       });
       this.map!.load(System.data);
