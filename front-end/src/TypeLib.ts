@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:41:22 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-15 18:23:14
+ * @Last Modified time: 2020-03-11 21:22:11
  */
 
 export type LISAtype = "NS" | "HH" | "LH" | "LL" | "HL";
@@ -24,6 +24,8 @@ export type DataItem = {
     lng: number;
     value: number;
     type: LISAtype;
+    mx: number;
+    my: number;
 };
 
 export namespace FileData {

@@ -6,12 +6,14 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.4.0",
     "@testing-library/user-event": "^7.2.1",
+    "@types/axios": "^0.14.0",
     "@types/jest": "^24.9.1",
     "@types/jquery": "^3.3.31",
     "@types/mapbox-gl": "^1.7.0",
     "@types/node": "^12.12.26",
     "@types/react": "^16.9.19",
     "@types/react-dom": "^16.9.5",
+    "axios": "^0.19.2",
     "jquery": "^3.4.1",
     "mapbox-gl": "^1.7.0",
     "react": "^16.12.0",
@@ -19,6 +21,7 @@
     "react-scripts": "3.3.1",
     "typescript": "^3.7.5"
   },
+  "proxy": "http://127.0.0.1:2369/",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",

@@ -6,6 +6,7 @@
  */
 
 import { DataItem, LISAtype } from "./TypeLib";
+import TaskQueue from "./tools/TaskQueue";
 
 interface SystemType {
     maxValue: number;
@@ -14,6 +15,7 @@ interface SystemType {
     picked: Array<number>;
     colorF: (value: LISAtype) => string;
     colorP: (value: number) => string;
+    task?: TaskQueue<null>;
 };
 
 const colorD = {

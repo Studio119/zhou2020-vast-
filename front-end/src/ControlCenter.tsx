@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-06 23:50:39
+ * @Last Modified time: 2020-03-11 20:56:42
  */
 
 import React, { Component } from "react";
@@ -14,6 +14,7 @@ export interface ControlCenterProps {
     width: number;
     height: number;
     padding: [number, number];
+    reset: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     apply: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     randomSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
 };
@@ -27,6 +28,21 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                 height: this.props.height - this.props.padding[0] * 2,
                 padding: `${ this.props.padding[0] }px ${ this.props.padding[1] }px`
             }} >
+                <div key="Reset"
+                style={{
+                    width: this.props.width - this.props.padding[1] * 2,
+                    height: 100,
+                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green
+                }} >
+                    <header
+                    style={{
+                        padding: "6px"
+                    }} >
+                        Reset
+                    </header>
+                    <SyncButton theme="NakiriAyame" text={ "apply" }
+                    executer={ this.props.reset } />
+                </div>
                 <div key="RapidSample"
                 style={{
                     width: this.props.width - this.props.padding[1] * 2,

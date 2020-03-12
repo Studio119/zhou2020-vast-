@@ -3,6 +3,7 @@ import numpy as np
 import math
 import json
 from tqdm import trange
+import sys
 
 
 class Z_score:
@@ -98,8 +99,15 @@ class Z_score:
             "value": float(val_list[i])
         } for i in range(n)]
 
+        # fr = open("../data/healthy_sp.json", mode='w', encoding='utf8')
+
         # 遍历，时间复杂度 O(n^2)
-        for i in trange(len(data), ncols=20, leave=True):
+        iteration = range(len(data))
+
+        if len(sys.argv) == 1:
+            iteration = trange(len(data), ncols=20, leave=True)
+
+        for i in iteration:
             """
             目标点
             @type {{x: float; y: float; value: float;}}
@@ -127,19 +135,27 @@ class Z_score:
                 dist = self.__diff(a, b)
 
                 order.append({
-                    "dist": dist,
+                    "dist": 1. / dist,
                     "value": b["value"]
                 })
 
             # 对 order 按距离升序排序
-            order.sort(key=lambda e: e["dist"])
+            order.sort(key=lambda e: e["dist"], reverse=True)
 
             """
             邻近点空间权重列向量
             @type {np.ndarray%shape=(1, self.k)}
             """
-            _weights = np.array([[d["value"]] for d in order[:self.k]])
+            _weights = np.array([[d["dist"]] for d in order[:self.k]])
             _weights /= _weights.sum()
+
+            # fr.write("[")
+            # for i in range(len(_weights)):
+            #     w = _weights[i]
+            #     fr.write(str(float(w)))
+            #     if i < len(_weights) - 1:
+            #         fr.write(",")
+            # fr.write("],")
 
             """
             标准化观测值
@@ -155,13 +171,15 @@ class Z_score:
 
             self.score.append([x, sp_lag])
 
+        # fr.close()
+
         return self
 
 
     """
     判断给定索引对应的数据点的类别
-    @param      {int}                               index 点的索引
-    @returns    {"NS" | "HH" | "LH" | "LL" | "HL"}  类别
+    @param      {int}                               index   点的索引
+    @returns    {"NS" | "HH" | "LH" | "LL" | "HL"}          类别
     """
     def type_idx(self, index):
         if math.sqrt(self.score[index][0] ** 2 + self.score[index][1] ** 2) <= self.r:
@@ -183,6 +201,13 @@ class Z_score:
 if __name__ == "__main__":
     m = Z_score(k=8, mode="euclidean")
 
+    input_name = None
+
+    output_name = "healthy_output"
+    if len(sys.argv) > 2:
+        input_name = sys.argv[1]
+        output_name = sys.argv[2]
+
     def fx(d):
         return (d + 128.14621384226703) / (67.85378615773539 - -128.14621384226703) * 398
 
@@ -199,18 +224,27 @@ if __name__ == "__main__":
             "value": d["value"]
         } for d in json.load(f)]
 
+    if input_name:
+        with open("../../../back-end/{}.json".format(input_name), mode='r', encoding='utf8') as f:
+            indexes = json.load(f)
+            A = [A[i] for i in range(len(A)) if i in indexes]
+    
     m.fit(A)
 
     transform = [m.type_idx(i) for i in range(len(A))]
 
-    with open("../data/healthy_output.json", mode='w', encoding='utf8') as f:
+    print(transform)
+
+    with open("../../../back-end/{}.json".format(output_name), mode='w', encoding='utf8') as f:
         res = []
         for i in range(len(A)):
             res.append({
                 "type": transform[i],
                 "lat": A[i]["lat"],
                 "lng": A[i]["lng"],
-                "value": A[i]["value"]
+                "value": A[i]["value"],
+                "mx": m.score[i][0],
+                "my": m.score[i][1]
             })
         json.dump(res, f)
 

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-12 17:49:35
+ * @Last Modified time: 2020-03-11 21:39:40
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -25,6 +25,7 @@ export interface MapViewProps {
     style?: React.CSSProperties;
     allowInteraction?: boolean;
     filter: boolean;
+    mode: "circle" | "rect";
 }
 
 export interface MapViewState<T> {
@@ -298,7 +299,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.mounted = true;
         this.canvas = document.getElementById(this.props.id + "_canvas") as HTMLCanvasElement;
         this.ctx = this.canvas!.getContext("2d");
-        this.ctx!.globalAlpha = 0.5;
+        // this.ctx!.globalAlpha = 1;
         this.canvas2 = document.getElementById(this.props.id + "_canvas2") as HTMLCanvasElement;
         this.ctx2 = this.canvas2!.getContext("2d");
         this.canvas_s = document.getElementById(this.props.id + "_canvas_s") as HTMLCanvasElement;
@@ -846,14 +847,36 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     private addPoint(x: number, y: number, style: string, source: "1" | "2"): void {
-        x = this.fx(x) - 1.5;//0.5;
-        y = this.fy(y) - 1.5;//0.5;
-        if (source === "1") {
-            this.ctx!.fillStyle = style;
-            this.ctx!.fillRect(x, y, 3, 3);//1, 1);
+        if (this.props.mode === "rect") {
+            x = this.fx(x) - 3;//0.5;
+            y = this.fy(y) - 3;//0.5;
+            if (source === "1") {
+                this.ctx!.fillStyle = "#999";
+                this.ctx!.fillRect(x - 1, y - 1, 8, 8);
+                this.ctx!.fillStyle = style;
+                this.ctx!.fillRect(x, y, 6, 6);//1, 1);
+            } else {
+                this.ctx2!.fillStyle = "#999";
+                this.ctx2!.fillRect(x - 1, y - 1, 8, 8);
+                this.ctx2!.fillStyle = style;
+                this.ctx2!.fillRect(x, y, 6, 6);//1, 1);
+            }
         } else {
-            this.ctx2!.fillStyle = style;
-            this.ctx2!.fillRect(x, y, 3, 3);//1, 1);
+            if (source === "1") {
+                this.ctx!.strokeStyle = "#999";
+                this.ctx!.fillStyle = style;
+                this.ctx!.beginPath();
+                this.ctx!.arc(this.fx(x), this.fy(y), 4, 0, 2 * Math.PI);
+                this.ctx!.stroke();
+                this.ctx!.fill();
+            } else {
+                this.ctx2!.strokeStyle = "#999";
+                this.ctx2!.fillStyle = style;
+                this.ctx2!.beginPath();
+                this.ctx2!.arc(this.fx(x), this.fy(y), 4, 0, 2 * Math.PI);
+                this.ctx2!.stroke();
+                this.ctx2!.fill();
+            }
         }
     }
 

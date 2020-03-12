@@ -23,9 +23,15 @@ class KD_tree:
             did_split_r = KD_tree._devide_tree(rc, should_node_split & alpha(rc) - alpha(lc) < lbd)
             node["n_leaves"] = lc["n_leaves"] + rc["n_leaves"]
             return did_split_l | did_split_r
-        elif (should_node_split or beta(node) < tau) and len(node["occupied"]) > 0:
+        elif (should_node_split or beta(node) < tao) and len(node["occupied"]) > 0:
             lc, lr = split_node(node, D)
             node["left_child"] = lc
             node["right_child"] = rc
             return True
         return False
+
+
+
+if __name__ == "__main__":
+    print("?")
+    pass
