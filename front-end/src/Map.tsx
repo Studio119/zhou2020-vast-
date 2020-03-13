@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-11 21:39:40
+ * @Last Modified time: 2020-03-13 22:31:50
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -319,6 +319,15 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.ready2 = [];
         this.sketchers = [];
         this.redraw();
+
+        System.highlight = (value: LISAtype | "none") => {
+            if (value === "none") {
+                this.highlighted = [];
+                this.redraw();
+            } else {
+                this.highlight(value);
+            }
+        };
     }
 
     public componentWillUnmount(): void {
@@ -806,11 +815,11 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.redraw();
     }
 
-    public highlight(list: Array<number>): void {
+    public highlight(type: LISAtype): void {
         this.highlighted = [];
-        list.forEach((id: number) => {
-            if (!this.props.filter || System.active[id]) {
-                this.highlighted.push(id);
+        this.state.data.forEach((item: {value: LISAtype;}, index: number) => {
+            if (item.value === type && (!this.props.filter || System.active[index])) {
+                this.highlighted.push(index);
             }
         });
         this.ready2 = [];

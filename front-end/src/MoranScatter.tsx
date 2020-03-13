@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-12 23:29:49
+ * @Last Modified time: 2020-03-13 22:26:30
  */
 
 import React, { Component } from "react";
@@ -156,20 +156,19 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                         const str: string = cmd.split("/").join("_sep")
                                                 .split(" ").join("_blc")
                                                 .split(".").join("_dot");
-                        const p: Promise<AxiosResponse<CommandResult<string|CommandError>>> = axios.get(
+                        const p: Promise<AxiosResponse<CommandResult<FileData.Origin|CommandError>>> = axios.get(
                             `/command/${ str }`, {
                                 headers: 'Content-type:text/html;charset=utf-8'
                             }
                         );
-                        p.then((value: AxiosResponse<CommandResult<string|CommandError>>) => {
+                        p.then((value: AxiosResponse<CommandResult<FileData.Origin|CommandError>>) => {
                             if (value.data.state === "successed") {
-                                // System.task!.open("../../back-end/temp_output.json", (jsondata: FileData.Origin) => {
-                                System.task!.open("./data/temp_output.json", (jsondata: FileData.Origin) => {
+                                try {
                                     const res: Array<{
                                         type: LISAtype;
                                         mx: number;
                                         my: number;
-                                    }> = jsondata.map((d: DataItem) => {
+                                    }> = (value.data.value as FileData.Origin).map((d: DataItem) => {
                                         return {
                                             type: d.type,
                                             mx: d.mx,
@@ -182,11 +181,11 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                     __resolve(true);
                                     resolve(true);
                                     send(true);
-                                }, () => {
+                                } catch (err) {
                                     __resolve(false);
                                     resolve(false);
                                     console.error("Error occured when fetching/parsing temp_output");
-                                });
+                                }
                             } else {
                                 __resolve(false);
                                 resolve(false);

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-11 20:56:42
+ * @Last Modified time: 2020-03-13 21:43:42
  */
 
 import React, { Component } from "react";
@@ -31,7 +31,7 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                 <div key="Reset"
                 style={{
                     width: this.props.width - this.props.padding[1] * 2,
-                    height: 100,
+                    height: 70,
                     border: "1.6px solid " + ColorThemes.NakiriAyame.Green
                 }} >
                     <header
@@ -46,7 +46,7 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                 <div key="RapidSample"
                 style={{
                     width: this.props.width - this.props.padding[1] * 2,
-                    height: 100,
+                    height: 70,
                     border: "1.6px solid " + ColorThemes.NakiriAyame.Green
                 }} >
                     <header
@@ -61,7 +61,7 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                 <div key="randomSample"
                 style={{
                     width: this.props.width - this.props.padding[1] * 2,
-                    height: 100,
+                    height: 70,
                     border: "1.6px solid " + ColorThemes.NakiriAyame.Green
                 }} >
                     <header

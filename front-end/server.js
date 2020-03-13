@@ -2,12 +2,13 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-12 22:56:48
+ * @Last Modified time: 2020-03-13 20:30:34
  */
 
 const express = require('express');
 const app = express();
 const process = require('child_process');
+const fs = require("fs")
 
 
 let path = "./";
@@ -60,7 +61,7 @@ app.get("/command/:cmd", (req, res) => {
                 formatResult(
                     cmd,
                     true,
-                    stdout.split("Active code page: 65001")[1]
+                    JSON.parse(fs.readFileSync("../back-end/temp_output.json"))
                 )
             );
             if (stdout.split("Active code page: 65001")[2]) {

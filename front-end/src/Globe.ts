@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 15:08:14 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-05 19:30:54
+ * @Last Modified time: 2020-03-13 22:20:46
  */
 
 import { DataItem, LISAtype } from "./TypeLib";
@@ -16,6 +16,7 @@ interface SystemType {
     colorF: (value: LISAtype) => string;
     colorP: (value: number) => string;
     task?: TaskQueue<null>;
+    highlight: (value: LISAtype | "none") => void;
 };
 
 const colorD = {
@@ -32,14 +33,12 @@ export const System: SystemType = {
     active: [],
     picked: [],
     colorF: (value: LISAtype): string => {
-        // return [
-        //     "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6"
-        // ][Math.floor(value * (9 - 1e-12))];
         return colorD[value]; 
     },
     colorP: (value: number): string => {
         return [
             "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6"
         ][Math.floor(value * (9 - 1e-12))];
-    }
+    },
+    highlight: () => {}
 };

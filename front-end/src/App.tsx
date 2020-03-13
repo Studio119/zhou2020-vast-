@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-12 21:58:03
+ * @Last Modified time: 2020-03-13 22:04:25
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -16,6 +16,7 @@ import { FileData, DataItem } from './TypeLib';
 import { System } from './Globe';
 // import { Command } from './Command';
 import { MoranScatter } from './MoranScatter';
+import { HighlightItems } from './HighlightItems';
 // import { RankingView } from './RankingView';
 
 
@@ -44,7 +45,16 @@ class App extends Component<{}, {}, null> {
           width={ 800 } height={ 834 } scaleType={ this.scale } filter={ true }
           mode="circle" />
         </Container>
-        <MoranScatter ref="sct" width={ 435 } height={ 400 } padding={ 12 } />
+        <div style={{
+          width: "436px",
+          height: "862px",
+          overflowX: "hidden",
+          display: "inline-block",
+          margin: "0 -1px 0 1px"
+        }}>
+          <HighlightItems ref="hl" height={ 44 } />
+          <MoranScatter ref="sct" width={ 436 } height={ 400 } padding={ 12 } />
+        </div>
         {/* <Container theme="NakiriAyame" title="UNKNOWN" height={ 432 } width={ 432 }>
         </Container> */}
         {/* <Container theme="NakiriAyame" title="SAMPLED VIEW" >
@@ -73,7 +83,7 @@ class App extends Component<{}, {}, null> {
     System.task = (this.refs["task"] as TaskQueue<null>);;
     this.sct = (this.refs["sct"] as MoranScatter);
 
-    this.load();
+    this.load(() => {}, () => {});
   }
 
   private apply(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
@@ -178,7 +188,7 @@ class App extends Component<{}, {}, null> {
     }
   }
 
-  private load(): void {
+  private load(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     this.task!.open("./data/healthy_output.json", (jsondata: FileData.Origin) => {
     // this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
     // this.task!.open("./data/population.json", (jsondata: FileData.Origin) => {
@@ -197,7 +207,10 @@ class App extends Component<{}, {}, null> {
 
       setTimeout(() => {
         this.sct!.load(System.data);
+        resolve();
       }, 2000);
+    }, () => {
+      reject();
     });
   }
 }
