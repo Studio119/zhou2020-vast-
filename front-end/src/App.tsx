@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-13 22:04:25
+ * @Last Modified time: 2020-03-14 23:27:19
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -21,7 +21,6 @@ import { HighlightItems } from './HighlightItems';
 
 
 class App extends Component<{}, {}, null> {
-  private task?: TaskQueue<null>;
   private map?: Map;
   private sct?: MoranScatter;
   // private map2?: Map;
@@ -33,53 +32,32 @@ class App extends Component<{}, {}, null> {
       <div className="App">
         <TaskQueue<null> control={ null } ref="task" />
         {/* <Command /> */}
-        <Container theme="NakiriAyame" title="CONTROLLER">
-          <ControlCenter width={ 300 } height={ 834 } padding={ [20, 20] }
-          apply={ this.apply.bind(this) } randomSample={ this.randomSample.bind(this) }
-          reset={ this.load.bind(this) } />
-        </Container>
+        <div style={{
+          width: "386px",
+          height: "862.5px",
+          overflow: "hidden",
+          display: "inline-block",
+          margin: "0 -1px -1px 1px"
+        }}>
+          <Container theme="NakiriAyame" title="CONTROLLER">
+            <ControlCenter width={ 386 } height={ 327 } padding={ [20, 20] }
+            apply={ this.apply.bind(this) } randomSample={ this.randomSample.bind(this) }
+            reset={ this.load.bind(this) } />
+          </Container>
+          <HighlightItems ref="hl" height={ 44 } />
+          <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 12 } />
+        </div>
         <Container theme="NakiriAyame" title="MAP VIEW" >
-          {/* <Map ref="map" id="map" minZoom={ 1 } zoom={ 4.7 } center={[-2.31, 53.56]}
-          width={ 800 } height={ 834 } scaleType={ this.scale } filter={ false } /> */}
-          <Map ref="map" id="map" minZoom={ 3 } zoom={ 7 } maxZoom={ 11 } center={[-0.21, 51.46]}
-          width={ 800 } height={ 834 } scaleType={ this.scale } filter={ true }
+          <Map ref="map" id="map" minZoom={ 3 } zoom={ 7.5 } maxZoom={ 11 } center={[-0.21, 51.46]}
+          width={ 1149 } height={ 834 } scaleType={ this.scale } filter={ true }
           mode="circle" />
         </Container>
-        <div style={{
-          width: "436px",
-          height: "862px",
-          overflowX: "hidden",
-          display: "inline-block",
-          margin: "0 -1px 0 1px"
-        }}>
-          <HighlightItems ref="hl" height={ 44 } />
-          <MoranScatter ref="sct" width={ 436 } height={ 400 } padding={ 12 } />
-        </div>
-        {/* <Container theme="NakiriAyame" title="UNKNOWN" height={ 432 } width={ 432 }>
-        </Container> */}
-        {/* <Container theme="NakiriAyame" title="SAMPLED VIEW" >
-          <Map ref="map2" id="map2" minZoom={ 1 } zoom={ 4.7 } center={[-2.31, 53.56]}
-          width={ 400 } height={ 400 } scaleType={ this.scale } filter={ true } />
-        </Container> */}
-        {/* <Container theme="NakiriAyame" title="RANKING VIEW">
-          <RankingView ref="RankingView" width={ 435 } height={ 400 }
-          scaleType={ this.scale } displayOnMap={ this.highlightPointsInGroup.bind(this) } />
-        </Container> */}
-        {/* <br /> */}
-        {/* <Container theme="NakiriAyame" title="TREE VIEW" width="100%">
-          <Tree width={ "100%" } height={ 402 } ref="tree"
-          scaleType={ this.scale } displayOnMap={ this.highlightPoints.bind(this) } rank={ this.rank.bind(this) } />
-        </Container> */}
       </div>
     );
   }
 
   public componentDidMount(): void {
     this.map = (this.refs["map"] as Map);
-    // this.map2 = (this.refs["map2"] as Map);
-    // this.map2.synchronize(this.map);
-    // this.tree = (this.refs["tree"] as Tree);
-    this.task = (this.refs["task"] as TaskQueue<null>);
     System.task = (this.refs["task"] as TaskQueue<null>);;
     this.sct = (this.refs["sct"] as MoranScatter);
 
@@ -89,27 +67,19 @@ class App extends Component<{}, {}, null> {
   private apply(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     try {
       (this.refs["map"] as Map).closeSketcher();
-      // (this.refs["map2"] as Map).closeSketcher();
-      this.task!.open("./data/sampled_9.17_10070_1.0_0.json", (jsondata: FileData.Sampled) => {
-      // this.task!.open("./data/population_sampled3.json", (jsondata: FileData.Sampled) => {
-        // this.task!.open("./data/industry_sampled.json", (jsondata: FileData.Sampled) => {
-          System.active.fill(false, 0, System.active.length);
-          for (const key in jsondata) {
-            if (jsondata.hasOwnProperty(key)) {
-              const list: Array<number> = jsondata[key];
-              list.forEach((i: number) => {
-                System.active[i] = true;
-              });
-            }
-          }
-          System.picked = Object.keys(jsondata).map((key: string) => parseInt(key));
-        });
-      // this.task!.open("./data/new_visualization_tree_dict_0.1_0.2_0.0025.json", (jsondata: FileData.Tree) => {
-      // // this.task!.open("./data/tree3.json", (jsondata: FileData.Tree) => {
-      //   // this.tree!.load(jsondata);
-      //   // this.map2!.load(System.data);
-      //   // (this.refs["RankingView"] as RankingView).forceUpdate();
-      //   resolve();
+      // this.task!.open("./data/sampled_9.17_10070_1.0_0.json", (jsondata: FileData.Sampled) => {
+      // // this.task!.open("./data/population_sampled3.json", (jsondata: FileData.Sampled) => {
+      // // this.task!.open("./data/industry_sampled.json", (jsondata: FileData.Sampled) => {
+      //   System.active.fill(false, 0, System.active.length);
+      //   for (const key in jsondata) {
+      //     if (jsondata.hasOwnProperty(key)) {
+      //       const list: Array<number> = jsondata[key];
+      //       list.forEach((i: number) => {
+      //         System.active[i] = true;
+      //       });
+      //     }
+      //   }
+      //   System.picked = Object.keys(jsondata).map((key: string) => parseInt(key));
       // });
       this.map!.load(System.data);
       this.sct!.setState({
@@ -129,23 +99,9 @@ class App extends Component<{}, {}, null> {
     }
   }
 
-  // private rank(node: TreeNode): void {
-  //   // (this.refs["RankingView"] as RankingView).activate(node);
-  // }
-
-  // private highlightPoints(list: Array<number>): void {
-  //   (this.refs["map"] as Map).highlight(list);
-  //   (this.refs["map2"] as Map).highlight(list);
-  // }
-
-  // private highlightPointsInGroup(id: number): void {
-  //   this.highlightPoints((this.refs["tree"] as Tree).getContaining(id));
-  // }
-
   private randomSample(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     try {
       (this.refs["map"] as Map).closeSketcher();
-      // (this.refs["map2"] as Map).closeSketcher();
       let target: number = 0;
       if ((window as any)['rate']) {
         target = (window as any)['rate'] as number;
@@ -168,7 +124,6 @@ class App extends Component<{}, {}, null> {
         }
       }
       System.picked = [];
-      // this.map2!.load(System.data);
       this.map!.load(System.data);
       this.sct!.setState({
         list: []
@@ -182,16 +137,14 @@ class App extends Component<{}, {}, null> {
           }
         });
       }, 2000);
-      // this.tree!.forceUpdate();
     } catch(err) {
       reject(err);
     }
   }
 
   private load(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-    this.task!.open("./data/healthy_output.json", (jsondata: FileData.Origin) => {
-    // this.task!.open("./data/industry_data.json", (jsondata: FileData.Origin) => {
-    // this.task!.open("./data/population.json", (jsondata: FileData.Origin) => {
+    System.task!.open("./data/healthy_output_15.json", (jsondata: FileData.Origin) => {
+    // this.task!.open("./data/maybe.json", (jsondata: FileData.Origin) => {
       this.sct!.setState({
         list: []
       });
@@ -216,3 +169,36 @@ class App extends Component<{}, {}, null> {
 }
 
 export default App;
+
+/***             无可奉告 一颗赛艇
+ *  uJjYJYYLLv7r7vJJ5kqSFFFUUjJ7rrr7LLYLJLJ7
+ *  JuJujuYLrvuEM@@@B@@@B@B@B@@0MG5Y7vLjYjJL
+ *  JYjYJvr7XM@3B8GOOE8ZEEO8GqM8OBBBMu77LLJ7
+ *  LJLY7ru@@@BOZ8O8NXFFuSkSu25X0OFZ8MZJ;vLv
+ *  YvL7i5@BM8OGGqk22uvriiriii;r7LuSZXEMXrvr
+ *  vv7iU@BMNkF1uY7v7rr;iiii:i:i:ii7JEPNBPir
+ *  L7iL@BM8Xjuujvv77rr;ri;i;:iiiii:iLXFOBJ:
+ *  7ri@B@MOFuUS2Y7L7777rii;:::::i:iirjPG@O:
+ *  7:1B@BBOPjXXSJvrL7rr7iiii:i::::i;iv5MBB,
+ *  r:0@BBM8SFPX2Y77rri::iirri:::::iii75O@G.
+ *  7:SB@BBGqXPk0122UJL::i::r:::i:i;i:v2@Bk.
+ *  ri:MB@BBEqEMGq2JLLL1u7.iX51u77LF27iSB@r,
+ *  ri,v@B@MB8@qqNEqN1u:5B8BOFE0S7ii7qMB@F::
+ *  ii,J80Eq1MZkqPPX5YkPE@B@iXPE52j7:vBjE7::
+ *  ii:7MSqkS0PvLv7rrii0@L.Z1iLr::ir:rO,vi::
+ *  ii::EZXPSkquLvii:iF@N:.,BUi7ri,::UY;r:::
+ *  i::.2ONXqkPXS5FUUEOPP;..iSPXkjLYLLrr:::,
+ *  :::,iMXNP0NPLriiLGZ@BB1P87;JuL7r:7ri:::,
+ *  :::,.UGqNX0EZF2uUjUuULr:::,:7uuvv77::::.
+ *  ::::..5OXqXNJ50NSY;i:.,,,:i77Yvr;v;,,::.
+ *  :::,:.jOEPqPJiqBMMMO8NqP0SYLJriirv:.:,:.
+ *  ,:,,,.,Zq0P0X7vPFqF1ujLv7r:irrr7j7.,,::.
+ *  ,,,....0qk0080v75ujLLv7ri:i:rvj2J...,,,.
+ *  ......8@UXqZEMNvJjr;ii::,:::7uuv...,.,,.
+ *  .....B@BOvX88GMGk52vririiirJS1i.......,.
+ *  .JEMB@B@BMvL0MOMMMO8PE8GPqSk2L:.........
+ *  @B@@@B@M@B@L:7PGBOO8MOMOEP0Xri@B@Mk7,...
+ *  B@B@BBMBB@B@0::rJP8MO0uvvu7..,B@B@B@B@27
+ *  MMBM@BBB@B@B@Br:i,..:Lur:....7@OMMBM@B@@
+ *  8OOMMMOMMMMBB@B:....,PZENNi..JBOZ8GMOOOO
+ */

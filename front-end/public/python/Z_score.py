@@ -89,6 +89,9 @@ class Z_score:
         """
         val_list = (val_in - mean) / std_deviation
 
+        print("标准化后取值范围：", (np.min(val_list), np.max(val_list)))
+        print("标准化数据均值：", np.mean(val_list), "标准化数据标准差：", np.std(val_list))
+
         """
         完成标准化的数据列表
         @type {list<{x: float; y: float; value: float;}>}
@@ -177,33 +180,36 @@ class Z_score:
 
 
     """
+    激活函数
+    @type {number => ("L" | "H")}
+    """
+    @staticmethod
+    def SIGN(n):
+        return "L" if n < 0 else "H"
+    
+    
+    """
     判断给定索引对应的数据点的类别
     @param      {int}                               index   点的索引
     @returns    {"NS" | "HH" | "LH" | "LL" | "HL"}          类别
     """
     def type_idx(self, index):
-        if math.sqrt(self.score[index][0] ** 2 + self.score[index][1] ** 2) <= self.r:
-            """
-            NS - 不显著点 = Not Significant
-            """
-            return "NS"
+        # if math.sqrt(self.score[index][0] ** 2 + self.score[index][1] ** 2) <= self.r:
+        #     """
+        #     NS - 不显著点 = Not Significant
+        #     """
+        #     return "NS"
 
-        """
-        激活函数
-        @type {number => ("L" | "H")}
-        """
-        SIGN = lambda n: "L" if n < 0 else "H"
-
-        return SIGN(self.score[index][0]) + SIGN(self.score[index][1])
+        return Z_score.SIGN(self.score[index][0]) + Z_score.SIGN(self.score[index][1])
 
 
 
 if __name__ == "__main__":
-    m = Z_score(k=8, mode="euclidean")
+    m = Z_score(k=15, mode="euclidean")
 
     input_name = None
+    output_name = None
 
-    output_name = "healthy_output"
     if len(sys.argv) > 2:
         input_name = sys.argv[1]
         output_name = sys.argv[2]
@@ -233,19 +239,33 @@ if __name__ == "__main__":
 
     transform = [m.type_idx(i) for i in range(len(A))]
 
-    print(transform)
+    # print(transform)
 
-    with open("../../../back-end/{}.json".format(output_name), mode='w', encoding='utf8') as f:
-        res = []
-        for i in range(len(A)):
-            res.append({
-                "type": transform[i],
-                "lat": A[i]["lat"],
-                "lng": A[i]["lng"],
-                "value": A[i]["value"],
-                "mx": m.score[i][0],
-                "my": m.score[i][1]
-            })
-        json.dump(res, f)
+    if output_name:
+        with open("../../../back-end/{}.json".format(output_name), mode='w', encoding='utf8') as f:
+            res = []
+            for i in range(len(A)):
+                res.append({
+                    "type": transform[i],
+                    "lat": A[i]["lat"],
+                    "lng": A[i]["lng"],
+                    "value": A[i]["value"],
+                    "mx": m.score[i][0],
+                    "my": m.score[i][1]
+                })
+            json.dump(res, f)
+    else:
+        with open("../../public/data/healthy_output_15.json", mode='w', encoding='utf8') as f:
+            res = []
+            for i in range(len(A)):
+                res.append({
+                    "type": transform[i],
+                    "lat": A[i]["lat"],
+                    "lng": A[i]["lng"],
+                    "value": A[i]["value"],
+                    "mx": m.score[i][0],
+                    "my": m.score[i][1]
+                })
+            json.dump(res, f)
 
     pass

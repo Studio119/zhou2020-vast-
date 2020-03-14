@@ -60,7 +60,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                         } >
                             <header
                             style={{
-                                padding: "6px",
+                                padding: "4px 6px",
 								pointerEvents: "none"
                             }} >
                                 Not Significant
@@ -89,10 +89,11 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                         } >
                             <header
                             style={{
-                                padding: "6px",
+                                padding: "4px 6px",
 								pointerEvents: "none"
                             }} >
-                                High-High
+                                High-
+                                High
                             </header>
                         </div>
                     </div>
@@ -118,10 +119,11 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                         } >
                             <header
                             style={{
-                                padding: "6px",
+                                padding: "4px 6px",
 								pointerEvents: "none"
                             }} >
-                                Low-High
+                                Low-
+                                High
                             </header>
                         </div>
                     </div>
@@ -147,10 +149,12 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                         } >
                             <header
                             style={{
-                                padding: "6px",
+                                padding: "4px 6px",
 								pointerEvents: "none"
                             }} >
-                                Low-Low
+                                Low-
+                                <br />
+                                Low
                             </header>
                         </div>
                     </div>
@@ -177,10 +181,11 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                         } >
                             <header
                             style={{
-                                padding: "6px",
+                                padding: "4px 6px",
 								pointerEvents: "none"
                             }} >
-                                High-Low
+                                High-
+                                Low
                             </header>
                         </div>
                     </div>
