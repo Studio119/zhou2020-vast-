@@ -24,6 +24,12 @@ class Z_score:
         self.mode = "manhattan" if mode == "manhattan" else "euclidean"
 
         """
+        每个点选取的邻近点的索引列表
+        @type {list<list<int>%len=self.k>%len=n?}
+        """
+        self.neighbors = None
+
+        """
         考虑的邻近点的数量
         @type {int}
         """
@@ -58,6 +64,9 @@ class Z_score:
     def fit(self, data):
         # 重置 Z 得分
         self.score = []
+
+        # 重置邻近点矩阵
+        self.neighbors = []
 
         """
         数据点的数量
@@ -102,8 +111,6 @@ class Z_score:
             "value": float(val_list[i])
         } for i in range(n)]
 
-        # fr = open("../data/healthy_sp.json", mode='w', encoding='utf8')
-
         # 遍历，时间复杂度 O(n^2)
         iteration = range(len(data))
 
@@ -119,7 +126,7 @@ class Z_score:
 
             """
             按距离升序排列的其他点
-            @type {list<{dist: float; value: float;}>%len=n-1}
+            @type {list<{dist: float; value: float; index: int;}>%len=n-1}
             """
             order = []
 
@@ -139,11 +146,15 @@ class Z_score:
 
                 order.append({
                     "dist": 1. / dist,
-                    "value": b["value"]
+                    # "dist": 1. / self.k,
+                    "value": b["value"],
+                    "index": j
                 })
 
             # 对 order 按距离升序排序
             order.sort(key=lambda e: e["dist"], reverse=True)
+
+            self.neighbors.append([e["index"] for e in order[:self.k]])
 
             """
             邻近点空间权重列向量
@@ -151,14 +162,6 @@ class Z_score:
             """
             _weights = np.array([[d["dist"]] for d in order[:self.k]])
             _weights /= _weights.sum()
-
-            # fr.write("[")
-            # for i in range(len(_weights)):
-            #     w = _weights[i]
-            #     fr.write(str(float(w)))
-            #     if i < len(_weights) - 1:
-            #         fr.write(",")
-            # fr.write("],")
 
             """
             标准化观测值
@@ -174,8 +177,6 @@ class Z_score:
 
             self.score.append([x, sp_lag])
 
-        # fr.close()
-
         return self
 
 
@@ -184,7 +185,7 @@ class Z_score:
     @type {number => ("L" | "H")}
     """
     @staticmethod
-    def SIGN(n):
+    def _SIGN(n):
         return "L" if n < 0 else "H"
     
     
@@ -200,12 +201,12 @@ class Z_score:
         #     """
         #     return "NS"
 
-        return Z_score.SIGN(self.score[index][0]) + Z_score.SIGN(self.score[index][1])
+        return Z_score._SIGN(self.score[index][0]) + Z_score._SIGN(self.score[index][1])
 
 
 
 if __name__ == "__main__":
-    m = Z_score(k=15, mode="euclidean")
+    m = Z_score(k=10, mode="euclidean")
 
     input_name = None
     output_name = None
@@ -245,26 +246,32 @@ if __name__ == "__main__":
         with open("../../../back-end/{}.json".format(output_name), mode='w', encoding='utf8') as f:
             res = []
             for i in range(len(A)):
+                neighbors = m.neighbors[i]
                 res.append({
                     "type": transform[i],
                     "lat": A[i]["lat"],
                     "lng": A[i]["lng"],
                     "value": A[i]["value"],
                     "mx": m.score[i][0],
-                    "my": m.score[i][1]
+                    "my": m.score[i][1],
+                    "n_L": len([e for e in neighbors if m.type_idx(e)[0].startswith("L")]),
+                    "n_H": len([e for e in neighbors if m.type_idx(e)[0].startswith("H")])
                 })
             json.dump(res, f)
     else:
-        with open("../../public/data/healthy_output_15.json", mode='w', encoding='utf8') as f:
+        with open("../../public/data/healthy_output_10.json", mode='w', encoding='utf8') as f:
             res = []
             for i in range(len(A)):
+                neighbors = m.neighbors[i]
                 res.append({
                     "type": transform[i],
                     "lat": A[i]["lat"],
                     "lng": A[i]["lng"],
                     "value": A[i]["value"],
                     "mx": m.score[i][0],
-                    "my": m.score[i][1]
+                    "my": m.score[i][1],
+                    "n_L": len([e for e in neighbors if m.type_idx(e)[0].startswith("L")]),
+                    "n_H": len([e for e in neighbors if m.type_idx(e)[0].startswith("H")])
                 })
             json.dump(res, f)
 
