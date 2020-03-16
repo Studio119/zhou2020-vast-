@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-14 23:27:19
+ * @Last Modified time: 2020-03-16 18:32:06
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -144,7 +144,6 @@ class App extends Component<{}, {}, null> {
 
   private load(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     System.task!.open("./data/healthy_output_15.json", (jsondata: FileData.Origin) => {
-    // this.task!.open("./data/maybe.json", (jsondata: FileData.Origin) => {
       this.sct!.setState({
         list: []
       });
@@ -156,12 +155,19 @@ class App extends Component<{}, {}, null> {
       });
       System.active.length = System.data.length;
       System.active.fill(true, 0, System.data.length);
-      this.map!.load(System.data);
 
-      setTimeout(() => {
-        this.sct!.load(System.data);
-        resolve();
-      }, 2000);
+      System.task!.open("./data/samplePoints-0.003-7615-0.27553641856930927.json", (data: Array<FileData.Poisson>) => {
+        this.map!.load(System.data, data);
+      }).catch((err: any) => {
+        console.error(err);
+        this.map!.load(System.data);
+      }).finally(() => {
+          setTimeout(() => {
+            this.sct!.load(System.data);
+            resolve();
+          }, 2000);
+      });
+
     }, () => {
       reject();
     });
@@ -169,6 +175,7 @@ class App extends Component<{}, {}, null> {
 }
 
 export default App;
+
 
 /***             无可奉告 一颗赛艇
  *  uJjYJYYLLv7r7vJJ5kqSFFFUUjJ7rrr7LLYLJLJ7

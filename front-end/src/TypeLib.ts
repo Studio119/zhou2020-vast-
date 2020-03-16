@@ -20,12 +20,13 @@ export namespace Snapshot {
 };
 
 export type DataItem = {
+    type: LISAtype;
     lat: number;
     lng: number;
     value: number;
-    type: LISAtype;
     mx: number;
     my: number;
+    neighbors: Array<number>;
 };
 
 export namespace FileData {
@@ -40,6 +41,22 @@ export namespace FileData {
 
     export type Sampled = {
         [id: number]: Array<number>;
+    };
+
+    export type Poisson = {
+        id: number;
+        lat: number;
+        lng: number;
+        value: number;
+        type: LISAtype;
+        r: number;
+        pointsInDisk: Array<{
+            id: number;
+            lat: number;
+            lng: number;
+            value: number;
+            type: LISAtype;
+        }>;
     };
 };
 

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-10-02 15:53:12 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2019-12-02 19:52:08
+ * @Last Modified time: 2020-03-16 18:24:39
  */
 
 import React from 'react';
@@ -250,6 +250,142 @@ class GetRequest {
         }
     }
 }
+
+
+/**
+ * Generates an object to control the callbacks while fetching, like a Promise.
+ * @class Task
+ * @exports
+ */
+export class Task {
+    /**
+     * Marks the status of the fetching & parsing behaviour.
+     */
+    private status: "pending" | "fulfilled" | "rejected";
+
+    /**
+     * Called when the handler lacks onrejected callback while the process rejected,
+     * Or used to handle errors happened during onfulfilled and onrejected callbacks.
+     * @param {any?} reason some information descriping the error
+     * @private
+     * @memberof Task
+     */
+    private oncatched?: (reason?: any) => void;
+
+    /**
+     * Called when the process end up either fulfilled or rejected.
+     * @private
+     * @memberof Task
+     */
+    private onfinally: () => void;
+
+    /**
+     * Returns a handler to switch its status to "fulfilled" or "rejected".
+     * And triggers the corresponding callbacks.
+     * This function will be invalidate once called.
+     * @returns {{ fulfill: () => void; reject: (err: string) => void; }}
+     * @public
+     * @memberof Task
+     */
+    public getHandler: (() => {
+        fulfill: () => void;
+        reject: (err: string) => void;
+    }) | null;
+
+    /**
+     *Creates an instance of Task.
+     * @param {() => void} [onfulfilled]
+     * @param {(err: any) => void} [onrejected]
+     * @memberof Task
+     */
+    public constructor(
+        onfulfilled?: () => void,
+        onrejected?: (err: any) => void
+    ) {
+        this.status = "pending";
+        this.oncatched = void 0;
+        this.onfinally = () => {};
+        this.getHandler = () => {
+            this.getHandler = null;
+            return {
+                fulfill: () => {
+                    this.status = "fulfilled";
+                    if (onfulfilled) {
+                        if (this.oncatched) {
+                            try {
+                                onfulfilled();
+                            } catch (err) {
+                                this.oncatched(err);
+                            }
+                        } else {
+                            onfulfilled();
+                        }
+                    }
+                    if (this.onfinally) {
+                        this.onfinally();
+                    }
+                },
+                reject: (err: string) => {
+                    this.status = "rejected";
+                    if (!onrejected) {
+                        if (this.oncatched) {
+                            this.oncatched(err);
+                        } else {
+                            throw err;
+                        }
+                    }
+                    if (this.oncatched) {
+                        if (onrejected) {
+                            try {
+                                onrejected(err);
+                            } catch (err) {
+                                this.oncatched(err);
+                            }
+                        } else {
+                            this.oncatched();
+                        }
+                    } else if (onrejected) {
+                        onrejected(err);
+                    }
+                    if (this.onfinally) {
+                        this.onfinally();
+                    }
+                }
+            };
+        };
+    }
+
+    /**
+     * Sets oncatched callback.
+     * @param {(reason?: any) => void} oncatched
+     * @returns {Task}
+     * @memberof Task
+     */
+    public catch(oncatched: (reason?: any) => void): Task {
+        this.oncatched = oncatched;
+        return this;
+    }
+
+    /**
+     * Sets onfinally callback.
+     * @param {() => void} onfinally
+     * @returns {Task}
+     * @memberof Task
+     */
+    public finally(onfinally: () => void): Task {
+        this.onfinally = onfinally;
+        return this;
+    }
+
+    /**
+     * Returns its current status.
+     * @returns {("pending" | "fulfilled" | "rejected")}
+     * @memberof Task
+     */
+    public getStatus(): "pending" | "fulfilled" | "rejected" {
+        return this.status;
+    }
+};
 
 
 /**
@@ -722,34 +858,52 @@ class TaskQueue<T = {}> extends Dragable<TaskQueueProps<T>, TaskQueueState, {}> 
      * @param {string} url The path of the file.
      * @param {((jsondata: any) => void | undefined | null)} [success] Callback called when the request successes.
      * @param {(() => void | undefined | null)} [fail] Callback called when the request fails.
-     * @returns {void}
+     * @returns {Task} An object to set callbacks and to mark the status
      * @memberof TaskQueue
      */
-    public open(url: string, success?: (jsondata: any) => void | undefined | null, fail?: () => void | undefined | null): void {
+    public open(url: string, success?: (jsondata: any) => void | undefined | null, fail?: () => void | undefined | null): Task {
+        let data: any = void 0;
+        
+        const task: Task = new Task(() => {
+            if (success) {
+                success(data);
+            }
+        }, fail);
+
+        const handler: {
+            fulfill: () => void;
+            reject: (err: string) => void;
+        } = task.getHandler!();
+        
         if (TaskQueue.files[url] === "REQUEST_NOW_WAITING_IN_THE_QUEUE") {
-            return;
+            setTimeout(() => {
+                handler.reject("REQUEST_NOW_WAITING_IN_THE_QUEUE");
+            }, 2);
+            return task;
         }
         else if (TaskQueue.files[url] !== undefined) {
             this.print(`@resSuccess:; Data from file @url${ url }:! already loaded.`);
             if (success && TaskQueue.files[url]) {
-                success(TaskQueue.files[url]);
+                data = TaskQueue.files[url];
+                handler.fulfill();
             }
-            return;
+            return task;
         }
         else {
             TaskQueue.files[url] = "REQUEST_NOW_WAITING_IN_THE_QUEUE";
-            new GetRequest(url, (data: any) => {
+            new GetRequest(url, (d: any) => {
+                data = d;
                 TaskQueue.files[url] = data;
                 if (success && data) {
-                    success(data);
+                    handler.fulfill();
                 }
             }, (log: string) => {
                 this.print(log);
                 if (fail && log.startsWith('@err')) {
-                    fail();
+                    handler.reject(log);
                 }
             });
-            return;
+            return task;
         }
     }
 

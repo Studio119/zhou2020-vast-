@@ -8,7 +8,7 @@ import sys
 
 class Z_score:
     
-    def __init__(self, k=10, mode="euclidean", r=.3):
+    def __init__(self, k=10, mode="euclidean", r=.3, equal=False):
         """
         Z 得分
         @type {list<[float, float]>?}
@@ -36,6 +36,12 @@ class Z_score:
         self.k = k
 
         """
+        是否均分邻近点空间权重
+        @type {bool}
+        """
+        self.equal = equal
+
+        """
         莫兰散点图中，点被判定为不显著点的半径上限
         @type {float}
         """
@@ -46,20 +52,28 @@ class Z_score:
 
     """
     计算两点距离
-    @param      {any extends {x: float; y: float;}} a   第一个坐标点
-    @param      {any extends {x: float; y: float;}} b   第二个坐标点
+    @param      {any extends {lng: float; lat: float;}} a   第一个坐标点
+    @param      {any extends {lng: float; lat: float;}} b   第二个坐标点
     @returns    {float}                                 距离
     """
-    def __diff(self, a, b):
-        if self.mode == "euclidean":
-            return math.sqrt((a["x"] - b["x"]) ** 2 + (a["y"] - b["y"]) ** 2)
-        else:
-            return math.fabs(a["x"] - b["x"]) + math.fabs(a["y"] - b["y"])
+    @staticmethod
+    def _diff(a, b):
+        lon1 = a['lng']
+        lon2 = b['lng']
+        lat1 = a['lat']
+        lat2 = b['lat']
+        lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+        a = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * \
+            math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+        c = 2 * math.asin(math.sqrt(a))
+        r = 6371
+        dis = c * r * 1000
+        return dis
 
 
     """
     生成邻近点矩阵
-    @param {list<{x: float; y: float; value: float;}>} data 空间数据
+    @param {list<{lng: float; lat: float; value: float;}>} data 空间数据
     """
     def fit(self, data):
         # 重置 Z 得分
@@ -98,16 +112,16 @@ class Z_score:
         """
         val_list = (val_in - mean) / std_deviation
 
-        print("标准化后取值范围：", (np.min(val_list), np.max(val_list)))
-        print("标准化数据均值：", np.mean(val_list), "标准化数据标准差：", np.std(val_list))
+        # print("标准化后取值范围：", (np.min(val_list), np.max(val_list)))
+        # print("标准化数据均值：", np.mean(val_list), "标准化数据标准差：", np.std(val_list))
 
         """
         完成标准化的数据列表
-        @type {list<{x: float; y: float; value: float;}>}
+        @type {list<{lat: float; lng: float; value: float;}>}
         """
         M = [{
-            "x": data[i]["x"],
-            "y": data[i]["y"],
+            "lng": data[i]["lng"],
+            "lat": data[i]["lat"],
             "value": float(val_list[i])
         } for i in range(n)]
 
@@ -142,11 +156,10 @@ class Z_score:
                 两点距离
                 @type {float}
                 """
-                dist = self.__diff(a, b)
+                dist = Z_score._diff(a, b)
 
                 order.append({
-                    "dist": 1. / dist,
-                    # "dist": 1. / self.k,
+                    "dist": 1. / dist if not self.equal else 1. / self.k,
                     "value": b["value"],
                     "index": j
                 })
@@ -195,18 +208,12 @@ class Z_score:
     @returns    {"NS" | "HH" | "LH" | "LL" | "HL"}          类别
     """
     def type_idx(self, index):
-        # if math.sqrt(self.score[index][0] ** 2 + self.score[index][1] ** 2) <= self.r:
-        #     """
-        #     NS - 不显著点 = Not Significant
-        #     """
-        #     return "NS"
-
         return Z_score._SIGN(self.score[index][0]) + Z_score._SIGN(self.score[index][1])
 
 
 
 if __name__ == "__main__":
-    m = Z_score(k=10, mode="euclidean")
+    m = Z_score(k=10, mode="euclidean", equal=True)
 
     input_name = None
     output_name = None
@@ -215,19 +222,10 @@ if __name__ == "__main__":
         input_name = sys.argv[1]
         output_name = sys.argv[2]
 
-    def fx(d):
-        return (d + 128.14621384226703) / (67.85378615773539 - -128.14621384226703) * 398
-
-    def fy(d):
-        d = (d - 50.55349948549696) / (22.86881607932105 - 50.55349948549696) * (22.86881607932105 - 50.55349948549696) + 50.55349948549696 + 2 * (1 - (22.86881607932105 - 50.55349948549696) / (22.86881607932105 - 50.55349948549696))
-        return 400 * (d * d * (-0.00025304519602050573) - d * 0.01760550015218513 + 1.5344062688366468)
-
     with open("../../../back-end/healthy_data1.json", mode='r', encoding='utf8') as f:
         A = [{
-            "lat": d["lat"],
             "lng": d["lng"],
-            "x": fx(d["lng"]),
-            "y": fy(d["lat"]),
+            "lat": d["lat"],
             "value": d["value"]
         } for d in json.load(f)]
 
@@ -249,17 +247,16 @@ if __name__ == "__main__":
                 neighbors = m.neighbors[i]
                 res.append({
                     "type": transform[i],
-                    "lat": A[i]["lat"],
                     "lng": A[i]["lng"],
+                    "lat": A[i]["lat"],
                     "value": A[i]["value"],
                     "mx": m.score[i][0],
                     "my": m.score[i][1],
-                    "n_L": len([e for e in neighbors if m.type_idx(e)[0].startswith("L")]),
-                    "n_H": len([e for e in neighbors if m.type_idx(e)[0].startswith("H")])
+                    "neighbors": neighbors
                 })
             json.dump(res, f)
     else:
-        with open("../../public/data/healthy_output_10.json", mode='w', encoding='utf8') as f:
+        with open("../../public/data/healthy_output_{}_eq.json".format(m.k), mode='w', encoding='utf8') as f:
             res = []
             for i in range(len(A)):
                 neighbors = m.neighbors[i]
@@ -270,8 +267,7 @@ if __name__ == "__main__":
                     "value": A[i]["value"],
                     "mx": m.score[i][0],
                     "my": m.score[i][1],
-                    "n_L": len([e for e in neighbors if m.type_idx(e)[0].startswith("L")]),
-                    "n_H": len([e for e in neighbors if m.type_idx(e)[0].startswith("H")])
+                    "neighbors": neighbors
                 })
             json.dump(res, f)
 

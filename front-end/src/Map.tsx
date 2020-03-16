@@ -2,13 +2,13 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-13 22:31:50
+ * @Last Modified time: 2020-03-16 18:45:36
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
 import MapBox from './react-mapbox/MapBox';
 import Color, { ColorThemes } from './preference/Color';
-import { DataItem, LISAtype } from './TypeLib';
+import { DataItem, LISAtype, FileData } from './TypeLib';
 import { System } from './Globe';
 
 
@@ -35,6 +35,7 @@ export interface MapViewState<T> {
         value: T;
         projection: number;
     }>;
+    poissons: Array<FileData.Poisson>;
 }
 
 export interface Sketch {
@@ -42,6 +43,7 @@ export interface Sketch {
     begin: [number, number];
     end: [number, number];
 };
+
 
 export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private originBounds: Readonly<[[number, number], [number, number]]>
@@ -59,6 +61,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private ctx_s: null | CanvasRenderingContext2D;
     private canvas_d: null | HTMLCanvasElement;
     private ctx_d: null | CanvasRenderingContext2D;
+    private canvas_p: null | HTMLCanvasElement;
+    private ctx_p: null | CanvasRenderingContext2D;
     private ready2: Array<Array<[number, number, string]>>;
     private timers: Array<NodeJS.Timeout>;
     private cloneObserver: Array<Map>;
@@ -71,7 +75,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     public constructor(props: MapViewProps) {
         super(props);
         this.mounted = false;
-        this.state = { data: [] };
+        this.state = { data: [], poissons: [] };
         this.canvas = null;
         this.ctx = null;
         this.timers = [];
@@ -83,6 +87,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.ctx_s = null;
         this.canvas_d = null;
         this.ctx_d = null;
+        this.canvas_p = null;
+        this.ctx_p = null;
         this.ready2 = [];
         this.cloneObserver = [];
         this.recursiveLock = false;
@@ -159,10 +165,16 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     left: '0px',
                     top: '-100%'
                 }} >
-                    <canvas key="1" id={ this.props.id + "_canvas" } ref="canvas"
+                    <canvas key="p" id={ this.props.id + "_poisson" } ref="poisson"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
                         position: 'initial',
-                        top: '-100%',
+                        pointerEvents: 'none'
+                    }} />
+                    <canvas key="1" id={ this.props.id + "_canvas" } ref="canvas"
+                    width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
                         pointerEvents: 'none'
                     }} />
                     <canvas key="2" id={ this.props.id + "_canvas2" } ref="canvas2"
@@ -297,9 +309,12 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         $(this.refs["cover"]).hide();
         $(this.refs["tool-line"]).hide();
         this.mounted = true;
+        this.canvas_p = document.getElementById(this.props.id + "_poisson") as HTMLCanvasElement;
+        this.ctx_p = this.canvas_p!.getContext("2d");
+        this.ctx_p!.strokeStyle = "#7A1B27";
+        this.ctx_p!.globalAlpha = 0.4;
         this.canvas = document.getElementById(this.props.id + "_canvas") as HTMLCanvasElement;
         this.ctx = this.canvas!.getContext("2d");
-        // this.ctx!.globalAlpha = 1;
         this.canvas2 = document.getElementById(this.props.id + "_canvas2") as HTMLCanvasElement;
         this.ctx2 = this.canvas2!.getContext("2d");
         this.canvas_s = document.getElementById(this.props.id + "_canvas_s") as HTMLCanvasElement;
@@ -328,6 +343,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 this.highlight(value);
             }
         };
+
+        this.showPoisson();
     }
 
     public componentWillUnmount(): void {
@@ -796,6 +813,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         } else {
             $(this.canvas!).css("opacity", 1);
         }
+
+        this.ctx_p!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        this.showPoisson();
     }
 
     public synchronize(clone: Map): void {
@@ -889,7 +909,35 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }
     }
 
-    public load(data: Array<DataItem>): void {
+    private showPoisson(): void {
+        this.state.poissons.forEach((p: FileData.Poisson) => {
+            const x: number = this.fx(p.lng);
+            const y: number = this.fy(p.lat);
+            const r: number = Math.max(
+                ...p.pointsInDisk.map((d: {
+                    lat: number;
+                    lng: number;
+                }) => {
+                    return Math.sqrt(
+                        Math.pow(
+                            this.fx(d.lng) - x, 2
+                        ) + Math.pow(
+                            this.fy(d.lat) - y, 2
+                        )
+                    );
+                })
+            );
+
+            this.ctx_p!.fillStyle = System.colorF(p.type);
+
+            this.ctx_p!.beginPath();
+            this.ctx_p!.arc(x, y, r + 4, 0, 2 * Math.PI);
+            this.ctx_p!.fill();
+            this.ctx_p!.stroke();
+        });
+    }
+
+    public load(data: Array<DataItem>, poissons?: Array<FileData.Poisson>): void {
         if (!this.mounted) {
             let count: number = 3;
             setTimeout(() => {
@@ -916,7 +964,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         : this.props.scaleType === "quick" ? Math.pow(d.value / System.maxValue, 0.34)
                         : Math.sqrt(d.value / System.maxValue)
                 };
-            })
+            }),
+            poissons: poissons ? poissons : this.state.poissons
         })
     }
 
