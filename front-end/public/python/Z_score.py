@@ -159,13 +159,17 @@ class Z_score:
                 dist = Z_score._diff(a, b)
 
                 order.append({
-                    "dist": 1. / dist if not self.equal else 1. / self.k,
+                    "dist": 1. / dist,
                     "value": b["value"],
                     "index": j
                 })
 
             # 对 order 按距离升序排序
             order.sort(key=lambda e: e["dist"], reverse=True)
+
+            if self.equal:
+                for o in order:
+                    o["dist"] = 1. / self.k
 
             self.neighbors.append([e["index"] for e in order[:self.k]])
 

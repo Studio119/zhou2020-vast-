@@ -909,6 +909,22 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }
     }
 
+    // private diff(a: {lng: number; lat: number;}, b: {lng: number; lat: number;}): number {
+    //     const lng1: number = a.lng * Math.PI / 180;
+    //     const lat1: number = a.lat * Math.PI / 180;
+    //     const lng2: number = b.lng * Math.PI / 180;
+    //     const lat2: number = b.lat * Math.PI / 180;
+    //     return Math.asin(
+    //         Math.sqrt(
+    //             Math.pow(
+    //                 Math.sin((lat2 - lat1) / 2), 2
+    //             ) + Math.cos(lat1) * Math.cos(lat2) * Math.pow(
+    //                 Math.sin((lng2 - lng1) / 2), 2
+    //             )
+    //         )
+    //     ) * 12742;
+    // }
+
     private showPoisson(): void {
         this.state.poissons.forEach((p: FileData.Poisson) => {
             const x: number = this.fx(p.lng);
@@ -920,11 +936,11 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }) => {
                     return Math.sqrt(
                         Math.pow(
-                            this.fx(d.lng) - x, 2
+                            x - this.fx(d.lng), 2
                         ) + Math.pow(
-                            this.fy(d.lat) - y, 2
+                            y - this.fy(d.lat), 2
                         )
-                    );
+                    )
                 })
             );
 

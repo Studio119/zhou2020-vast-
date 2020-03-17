@@ -158,6 +158,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
     }
 
     public componentDidUpdate(): void {
+        this.ctx!.clearRect(0, 0, this.width, this.props.height);
         this.timers.forEach((timer: NodeJS.Timeout) => {
             clearTimeout(timer);
         });

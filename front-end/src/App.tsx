@@ -156,7 +156,7 @@ class App extends Component<{}, {}, null> {
       System.active.length = System.data.length;
       System.active.fill(true, 0, System.data.length);
 
-      System.task!.open("./data/samplePoints-0.003-7615-0.27553641856930927.json", (data: Array<FileData.Poisson>) => {
+      System.task!.open("./data/samplePoints-250-8058-0.2915656547382133.json", (data: Array<FileData.Poisson>) => {
         this.map!.load(System.data, data);
       }).catch((err: any) => {
         console.error(err);
