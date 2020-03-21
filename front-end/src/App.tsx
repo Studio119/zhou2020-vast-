@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-16 18:32:06
+ * @Last Modified time: 2020-03-21 16:50:33
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -40,11 +40,11 @@ class App extends Component<{}, {}, null> {
           margin: "0 -1px -1px 1px"
         }}>
           <Container theme="NakiriAyame" title="CONTROLLER">
-            <ControlCenter width={ 386 } height={ 327 } padding={ [20, 20] }
+            <ControlCenter width={ 386 } height={ 267 } padding={ [20, 20] }
             apply={ this.apply.bind(this) } randomSample={ this.randomSample.bind(this) }
             reset={ this.load.bind(this) } />
           </Container>
-          <HighlightItems ref="hl" height={ 44 } />
+          <HighlightItems ref="hl" height={ 104 } />
           <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 12 } />
         </div>
         <Container theme="NakiriAyame" title="MAP VIEW" >
@@ -86,9 +86,10 @@ class App extends Component<{}, {}, null> {
         list: []
       });
       setTimeout(() => {
-        this.sct!.run((s: boolean) => {
+        this.sct!.run((s: Array<DataItem> | null) => {
           if (s) {
             resolve();
+            System.update();
           } else {
             reject();
           }
@@ -124,14 +125,24 @@ class App extends Component<{}, {}, null> {
         }
       }
       System.picked = [];
-      this.map!.load(System.data);
+      this.map!.load([]);
       this.sct!.setState({
         list: []
       });
       setTimeout(() => {
-        this.sct!.run((s: boolean) => {
+        this.sct!.run((s: Array<DataItem> | null) => {
           if (s) {
             resolve();
+            System.active = [];
+            System.data = s.map((item: DataItem) => {
+              return {
+                ...item
+              };
+            });
+            System.active.length = System.data.length;
+            System.active.fill(true, 0, System.data.length);
+            this.map!.load(System.data);
+            System.update();
           } else {
             reject();
           }
@@ -156,17 +167,26 @@ class App extends Component<{}, {}, null> {
       System.active.length = System.data.length;
       System.active.fill(true, 0, System.data.length);
 
-      System.task!.open("./data/samplePoints-250-8058-0.2915656547382133.json", (data: Array<FileData.Poisson>) => {
-        this.map!.load(System.data, data);
-      }).catch((err: any) => {
-        console.error(err);
-        this.map!.load(System.data);
-      }).finally(() => {
-          setTimeout(() => {
-            this.sct!.load(System.data);
-            resolve();
-          }, 2000);
-      });
+      this.map!.load(System.data);
+
+      System.initialize();
+
+      setTimeout(() => {
+        this.sct!.load(System.data);
+        resolve();
+      }, 0);
+
+      // System.task!.open("./data/samplePoints-250-8058-0.2915656547382133.json", (data: Array<FileData.Poisson>) => {
+      //   this.map!.load(System.data, data);
+      // }).catch((err: any) => {
+      //   console.error(err);
+      //   this.map!.load(System.data);
+      // }).finally(() => {
+      //     setTimeout(() => {
+      //       this.sct!.load(System.data);
+      //       resolve();
+      //     }, 2000);
+      // });
 
     }, () => {
       reject();

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:29:28 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-07 00:17:08
+ * @Last Modified time: 2020-03-21 17:01:57
  */
 
 import React, { Component } from "react";
@@ -61,7 +61,7 @@ export class SyncButton<T=void> extends Component<SyncButtonProps<T>, SyncButton
         return (
             <button
             style={{
-                padding: "2px 6px",
+                padding: "1px 6px 4px",
                 border: `2px solid ${ ColorThemes[this.props.theme].Grey }`,
                 backgroundColor: Color.setLightness(
                     ColorThemes[this.props.theme].Red, this.state.busy || !this.state.active ? 0.8 : 0.4

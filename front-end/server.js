@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-13 20:30:34
+ * @Last Modified time: 2020-03-21 16:37:22
  */
 
 const express = require('express');
@@ -28,9 +28,9 @@ function formatResult(cmd, state, value) {
 
 app.get("/command/:cmd", (req, res) => {
     const cmd = req.params["cmd"].split("_blc").join(" ")
-                                .split("_sep").join("/")
-                                .split("_dot").join(".")
-                                .split("_init").join("cd " + originPath + " & conda deactivate");
+                    .split("_sep").join("/")
+                    .split("_dot").join(".")
+                    .split("_init").join("cd " + originPath + " & conda deactivate");
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
     process.exec(
         "cd " + path

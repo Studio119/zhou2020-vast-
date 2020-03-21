@@ -2,14 +2,14 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-14 22:57:49
+ * @Last Modified time: 2020-03-21 16:46:42
  */
 
 import React, { Component } from "react";
 import $ from "jquery";
 import { LISAtype, DataItem, FileData } from "./TypeLib";
 import { System } from "./Globe";
-import Color, { ColorThemes } from "./preference/Color";
+import { ColorThemes } from "./preference/Color";
 import { Container } from "./prototypes/Container";
 import axios, { AxiosResponse } from "axios";
 import { CommandResult, CommandError } from "./Command";
@@ -30,11 +30,15 @@ export interface MoranScatterState {
     }>;
 };
 
-export class MoranScatter extends Component<MoranScatterProps, MoranScatterState> {
+export class MoranScatter extends Component<MoranScatterProps, MoranScatterState, null> {
     private canvas: null | HTMLCanvasElement;
     private ctx: null | CanvasRenderingContext2D;
     private width: number;
     private timers: Array<NodeJS.Timeout>;
+    private snapshots: {
+        fx: (d: number) => number;
+        fy: (d: number) => number;
+    };
 
     public constructor(props: MoranScatterProps) {
         super(props);
@@ -45,6 +49,10 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.ctx = null;
         this.width = 0;
         this.timers = [];
+        this.snapshots = {
+            fx: () => NaN,
+            fy: () => NaN
+        };
     }
 
     public componentWillUnmount(): void {
@@ -101,21 +109,17 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         [xMin, xMax] = [xMin - (xMax - xMin) / 10, xMax + (xMax - xMin) / 10];
         [yMin, yMax] = [yMin - (yMax - yMin) / 10, yMax + (yMax - yMin) / 10];
 
-        const fx: (d: number) => number = (d: number) => {
+        this.snapshots.fx = (d: number) => {
             return this.props.padding + (
                 100 - this.props.padding * 2
             ) * (d - xMin) / (xMax - xMin);
         };
         
-        const fy: (d: number) => number = (d: number) => {
+        this.snapshots.fy = (d: number) => {
             return this.props.padding + (
                 100 - this.props.padding * 2
             ) * (yMax - d) / (yMax - yMin);
         };
-
-        setTimeout(() => {
-            this.paint(fx, fy);
-        });
 
         return (
             <Container theme="NakiriAyame" title="MORAN SCATTER" >
@@ -137,10 +141,21 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                 }}>
                     {
                         <g key="axes">
-                            { this.axis("x", fx, fy, xTicks) }
-                            { this.axis("y", fx, fy, yTicks) }
+                            { this.axis(
+                                "x",
+                                this.snapshots.fx,
+                                this.snapshots.fy,
+                                xTicks
+                            ) }
+                            { this.axis(
+                                "y",
+                                this.snapshots.fx,
+                                this.snapshots.fy,
+                                yTicks
+                            ) }
                             <text key={ "0_text" }
-                            x={ fx(0) + "%" } y={ fy(0) + "%" }
+                            x={ this.snapshots.fx(0) + "%" }
+                            y={ this.snapshots.fy(0) + "%" }
                             textAnchor="middle"
                             style={{
                                 fontSize: 15,
@@ -157,11 +172,18 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         );
     }
 
-    public componentDidUpdate(): void {
+    public getSnapshotBeforeUpdate(): null {
         this.ctx!.clearRect(0, 0, this.width, this.props.height);
         this.timers.forEach((timer: NodeJS.Timeout) => {
             clearTimeout(timer);
         });
+        return null;
+    }
+
+    public componentDidUpdate(): void {
+        setTimeout(() => {
+            this.paint(this.snapshots.fx, this.snapshots.fy);
+        }, 0);
     }
 
     public componentDidMount(): void {
@@ -170,12 +192,12 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.width = $(this.canvas).width()!;
     }
 
-    private tick(list: Array<{color: string; x: number; y: number;}>): void {
+    private tick(list: Array<{color: [string, string]; x: number; y: number;}>): void {
         list.forEach((item: {
-            color: string; x: number; y: number;
+            color: [string, string]; x: number; y: number;
         }) => {
-            this.ctx!.strokeStyle = Color.setLightness(item.color, 0.3);
-            this.ctx!.fillStyle = item.color;
+            this.ctx!.strokeStyle = item.color[1];
+            this.ctx!.fillStyle = item.color[0];
 
             this.ctx!.beginPath();
             this.ctx!.arc(item.x, item.y, 3, 0, 2 * Math.PI);
@@ -186,7 +208,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
 
     private paint(fx: (d: number) => number, fy: (d: number) => number): void {
         let ready: Array<Array<{
-            color: string; x: number; y: number;
+            color: [string, string]; x: number; y: number;
         }>> = [];
 
         let nParts = Math.floor(Math.pow((this.state.list.length - 400) / 100, 0.8));
@@ -201,7 +223,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.state.list.forEach((item: {
             type: LISAtype; mx: number; my: number;
         }, index: number) => {
-            const color: string = System.colorF(item.type);
+            const color: [string, string] = System.colorF(item.type);
 
             ready[index % nParts].push({
                 color: color,
@@ -211,7 +233,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         });
 
         ready.forEach((li: Array<{
-            color: string; x: number; y: number;
+            color: [string, string]; x: number; y: number;
         }>, index: number) => {
             this.timers.push(setTimeout(() => {
                 this.tick(li);
@@ -219,7 +241,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         });
     }
 
-    public async run(send: (s: boolean) => void): Promise<boolean> {
+    public async run(send: (s: null | Array<DataItem>) => void): Promise<boolean> {
         this.setState({
             list: []
         });
@@ -258,11 +280,13 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                         p.then((value: AxiosResponse<CommandResult<FileData.Origin|CommandError>>) => {
                             if (value.data.state === "successed") {
                                 try {
+                                    let v: Array<DataItem> = [];
                                     const res: Array<{
                                         type: LISAtype;
                                         mx: number;
                                         my: number;
                                     }> = (value.data.value as FileData.Origin).map((d: DataItem) => {
+                                        v.push(d);
                                         return {
                                             type: d.type,
                                             mx: d.mx,
@@ -274,7 +298,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                     });
                                     __resolve(true);
                                     resolve(true);
-                                    send(true);
+                                    send(v);
                                 } catch (err) {
                                     __resolve(false);
                                     resolve(false);
@@ -283,7 +307,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                             } else {
                                 __resolve(false);
                                 resolve(false);
-                                send(false);
+                                send(null);
                                 if (typeof(value.data.value) === "string") {
                                     console.error(decodeURI(value.data.value));
                                 } else {
@@ -296,12 +320,12 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                             console.warn(reason);
                             __resolve(false);
                             resolve(false);
-                            send(false);
+                            send(null);
                         });
                     });
                 } else {
                     resolve(false);
-                    send(false);
+                    send(null);
                     if (typeof(value.data.value) === "string") {
                         console.error(decodeURI(value.data.value));
                     } else {
@@ -313,7 +337,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             }).catch((reason: any) => {
                 console.warn(reason);
                 resolve(false);
-                send(false);
+                send(null);
             });
         });
     }

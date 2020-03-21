@@ -43,21 +43,21 @@ export namespace FileData {
         [id: number]: Array<number>;
     };
 
-    export type Poisson = {
-        id: number;
-        lat: number;
-        lng: number;
-        value: number;
-        type: LISAtype;
-        r: number;
-        pointsInDisk: Array<{
-            id: number;
-            lat: number;
-            lng: number;
-            value: number;
-            type: LISAtype;
-        }>;
-    };
+    // export type Poisson = {
+    //     id: number;
+    //     lat: number;
+    //     lng: number;
+    //     value: number;
+    //     type: LISAtype;
+    //     r: number;
+    //     pointsInDisk: Array<{
+    //         id: number;
+    //         lat: number;
+    //         lng: number;
+    //         value: number;
+    //         type: LISAtype;
+    //     }>;
+    // };
 };
 
 export type TreeNode = {

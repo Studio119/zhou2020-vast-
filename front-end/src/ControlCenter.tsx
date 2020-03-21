@@ -28,51 +28,69 @@ export class ControlCenter extends Component<ControlCenterProps, {}, null> {
                 height: this.props.height - this.props.padding[0] * 2,
                 padding: `${ this.props.padding[0] }px ${ this.props.padding[1] }px`
             }} >
-                <div key="Reset"
+                <table
                 style={{
                     width: this.props.width - this.props.padding[1] * 2,
-                    height: 70,
                     border: "1.6px solid " + ColorThemes.NakiriAyame.Green
                 }} >
-                    <header
-                    style={{
-                        padding: "6px"
-                    }} >
-                        Reset
-                    </header>
-                    <SyncButton theme="NakiriAyame" text={ "apply" }
-                    executer={ this.props.reset } />
-                </div>
-                <div key="RapidSample"
-                style={{
-                    width: this.props.width - this.props.padding[1] * 2,
-                    height: 70,
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green
-                }} >
-                    <header
-                    style={{
-                        padding: "6px"
-                    }} >
-                        RapidSample
-                    </header>
-                    <SyncButton theme="NakiriAyame" text={ "apply" }
-                    executer={ this.props.apply } />
-                </div>
-                <div key="randomSample"
-                style={{
-                    width: this.props.width - this.props.padding[1] * 2,
-                    height: 70,
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green
-                }} >
-                    <header
-                    style={{
-                        padding: "6px"
-                    }} >
-                        RandomSample
-                    </header>
-                    <SyncButton theme="NakiriAyame" text={ "sample" }
-                    executer={ this.props.randomSample } />
-                </div>
+                    <tbody>
+                        <tr key="names"
+                        style={{
+                            padding: "6px"
+                        }} >
+                            <th key="1"
+                            style={{
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                width: "33.3%",
+                                padding: "2px 0"
+                            }} >
+                                Reset
+                            </th>
+                            <th key="2"
+                            style={{
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                width: "33.3%",
+                                padding: "2px 0"
+                            }} >
+                                Test
+                            </th>
+                            <th key="3"
+                            style={{
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                width: "33.3%",
+                                padding: "2px 0"
+                            }} >
+                                RandomSP
+                            </th>
+                        </tr>
+                        <tr key="buttons" >
+                            <td key="1"
+                            style={{
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                padding: "6px 0"
+                            }} >
+                                <SyncButton theme="NakiriAyame" text={ "o" }
+                                    executer={ this.props.reset } />
+                            </td>
+                            <td key="2"
+                            style={{
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                padding: "6px 0"
+                            }} >
+                                <SyncButton theme="NakiriAyame" text={ "o" }
+                                    executer={ this.props.apply } />
+                            </td>
+                            <td key="3"
+                            style={{
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                padding: "6px 0"
+                            }} >
+                                <SyncButton theme="NakiriAyame" text={ "o" }
+                                    executer={ this.props.randomSample } />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         );
     }
