@@ -643,7 +643,7 @@ class TaskQueue<T = {}> extends Dragable<TaskQueueProps<T>, TaskQueueState, {}> 
     }
 
     public dragableComponentDidMount(): void {
-        // $(this.refs["drag:target"]).hide();
+        $(this.refs["drag:target"]).hide();
         $('html').keydown((event: JQuery.KeyDownEvent<HTMLElement, null, HTMLElement, HTMLElement>) => {
             if (this.debounce || $(this.refs["input"]).css("display") !== "none") {
                 return;

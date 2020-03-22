@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-21 16:50:33
+ * @Last Modified time: 2020-03-22 22:19:30
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -49,7 +49,7 @@ class App extends Component<{}, {}, null> {
         </div>
         <Container theme="NakiriAyame" title="MAP VIEW" >
           <Map ref="map" id="map" minZoom={ 3 } zoom={ 7.5 } maxZoom={ 11 } center={[-0.21, 51.46]}
-          width={ 1149 } height={ 834 } scaleType={ this.scale } filter={ true }
+          width={ 1149 } height={ 837 } scaleType={ this.scale } filter={ true }
           mode="circle" />
         </Container>
       </div>
@@ -60,8 +60,6 @@ class App extends Component<{}, {}, null> {
     this.map = (this.refs["map"] as Map);
     System.task = (this.refs["task"] as TaskQueue<null>);;
     this.sct = (this.refs["sct"] as MoranScatter);
-
-    this.load(() => {}, () => {});
   }
 
   private apply(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
@@ -154,7 +152,12 @@ class App extends Component<{}, {}, null> {
   }
 
   private load(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-    System.task!.open("./data/healthy_output_15.json", (jsondata: FileData.Origin) => {
+    if (!System.filepath) {
+      alert("Error: dataset is NOT loaded");
+      resolve();
+      return;
+    }
+    System.task!.open(`./data/${ System.filepath }`, (jsondata: FileData.Origin) => {
       this.sct!.setState({
         list: []
       });

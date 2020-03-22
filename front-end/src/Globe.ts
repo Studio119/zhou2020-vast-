@@ -2,13 +2,14 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 15:08:14 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-13 22:20:46
+ * @Last Modified time: 2020-03-22 22:15:52
  */
 
 import { DataItem, LISAtype } from "./TypeLib";
 import TaskQueue from "./tools/TaskQueue";
 
 interface SystemType {
+    filepath: string | null;
     maxValue: number;
     data: Array<DataItem>;
     active: Array<boolean>;
@@ -30,6 +31,7 @@ const colorD: {[type: string]: [string, string]} = {
 };
 
 export const System: SystemType = {
+    filepath: null,
     maxValue: 1,
     data: [],
     active: [],
