@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-22 23:02:05
+ * @Last Modified time: 2020-03-23 21:00:31
  */
 
 import React, { Component } from "react";
@@ -55,7 +55,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         <label>
                             Load dataset from...
                         </label>
-                        <input type="file" ref="actualInput" accept=".json" name="file"
+                        <input type="file" ref="actualInput" accept=".csv" name="file"
                         onChange={
                             (event: React.ChangeEvent<HTMLInputElement>) => {
                                 this.onSelected(

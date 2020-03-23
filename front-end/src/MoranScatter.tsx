@@ -2,12 +2,12 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-21 16:46:42
+ * @Last Modified time: 2020-03-23 23:02:05
  */
 
 import React, { Component } from "react";
 import $ from "jquery";
-import { LISAtype, DataItem, FileData } from "./TypeLib";
+import { LISAtype, DataItem } from "./TypeLib";
 import { System } from "./Globe";
 import { ColorThemes } from "./preference/Color";
 import { Container } from "./prototypes/Container";
@@ -241,7 +241,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         });
     }
 
-    public async run(send: (s: null | Array<DataItem>) => void): Promise<boolean> {
+    public async run(send: (s: boolean) => void): Promise<boolean> {
         this.setState({
             list: []
         });
@@ -252,80 +252,24 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             return System.active[i];
         });
 
-        const cmdWrite: string = "cd public/python & python write.py ["
-            + items.join(",") + "] & cd ../..";
-
-        const cmd: string = "cd public/python & conda activate base & python Z_score.py temp_input temp_output & cd ../..";
-
         return await new Promise<boolean>((resolve: (value?: boolean | PromiseLike<boolean> | undefined) => void) => {
-            const strWrite: string = cmdWrite.split("/").join("_sep")
-                                            .split(" ").join("_blc")
-                                            .split(".").join("_dot");
-            const p: Promise<AxiosResponse<CommandResult<string|CommandError>>> = axios.get(
-                `/command/${ strWrite }`, {
-                    headers: 'Content-type:text/html;charset=utf-8'
+            const p: Promise<AxiosResponse<CommandResult<string|CommandError>>> = axios.post(
+                `/take`, {
+                    dataset: System.filepath,
+                    list: items
+                }, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    }
                 }
             );
             p.then((value: AxiosResponse<CommandResult<string|CommandError>>) => {
                 if (value.data.state === "successed") {
-                    new Promise<boolean>((__resolve: (value?: boolean | PromiseLike<boolean> | undefined) => void) => {
-                        const str: string = cmd.split("/").join("_sep")
-                                                .split(" ").join("_blc")
-                                                .split(".").join("_dot");
-                        const p: Promise<AxiosResponse<CommandResult<FileData.Origin|CommandError>>> = axios.get(
-                            `/command/${ str }`, {
-                                headers: 'Content-type:text/html;charset=utf-8'
-                            }
-                        );
-                        p.then((value: AxiosResponse<CommandResult<FileData.Origin|CommandError>>) => {
-                            if (value.data.state === "successed") {
-                                try {
-                                    let v: Array<DataItem> = [];
-                                    const res: Array<{
-                                        type: LISAtype;
-                                        mx: number;
-                                        my: number;
-                                    }> = (value.data.value as FileData.Origin).map((d: DataItem) => {
-                                        v.push(d);
-                                        return {
-                                            type: d.type,
-                                            mx: d.mx,
-                                            my: d.my
-                                        };
-                                    });
-                                    this.setState({
-                                        list: res
-                                    });
-                                    __resolve(true);
-                                    resolve(true);
-                                    send(v);
-                                } catch (err) {
-                                    __resolve(false);
-                                    resolve(false);
-                                    console.error("Error occured when fetching/parsing temp_output");
-                                }
-                            } else {
-                                __resolve(false);
-                                resolve(false);
-                                send(null);
-                                if (typeof(value.data.value) === "string") {
-                                    console.error(decodeURI(value.data.value));
-                                } else {
-                                    console.error(`Command failed with code ${
-                                        (value.data.value as CommandError).code
-                                    }`);
-                                }
-                            }
-                        }).catch((reason: any) => {
-                            console.warn(reason);
-                            __resolve(false);
-                            resolve(false);
-                            send(null);
-                        });
-                    });
+                    resolve(true);
+                    send(true);
                 } else {
                     resolve(false);
-                    send(null);
+                    send(false);
                     if (typeof(value.data.value) === "string") {
                         console.error(decodeURI(value.data.value));
                     } else {
@@ -337,7 +281,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             }).catch((reason: any) => {
                 console.warn(reason);
                 resolve(false);
-                send(null);
+                send(false);
             });
         });
     }

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-22 22:19:30
+ * @Last Modified time: 2020-03-23 23:27:19
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -17,6 +17,8 @@ import { System } from './Globe';
 // import { Command } from './Command';
 import { MoranScatter } from './MoranScatter';
 import { HighlightItems } from './HighlightItems';
+import axios, { AxiosResponse } from 'axios';
+import { CommandResult, CommandError } from './Command';
 // import { RankingView } from './RankingView';
 
 
@@ -65,26 +67,12 @@ class App extends Component<{}, {}, null> {
   private apply(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     try {
       (this.refs["map"] as Map).closeSketcher();
-      // this.task!.open("./data/sampled_9.17_10070_1.0_0.json", (jsondata: FileData.Sampled) => {
-      // // this.task!.open("./data/population_sampled3.json", (jsondata: FileData.Sampled) => {
-      // // this.task!.open("./data/industry_sampled.json", (jsondata: FileData.Sampled) => {
-      //   System.active.fill(false, 0, System.active.length);
-      //   for (const key in jsondata) {
-      //     if (jsondata.hasOwnProperty(key)) {
-      //       const list: Array<number> = jsondata[key];
-      //       list.forEach((i: number) => {
-      //         System.active[i] = true;
-      //       });
-      //     }
-      //   }
-      //   System.picked = Object.keys(jsondata).map((key: string) => parseInt(key));
-      // });
       this.map!.load(System.data);
       this.sct!.setState({
         list: []
       });
       setTimeout(() => {
-        this.sct!.run((s: Array<DataItem> | null) => {
+        this.sct!.run((s: boolean) => {
           if (s) {
             resolve();
             System.update();
@@ -128,19 +116,14 @@ class App extends Component<{}, {}, null> {
         list: []
       });
       setTimeout(() => {
-        this.sct!.run((s: Array<DataItem> | null) => {
+        this.sct!.run((s: boolean) => {
           if (s) {
-            resolve();
             System.active = [];
-            System.data = s.map((item: DataItem) => {
-              return {
-                ...item
-              };
-            });
-            System.active.length = System.data.length;
-            System.active.fill(true, 0, System.data.length);
-            this.map!.load(System.data);
-            System.update();
+            System.data = [];
+            this.fetch(() => {
+              resolve();
+              System.update();
+            }, reject, "temp");
           } else {
             reject();
           }
@@ -151,49 +134,52 @@ class App extends Component<{}, {}, null> {
     }
   }
 
+  private async fetch(
+    resolve: (value?: void | PromiseLike<void> | undefined) => void,
+    reject: (reason?: any) => void,
+    path?: string
+  ): Promise<AxiosResponse<CommandResult<FileData.Origin|CommandError>>> {
+    const p: Promise<AxiosResponse<CommandResult<FileData.Origin|CommandError>>> = axios.get(
+      `/zs/${ (path ? path : System.filepath!).split(".").join("_dot") }`, {
+          headers: 'Content-type:text/html;charset=utf-8'
+      }
+    );
+    p.then((value: AxiosResponse<CommandResult<FileData.Origin|CommandError>>) => {
+      if (value.data.state === "successed") {
+        System.data = (value.data.value as FileData.Origin).map((item: DataItem) => {
+          System.active.push(true);
+          return {
+            ...item
+          };
+        });
+
+        this.map!.load(System.data);
+
+        System.initialize();
+
+        setTimeout(() => {
+          this.sct!.load(System.data);
+          resolve();
+        }, 0);
+      } else {
+        reject();
+      }
+    });
+    return p;
+  }
+
   private load(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-    if (!System.filepath) {
+    if (System.filepath === null) {
       alert("Error: dataset is NOT loaded");
-      resolve();
+      reject();
       return;
     }
-    System.task!.open(`./data/${ System.filepath }`, (jsondata: FileData.Origin) => {
-      this.sct!.setState({
-        list: []
-      });
-      System.active = [];
-      System.data = jsondata.map((item: DataItem) => {
-        return {
-          ...item
-        };
-      });
-      System.active.length = System.data.length;
-      System.active.fill(true, 0, System.data.length);
 
-      this.map!.load(System.data);
+    this.map!.load([]);
+    this.sct!.setState({ list: [] });
+    System.active = [];
 
-      System.initialize();
-
-      setTimeout(() => {
-        this.sct!.load(System.data);
-        resolve();
-      }, 0);
-
-      // System.task!.open("./data/samplePoints-250-8058-0.2915656547382133.json", (data: Array<FileData.Poisson>) => {
-      //   this.map!.load(System.data, data);
-      // }).catch((err: any) => {
-      //   console.error(err);
-      //   this.map!.load(System.data);
-      // }).finally(() => {
-      //     setTimeout(() => {
-      //       this.sct!.load(System.data);
-      //       resolve();
-      //     }, 2000);
-      // });
-
-    }, () => {
-      reject();
-    });
+    this.fetch(resolve, reject);
   }
 }
 

@@ -2,19 +2,16 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-21 16:37:22
+ * @Last Modified time: 2020-03-23 23:49:28
  */
 
 const express = require('express');
 const app = express();
 const process = require('child_process');
 const fs = require("fs")
-
-
-let path = "./";
-let originPath = "./";
-
-let venv = null;
+const bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 
 function formatResult(cmd, state, value) {
@@ -25,61 +22,81 @@ function formatResult(cmd, state, value) {
     };
 }
 
+function parseCSV(b) {
+    return decodeURI(b).split("\n").filter(d => d.includes(","));
+}
 
-app.get("/command/:cmd", (req, res) => {
-    const cmd = req.params["cmd"].split("_blc").join(" ")
-                    .split("_sep").join("/")
-                    .split("_dot").join(".")
-                    .split("_init").join("cd " + originPath + " & conda deactivate");
+
+app.get("/zs/:filepath", (req, res) => {
+    const path = req.params["filepath"] === "temp"
+                ? "..\\back-end\\temp_input.csv"
+                : ".\\public\\data\\" + req.params["filepath"].split("_dot").join(".");
+    const output_path = path.replace(".csv", "_zs.json").replace("\\data\\", "\\storage\\");
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
-    process.exec(
-        "cd " + path
-            + " & CHCP 65001 "
-            + " & " + (
-                venv ? (" conda activate " + venv + " & ") : ""
-            ) + cmd
-            + " & CHCP & cd & CHCP"
-            , (error, stdout, stderr) => {
-        if (stderr) {
-            res.json(
-                formatResult(
-                    cmd,
-                    false,
-                    stderr
-                )
-            );
-        } else if (error) {
-            res.json(
-                formatResult(
-                    cmd,
-                    false,
-                    error
-                )
-            );
+    fs.readFile(output_path, {encoding: "utf-8"}, (err, data) => {
+        if (err) {
+            const cmd = "CHCP 65001 & .\\public\\cpp\\Z_Score < " + path + " > " + output_path;
+            process.exec(cmd, (error, stdout, stderr) => {
+                if (stderr) {
+                    res.json(
+                        formatResult(
+                            cmd,
+                            false,
+                            stderr
+                        )
+                    );
+                } else if (error) {
+                    res.json(
+                        formatResult(
+                            cmd,
+                            false,
+                            error
+                        )
+                    );
+                } else {
+                    res.json(
+                        formatResult(
+                            cmd,
+                            true,
+                            JSON.parse(fs.readFileSync(output_path))
+                        )
+                    );
+                }
+            });
         } else {
             res.json(
                 formatResult(
-                    cmd,
+                    "get storage",
                     true,
-                    JSON.parse(fs.readFileSync("../back-end/temp_output.json"))
+                    JSON.parse(fs.readFileSync(output_path))
                 )
             );
-            if (stdout.split("Active code page: 65001")[2]) {
-                const o = stdout.split("Active code page: 65001")[2].split("\r\n");
-                for (let i = 0; i < o.length; i++) {
-                    if (o[i].length) {
-                        path = o[i];
-                        break;
-                    }
-                }
-            }
-            if (cmd === "conda deactivate") {
-                venv = null;
-            } else if (cmd.startsWith("conda activate ")) {
-                venv = cmd.replace("conda activate ", "");
-            }
         }
     });
+});
+
+
+app.post("/take", (req, res) => {
+    const body = JSON.parse(Object.keys(req.body)[0]);
+    const file = body["dataset"];
+    const sample = body["list"];
+    const data = parseCSV(fs.readFileSync("./public/data/" + file));
+
+    let items = [];
+    
+    for (let i = 0; i < sample.length; i++) {
+        items.push(data[sample[i]]);
+    }
+    
+    fs.writeFileSync("../back-end/temp_input.csv", items.join("\n"));
+    
+    res.json(
+        formatResult(
+            "take sample",
+            true,
+            true
+        )
+    );
 });
 
 
@@ -88,10 +105,4 @@ const server = app.listen(2369, () => {
     const host = addr === "::" ? "127.0.0.1" : addr;
     const port = server.address().port;
     console.log("Back-end server opened at http://" + host + ":" + port);
-
-    process.exec("cd", (error, stdout, stderr) => {
-        if (stdout) {
-            originPath = stdout.replace("\r\n", "");
-        }
-    });
 });
