@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-23 23:49:28
+ * @Last Modified time: 2020-03-24 15:50:09
  */
 
 const express = require('express');
@@ -12,6 +12,10 @@ const fs = require("fs")
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+
+const pathInput = ".\\public\\data\\";
+const pathOutput = "..\\storage\\";
 
 
 function formatResult(cmd, state, value) {
@@ -28,51 +32,83 @@ function parseCSV(b) {
 
 
 app.get("/zs/:filepath", (req, res) => {
-    const path = req.params["filepath"] === "temp"
-                ? "..\\back-end\\temp_input.csv"
-                : ".\\public\\data\\" + req.params["filepath"].split("_dot").join(".");
-    const output_path = path.replace(".csv", "_zs.json").replace("\\data\\", "\\storage\\");
-    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
-    fs.readFile(output_path, {encoding: "utf-8"}, (err, data) => {
-        if (err) {
-            const cmd = "CHCP 65001 & .\\public\\cpp\\Z_Score < " + path + " > " + output_path;
-            process.exec(cmd, (error, stdout, stderr) => {
-                if (stderr) {
-                    res.json(
-                        formatResult(
-                            cmd,
-                            false,
-                            stderr
-                        )
-                    );
-                } else if (error) {
-                    res.json(
-                        formatResult(
-                            cmd,
-                            false,
-                            error
-                        )
-                    );
-                } else {
-                    res.json(
-                        formatResult(
-                            cmd,
-                            true,
-                            JSON.parse(fs.readFileSync(output_path))
-                        )
-                    );
-                }
-            });
-        } else {
-            res.json(
-                formatResult(
-                    "get storage",
-                    true,
-                    JSON.parse(fs.readFileSync(output_path))
-                )
-            );
-        }
-    });
+    if (req.params["filepath"] === "temp") {
+        const path = pathOutput + "temp_input.csv";
+        const output_path = pathOutput + "temp_output.json";
+        res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+        const cmd = "CHCP 65001 & .\\public\\cpp\\Z_Score < " + path + " > " + output_path;
+        process.exec(cmd, (error, stdout, stderr) => {
+            if (stderr) {
+                res.json(
+                    formatResult(
+                        cmd,
+                        false,
+                        stderr
+                    )
+                );
+            } else if (error) {
+                res.json(
+                    formatResult(
+                        cmd,
+                        false,
+                        error
+                    )
+                );
+            } else {
+                res.json(
+                    formatResult(
+                        cmd,
+                        true,
+                        JSON.parse(fs.readFileSync(output_path))
+                    )
+                );
+            }
+        });
+    } else {
+        const path = pathInput + req.params["filepath"].split("_dot").join(".");
+        const output_path = path.replace(".csv", ".json").replace(pathInput, pathOutput);
+        res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+        fs.readFile(output_path, {encoding: "utf-8"}, (err, data) => {
+            if (err) {
+                const cmd = "CHCP 65001 & .\\public\\cpp\\Z_Score < " + path + " > " + output_path;
+                process.exec(cmd, (error, stdout, stderr) => {
+                    if (stderr) {
+                        res.json(
+                            formatResult(
+                                cmd,
+                                false,
+                                stderr
+                            )
+                        );
+                    } else if (error) {
+                        res.json(
+                            formatResult(
+                                cmd,
+                                false,
+                                error
+                            )
+                        );
+                    } else {
+                        res.json(
+                            formatResult(
+                                cmd,
+                                true,
+                                JSON.parse(fs.readFileSync(output_path))
+                            )
+                        );
+                    }
+                });
+            } else {
+                res.json(
+                    formatResult(
+                        "get storage",
+                        true,
+                        JSON.parse(fs.readFileSync(output_path))
+                    )
+                );
+            }
+        });
+    }
 });
 
 
@@ -80,7 +116,7 @@ app.post("/take", (req, res) => {
     const body = JSON.parse(Object.keys(req.body)[0]);
     const file = body["dataset"];
     const sample = body["list"];
-    const data = parseCSV(fs.readFileSync("./public/data/" + file));
+    const data = parseCSV(fs.readFileSync(pathInput + file));
 
     let items = [];
     
@@ -88,15 +124,34 @@ app.post("/take", (req, res) => {
         items.push(data[sample[i]]);
     }
     
-    fs.writeFileSync("../back-end/temp_input.csv", items.join("\n"));
-    
-    res.json(
-        formatResult(
-            "take sample",
-            true,
-            true
-        )
-    );
+    fs.open(pathOutput + "temp_input.csv", 'w', (err, fd) => {
+        if (err) {
+            throw err;
+        }
+
+        fs.writeSync(fd, items.slice(0, items.length - 1).join("\n") + "\n", 0, 'utf-8');
+
+        fs.close(fd, err => {
+            if (err) {
+                res.json(
+                    formatResult(
+                        "take sample",
+                        err,
+                        false
+                    )
+                );
+                throw err;
+            } else {
+                res.json(
+                    formatResult(
+                        "take sample",
+                        true,
+                        true
+                    )
+                );
+            }
+        });
+    });;
 });
 
 

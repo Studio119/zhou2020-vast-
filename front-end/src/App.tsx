@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-23 23:27:19
+ * @Last Modified time: 2020-03-24 16:43:18
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -19,6 +19,7 @@ import { MoranScatter } from './MoranScatter';
 import { HighlightItems } from './HighlightItems';
 import axios, { AxiosResponse } from 'axios';
 import { CommandResult, CommandError } from './Command';
+import { Loading } from './Loading';
 // import { RankingView } from './RankingView';
 
 
@@ -34,6 +35,7 @@ class App extends Component<{}, {}, null> {
       <div className="App">
         <TaskQueue<null> control={ null } ref="task" />
         {/* <Command /> */}
+        <Loading ref="loading" />
         <div style={{
           width: "386px",
           height: "862.5px",
@@ -66,23 +68,35 @@ class App extends Component<{}, {}, null> {
 
   private apply(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     try {
-      (this.refs["map"] as Map).closeSketcher();
+      this.map!.closeSketcher();
       this.map!.load(System.data);
       this.sct!.setState({
         list: []
+      });
+      (this.refs["loading"] as Loading).setState({
+        show: true
       });
       setTimeout(() => {
         this.sct!.run((s: boolean) => {
           if (s) {
             resolve();
+            (this.refs["loading"] as Loading).setState({
+              show: false
+            });
             System.update();
           } else {
             reject();
+            (this.refs["loading"] as Loading).setState({
+              show: false
+            });
           }
         });
       }, 2000);
     } catch(err) {
       reject(err);
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
     }
   }
 
@@ -90,6 +104,9 @@ class App extends Component<{}, {}, null> {
     try {
       (this.refs["map"] as Map).closeSketcher();
       let target: number = 0;
+      (this.refs["loading"] as Loading).setState({
+        show: true
+      });
       if ((window as any)['rate']) {
         target = (window as any)['rate'] as number;
       } else {
@@ -122,15 +139,29 @@ class App extends Component<{}, {}, null> {
             System.data = [];
             this.fetch(() => {
               resolve();
+              (this.refs["loading"] as Loading).setState({
+                show: false
+              });
               System.update();
-            }, reject, "temp");
+            }, () => {
+              reject();
+              (this.refs["loading"] as Loading).setState({
+                show: false
+              });
+            }, "temp");
           } else {
             reject();
+            (this.refs["loading"] as Loading).setState({
+              show: false
+            });
           }
         });
       }, 2000);
     } catch(err) {
       reject(err);
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
     }
   }
 
@@ -155,14 +186,22 @@ class App extends Component<{}, {}, null> {
 
         this.map!.load(System.data);
 
-        System.initialize();
+        if (!path) {
+          System.initialize();
+        }
 
         setTimeout(() => {
           this.sct!.load(System.data);
           resolve();
+          (this.refs["loading"] as Loading).setState({
+            show: false
+          });
         }, 0);
       } else {
         reject();
+        (this.refs["loading"] as Loading).setState({
+          show: false
+        });
       }
     });
     return p;
@@ -178,6 +217,9 @@ class App extends Component<{}, {}, null> {
     this.map!.load([]);
     this.sct!.setState({ list: [] });
     System.active = [];
+    (this.refs["loading"] as Loading).setState({
+      show: true
+    });
 
     this.fetch(resolve, reject);
   }
