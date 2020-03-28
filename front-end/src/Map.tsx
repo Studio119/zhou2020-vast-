@@ -71,6 +71,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private behavior: "line" | "circle";
     private sketchers: Array<Sketch>;
     private drawing: boolean;
+    private timers_p: Array<NodeJS.Timeout>;
 
     public constructor(props: MapViewProps) {
         super(props);
@@ -96,6 +97,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.behavior = "line";
         this.sketchers = [];
         this.drawing = false;
+        this.timers_p = [];
     }
 
     public render(): JSX.Element {
@@ -330,6 +332,10 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             clearTimeout(timer);
         });
         this.timers = [];
+        this.timers_p.forEach((timer: NodeJS.Timeout) => {
+            clearTimeout(timer);
+        });
+        this.timers_p = [];
         this.ready = [];
         this.ready2 = [];
         this.sketchers = [];
@@ -344,11 +350,14 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             }
         };
 
-        this.showPoisson();
+        // this.showPoisson();
     }
 
     public componentWillUnmount(): void {
         this.timers.forEach((timer: NodeJS.Timeout) => {
+            clearTimeout(timer);
+        });
+        this.timers_p.forEach((timer: NodeJS.Timeout) => {
             clearTimeout(timer);
         });
     }
@@ -753,7 +762,11 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             clearTimeout(timer);
         });
         this.timers = [];
-        if (source === "all") {
+        this.timers_p.forEach((timer: NodeJS.Timeout) => {
+            clearTimeout(timer);
+        });
+        this.timers_p = [];
+        // if (source === "all") {
             this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             if (this.ready.length === 0) {
                 let nParts = Math.floor(Math.pow((this.state.data.length - 400) / 100, 0.8));
@@ -768,7 +781,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
                         return;
                     }
-                    this.ready[index % nParts].push([d.lng, d.lat, System.colorF(d.value)]);
+                    // this.ready[index % nParts].push([d.lng, d.lat, System.colorF(d.value)]);
+                    this.ready[index % nParts].push([d.lng, d.lat, "rgb(140,140,140)"]);
                 });
             }
             this.ready.forEach((list: Array<[number, number, string]>, index: number) => {
@@ -780,42 +794,44 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     }, index * 10)
                 );
             });
-        }
-        this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
-        if (this.highlighted.length) {
-            $(this.canvas!).css("opacity", 0.33);
-            if (this.ready2.length === 0) {
-                let nParts = Math.floor(Math.pow((this.highlighted.length - 400) / 100, 0.8));
-                if (!nParts || nParts < 1) {
-                    nParts = 1;
-                }
-                nParts *= (1 + this.cloneObserver.length);
-                for (let i: number = 0; i < nParts; i++) {
-                    this.ready2.push([]);
-                }
-                this.highlighted.forEach((id: number, index: number) => {
-                    const d: { lng: number; lat: number; value: LISAtype; } = this.state.data[id];
-                    if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[id])) {
-                        return;
-                    }
-                    this.ready2[index % nParts].push([d.lng, d.lat, System.colorF(d.value)]);
-                });
-            }
-            this.ready2.forEach((list: Array<[number, number, string]>, index: number) => {
-                this.timers.push(
-                    setTimeout(() => {
-                        list.forEach((d: [number, number, string]) => {
-                            this.addPoint(d[0], d[1], d[2], "2");
-                        });
-                    }, index * 10)
-                );
-            });
-        } else {
-            $(this.canvas!).css("opacity", 1);
-        }
+        // }
+        // this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        // if (this.highlighted.length) {
+        //     $(this.canvas!).css("opacity", 0.33);
+        //     if (this.ready2.length === 0) {
+        //         let nParts = Math.floor(Math.pow((this.highlighted.length - 400) / 100, 0.8));
+        //         if (!nParts || nParts < 1) {
+        //             nParts = 1;
+        //         }
+        //         nParts *= (1 + this.cloneObserver.length);
+        //         for (let i: number = 0; i < nParts; i++) {
+        //             this.ready2.push([]);
+        //         }
+        //         this.highlighted.forEach((id: number, index: number) => {
+        //             const d: { lng: number; lat: number; value: LISAtype; } = this.state.data[id];
+        //             if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[id])) {
+        //                 return;
+        //             }
+        //             this.ready2[index % nParts].push([d.lng, d.lat, System.colorF(d.value)]);
+        //         });
+        //     }
+        //     this.ready2.forEach((list: Array<[number, number, string]>, index: number) => {
+        //         this.timers.push(
+        //             setTimeout(() => {
+        //                 list.forEach((d: [number, number, string]) => {
+        //                     this.addPoint(d[0], d[1], d[2], "2");
+        //                 });
+        //             }, index * 10)
+        //         );
+        //     });
+        // } else {
+        //     $(this.canvas!).css("opacity", 1);
+        // }
 
         this.ctx_p!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
-        this.showPoisson();
+        setTimeout(() => {
+            this.showPoisson();
+        }, 4000);
     }
 
     public synchronize(clone: Map): void {
@@ -926,7 +942,16 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     // }
 
     private showPoisson(): void {
-        this.state.poissons.forEach((p: FileData.Poisson) => {
+        this.ready = [];
+        const nParts = 10;
+        for (let i: number = 0; i < nParts; i++) {
+            this.ready.push([]);
+        }
+
+        this.state.poissons.forEach((p: FileData.Poisson, i: number) => {
+            for (let t: number = 0; t < nParts - 1; t++) {
+                this.ready[t] = [];
+            }
             const x: number = this.fx(p.lng);
             const y: number = this.fy(p.lat);
             const r: number = Math.max(
@@ -940,16 +965,69 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         ) + Math.pow(
                             y - this.fy(d.lat), 2
                         )
-                    )
+                    );
                 })
             );
+            
+            this.timers_p.push(
+                setTimeout(() => {
+                    this.ctx_p!.beginPath();
+                    this.ctx_p!.arc(x, y, r, 0, 2 * Math.PI);
+                    this.ctx_p!.stroke();
+                }, 10 * i)
+            );
 
-            this.ctx_p!.fillStyle = System.colorF(p.type);
+            this.ready[9].push([
+                this.state.data[p.c_index].lng,
+                this.state.data[p.c_index].lat,
+                "rgb(231,0,0)"
+            ]);
 
-            this.ctx_p!.beginPath();
-            this.ctx_p!.arc(x, y, r + 4, 0, 2 * Math.PI);
-            this.ctx_p!.fill();
-            this.ctx_p!.stroke();
+            this.ready.forEach((list: Array<[number, number, string]>, index: number) => {
+                this.timers.push(
+                    setTimeout(() => {
+                        list.forEach((d: [number, number, string]) => {
+                            this.addPoint(d[0], d[1], d[2], "1");
+                        });
+                    }, index * 10)
+                );
+            });
+
+            // if (i < this.state.poissons.length - 1) {
+                return;
+            // }
+
+            this.timers.push(
+                setTimeout(() => {
+                    this.ready[9].push([
+                        this.state.data[p.c_index].lng,
+                        this.state.data[p.c_index].lat,
+                        "rgb(231,0,0)"
+                    ]);
+                    p.pointsInDisk.forEach((d: {
+                        id: number;
+                        lat: number;
+                        lng: number;
+                        value: number;
+                        type: LISAtype;
+                    }) => {
+                        this.ready[d.id % (nParts - 1)].push([
+                            d.lng,
+                            d.lat,
+                            "rgb(87,136,211)"
+                        ]);
+                    });
+                    this.ready.forEach((list: Array<[number, number, string]>, index: number) => {
+                        this.timers.push(
+                            setTimeout(() => {
+                                list.forEach((d: [number, number, string]) => {
+                                    this.addPoint(d[0], d[1], d[2], "1");
+                                });
+                            }, index * 10)
+                        );
+                    });
+                }, 400 * i)
+            );
         });
     }
 

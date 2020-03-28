@@ -1,7 +1,8 @@
 import numpy as np
 from sklearn.neighbors import KernelDensity
 from scipy import stats
-from random import randint
+from random import randint, sample
+from Z_score import Z_score as Z_score
 
 
 """
@@ -46,9 +47,8 @@ class BalanceSampling:
         self._snapshot = {
             "pr": 2.,       # 预定义半径参数
             "p_active": [], # 当前活跃点集
-            "n_ready": 0,   # 当前可激活点数
+            "p_ready": [],   # 当前可激活点
             "result": [],   # 被采样点
-            "state": [],    # 各数据点状态
             "poissons": []  # 泊松盘
         }
 
@@ -90,14 +90,6 @@ class BalanceSampling:
         N = len(self.dataset)
 
         """
-        数据点状态
-        - "checked" 已被采样
-        - "invaild" 未被采样，但落入禁区
-        - "ready"   可被采样
-        @type {list<"checked" | "invaild" | "ready">%len=N}
-        """
-        self._snapshot["state"] = ["ready" for _ in range(N)]
-        """
         采样结果
         @type {list<number>}
         """
@@ -108,31 +100,20 @@ class BalanceSampling:
         """
         self._snapshot["p_active"] = []
         """
-        当前剩余可被选择点数
-        @type {number}
+        当前剩余可被选择点
+        @type {list<number>}
         """
-        self._snapshot["n_ready"] = N
+        self._snapshot["p_ready"] = [i for i in range(N)]
 
         # 开始循环
-        while self._snapshot["n_ready"]:
-            possible = self._onLoopBegin() if len(self._snapshot["p_active"])\
+        while len(self._snapshot["p_ready"]) or len(self._snapshot["p_active"]):
+            self._snapshot["p_active"] =\
+                self._onLoopBegin() if len(self._snapshot["p_active"])\
                         else self._onLoopEnter()
-            # print("下一步：", possible)
-            while len(possible):
-                idx = possible[randint(0, len(possible) - 1)]
-                # print("{} 号点标记为活跃点".format(idx))
-                self._snapshot["p_active"].append(idx)
-                self._snapshot["state"][idx] = "checked"
-                self._snapshot["result"].append(idx)
-                self._snapshot["n_ready"] -= 1
-                possible = self._onLoopBegin()
-                # print("下一步：", possible)
-            else:
-                # print("{} 号点标记为不活跃点".format(self._snapshot["poissons"][-1]["c_index"]))
-                self._snapshot["p_active"].remove(self._snapshot["poissons"][-1]["c_index"])
-            # print("...剩余活跃点 {} 个，{} 个点未被禁区覆盖".format(
-            #     len(self._snapshot["p_active"]), self._snapshot["n_ready"]
-            # ))
+            print(
+                len(self._snapshot["p_ready"]),
+                len(self._snapshot["p_active"])
+            )
             pass
 
         return self._snapshot["result"]
@@ -149,8 +130,23 @@ class BalanceSampling:
     def _generatePoisson(self, idx):
         poisson = {
             "c_index": idx,
-            "r": self._snapshot["pr"] / self.kde_map[idx]
+            "r": self._snapshot["pr"] / self.kde_map[idx],
+            "lat": self.dataset[idx]["lat"],
+            "lng": self.dataset[idx]["lng"],
+            "id": len(self._snapshot["poissons"]),
+            "value": self.dataset[idx]["value"],
+            "type": self.dataset[idx]["type"],
+            "pointsInDisk": []
         }
+
+        # 检查盘内是否含有已有泊松盘的圆心
+        for p in self._snapshot["poissons"]:
+            dist = (
+                (self.dataset[idx]["x"] - self.dataset[p["c_index"]]["x"]) ** 2
+                + (self.dataset[idx]["y"] - self.dataset[p["c_index"]]["y"]) ** 2
+            ) ** 0.5 - poisson["r"]
+            if dist < 0:
+                poisson["r"] += dist
 
         """
         位于泊松盘 r ~ 2r 之间的可激活点列表
@@ -160,29 +156,65 @@ class BalanceSampling:
 
         count = 0
 
-        # 遍历附近的点，将其他落入禁区的点标记，记录 r ~ 2r 间可被激活的点
-        for i, d in enumerate(self._snapshot["state"]):
-            if d != "ready":
-                # 排除不可激活的点，此处也会剔除其本身
-                continue
-                
+        for d in self._snapshot["p_active"]:
             # 判断指定点的关系
             pos = BalanceSampling._checkIfPointAvailable({
                 "x": self.dataset[idx]["x"],
                 "y": self.dataset[idx]["y"]
             }, {
-                "x": self.dataset[i]["x"],
-                "y": self.dataset[i]["y"]
+                "x": self.dataset[d]["x"],
+                "y": self.dataset[d]["y"]
             }, poisson["r"])
 
             if pos == 1:
                 # 落入禁区，标记为无效
-                self._snapshot["state"][i] = "invaild"
-                self._snapshot["n_ready"] -= 1
+                poisson["pointsInDisk"].append({
+                    "id": d,
+                    "lat":self.dataset[d]["lat"],
+                    "lng": self.dataset[d]["lng"],
+                    "value": self.dataset[d]["value"],
+                    "type": self.dataset[d]["type"]
+                })
+                count += 1
+            else:
+                possible.append(d)
+            pass
+
+        removing = []
+        
+        for d in self._snapshot["p_ready"]:
+            # 判断指定点的关系
+            pos = BalanceSampling._checkIfPointAvailable({
+                "x": self.dataset[idx]["x"],
+                "y": self.dataset[idx]["y"]
+            }, {
+                "x": self.dataset[d]["x"],
+                "y": self.dataset[d]["y"]
+            }, poisson["r"])
+
+            if pos == 1:
+                poisson["pointsInDisk"].append({
+                    "id": d,
+                    "lat":self.dataset[d]["lat"],
+                    "lng": self.dataset[d]["lng"],
+                    "value": self.dataset[d]["value"],
+                    "type": self.dataset[d]["type"]
+                })
+                # 落入禁区，标记为无效
+                removing.append(d)
                 count += 1
             elif pos == 2:
-                possible.append(i)
+                removing.append(d)
+                possible.append(d)
             pass
+
+        for i in removing:
+            self._snapshot["p_ready"].remove(i)
+
+        pc = {
+            "x": self.dataset[idx]["x"],
+            "y": self.dataset[idx]["y"]
+        }
 
         print("第 {} 个泊松盘：新增 {} 个点落入禁区".format(len(self._snapshot["poissons"]) + 1, count))
 
@@ -199,15 +231,22 @@ class BalanceSampling:
     """
     @staticmethod
     def _checkIfPointAvailable(pc, p, r):
-        if abs(pc["x"] - p["x"]) > r * 2:
-            return -1
-        elif abs(pc["y"] - p["y"]) > r * 2:
-            return -1
-        else:
-            dist_2 = (pc["x"] - p["x"]) ** 2 + (pc["y"] - p["y"]) ** 2
-            if dist_2 <= (r * 2) ** 2:
-                return 1 if dist_2 <= r ** 2 else 2
-            return -1
+        dist = ((pc["x"] - p["x"]) ** 2 + (pc["y"] - p["y"]) ** 2) ** 0.5
+        if dist <= r * 2:
+            return 1 if dist <= r else -1
+        return -1
+        # if abs(pc["x"] - p["x"]) > r * 2:
+        #     return -1
+        # elif abs(pc["y"] - p["y"]) > r * 2:
+        #     return -1
+        # else:
+        #     # dist_2 = (pc["x"] - p["x"]) ** 2 + (pc["y"] - p["y"]) ** 2
+        #     # if dist_2 <= (r * 2) ** 2:
+        #     #     return 1 if dist_2 <= r ** 2 else 2
+        #     dist = ((pc["x"] - p["x"]) ** 2 + (pc["y"] - p["y"]) ** 2) ** 0.5
+        #     if dist <= r * 2:
+        #         return 1 if dist <= r else -1
+        #     return -1
 
 
     """
@@ -215,13 +254,8 @@ class BalanceSampling:
     @returns {list<number>} 位于新泊松盘 r ~ 2r 范围的可激活点索引集合
     """
     def _onLoopEnter(self):
-        ps = [i for i, d in enumerate(self._snapshot["state"]) if d == "ready"]
-        idx = ps[randint(0, len(ps) - 1)]
-        # print("新的流程，{} 号点标记为活跃点".format(idx))
-        self._snapshot["p_active"].append(idx)
-        self._snapshot["state"][idx] = "checked"
+        idx = self._snapshot["p_ready"].pop(randint(0, len(self._snapshot["p_ready"]) - 1))
         self._snapshot["result"].append(idx)
-        self._snapshot["n_ready"] -= 1
         poisson, possible = self._generatePoisson(idx)
         self._snapshot["poissons"].append(poisson)
         return possible
@@ -232,12 +266,11 @@ class BalanceSampling:
     @returns {list<number>} 位于新泊松盘 r ~ 2r 范围的可激活点索引集合
     """
     def _onLoopBegin(self):
-        idx = self._snapshot["p_active"][randint(0, len(self._snapshot["p_active"]) - 1)]
-        # print("挑选活跃点 {} ".format(idx))
+        idx = self._snapshot["p_active"].pop(randint(0, len(self._snapshot["p_active"]) - 1))
+        self._snapshot["result"].append(idx)
         poisson, possible = self._generatePoisson(idx)
         self._snapshot["poissons"].append(poisson)
         return possible
-
 
 
 if __name__ == "__main__":
@@ -245,76 +278,125 @@ if __name__ == "__main__":
     import json
 
     def fx(d):
-        return (d + 128.14621384226703) / (67.85378615773539 - -128.14621384226703) * 398
+        return (d - -128.14621384226703) / (-67.85378615773539 - -128.14621384226703) * 1147
 
     def fy(d):
-        d = (d - 50.55349948549696) / (22.86881607932105 - 50.55349948549696) * (22.86881607932105 - 50.55349948549696) + 50.55349948549696 + 2 * (1 - (22.86881607932105 - 50.55349948549696) / (22.86881607932105 - 50.55349948549696))
-        return 400 - 400 * (d * d * (-0.00025304519602050573) - d * 0.01760550015218513 + 1.5344062688366468)
-
-    def show(origin, sampled):
-        from matplotlib import pyplot as plt
-
-        plt.figure(figsize=(16, 8))
-        plt.subplot(1, 2, 1)
-        
-        x = []
-        y = []
-
-        di = {
-            "HH": "black",
-            "LH": "yellow",
-            "LL": "blue",
-            "HL": "red"
-        }
-
-        T = []
-
-        for d in origin:
-            x.append(d["x"])
-            y.append(d["y"])
-            T.append(di[d["type"]])
-        
-        plt.scatter(x, y, c=T, s=5, alpha=0.6, marker='o')
-
-        plt.subplot(1, 2, 2)
-        
-        x = []
-        y = []
-
-        di = {
-            "HH": "black",
-            "LH": "yellow",
-            "LL": "blue",
-            "HL": "red"
-        }
-
-        T = []
-
-        for d in sampled:
-            x.append(dataset[d]["x"])
-            y.append(dataset[d]["y"])
-            T.append(di[dataset[d]["type"]])
-        
-        plt.scatter(x, y, c=T, s=5, alpha=0.6, marker='o')
-
-        plt.show()
-
-        return
+        d = (d - 50.55349948549696) / (22.86881607932105 - 50.55349948549696)\
+            * (22.86881607932105 - 50.55349948549696) + 50.55349948549696\
+                + 2 * (1 - (22.86881607932105 - 50.55349948549696) / (22.86881607932105 - 50.55349948549696))
+        return 834 * (d * d * (-0.00025304519602050573) - d * 0.01760550015218513 + 1.5344062688366468)
 
     with open("../data/healthy_output_10.json", mode='r', encoding='utf8') as f:
         dataset = [{
             "type": d["type"],
             "x": fx(d["lng"]),
             "y": fy(d["lat"]),
+            "lng": d["lng"],
+            "lat": d["lat"],
             # "x": d["lng"],
             # "y": d["lat"],
             "value": d["value"]
         } for d in json.load(f)]
         
         bs.fit(dataset)
-        res = bs.sample(0.003)
+        res = bs.sample(0.001)
         print(len(res))
-        show(dataset, [])
+        # show(dataset, [])
+
+        count = {
+            "HH": 0,
+            "LH": 0,
+            "LL": 0,
+            "HL": 0
+        }
+
+        for d in dataset:
+            count[d["type"]] += 1
+        
+        print("原来：", count)
+        print("原来：", {
+            "HH": count["HH"] / len(dataset),
+            "LH": count["LH"] / len(dataset),
+            "LL": count["LL"] / len(dataset),
+            "HL": count["HL"] / len(dataset)
+        })
+
+        sampled = [{
+            "lng": dataset[i]["lng"],
+            "lat": dataset[i]["lat"],
+            "value": dataset[i]["value"]
+        } for i in res]
+
+        zs = Z_score(k=10, mode="euclidean", equal=False).fit(sampled)
+
+        coming = [zs.type_idx(i) for i in range(len(res))]
+        
+        count = {
+            "HH": 0,
+            "LH": 0,
+            "LL": 0,
+            "HL": 0
+        }
+
+        mis = 0
+
+        for i, e in enumerate(res):
+            d = coming[i]
+            count[d] += 1
+            if d != dataset[e]["type"]:
+                mis += 1
+        
+        print("蓝噪声：", count)
+        print("蓝噪声：", {
+            "HH": count["HH"] / len(res),
+            "LH": count["LH"] / len(res),
+            "LL": count["LL"] / len(res),
+            "HL": count["HL"] / len(res)
+        })
+
+        print("采样率：", len(res) / len(dataset))
+        print("正确率：", 1 - mis / len(res))
+
+        r = sample([i for i in range(len(dataset))], len(res))
+
+        sampled = [{
+            "lng": dataset[i]["lng"],
+            "lat": dataset[i]["lat"],
+            "value": dataset[i]["value"]
+        } for i in r]
+
+        zs = Z_score(k=10, mode="euclidean", equal=False).fit(sampled)
+
+        coming = [zs.type_idx(i) for i in range(len(res))]
+        
+        count = {
+            "HH": 0,
+            "LH": 0,
+            "LL": 0,
+            "HL": 0
+        }
+
+        mis = 0
+
+        for i, e in enumerate(res):
+            d = coming[i]
+            count[d] += 1
+            if d != dataset[e]["type"]:
+                mis += 1
+        
+        print("随机：", count)
+        print("随机：", {
+            "HH": count["HH"] / len(res),
+            "LH": count["LH"] / len(res),
+            "LL": count["LL"] / len(res),
+            "HL": count["HL"] / len(res)
+        })
+
+        print("采样率：", len(res) / len(dataset))
+        print("正确率：", 1 - mis / len(res))
+
+        with open("../data/samplePoints-all.json", mode='w', encoding='utf8') as p:
+            json.dump(bs._snapshot["poissons"], p)
         
     pass
 

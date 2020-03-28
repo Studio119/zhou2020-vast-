@@ -226,7 +226,7 @@ if __name__ == "__main__":
         input_name = sys.argv[1]
         output_name = sys.argv[2]
 
-    with open("../../../back-end/healthy_data1.json", mode='r', encoding='utf8') as f:
+    with open("../../../back-end/healthy_data1K.json", mode='r', encoding='utf8') as f:
         A = [{
             "lng": d["lng"],
             "lat": d["lat"],
@@ -260,7 +260,7 @@ if __name__ == "__main__":
                 })
             json.dump(res, f)
     else:
-        with open("../../public/data/healthy_output_{}_eq.json".format(m.k), mode='w', encoding='utf8') as f:
+        with open("../../public/data/healthy_output_{}_1K.json".format(m.k), mode='w', encoding='utf8') as f:
             res = []
             for i in range(len(A)):
                 neighbors = m.neighbors[i]
@@ -274,5 +274,13 @@ if __name__ == "__main__":
                     "neighbors": neighbors
                 })
             json.dump(res, f)
+        # with open("../../public/data/healthy_output_{}_1K.csv".format(m.k), mode='w', encoding='utf8') as f:
+        #     for i in range(len(A)):
+        #         neighbors = m.neighbors[i]
+        #         f.write(
+        #             str(A[i]["lat"]) + ","\
+        #             + str(A[i]["lng"]) + ","\
+        #             + str(A[i]["value"]) + "\n"
+        #         )
 
     pass

@@ -143,7 +143,7 @@ class App extends Component<{}, {}, null> {
   }
 
   private load(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-    System.task!.open("./data/healthy_output_15.json", (jsondata: FileData.Origin) => {
+    System.task!.open("./data/healthy_output_10.json", (jsondata: FileData.Origin) => {
       this.sct!.setState({
         list: []
       });
@@ -156,7 +156,7 @@ class App extends Component<{}, {}, null> {
       System.active.length = System.data.length;
       System.active.fill(true, 0, System.data.length);
 
-      System.task!.open("./data/samplePoints-250-8058-0.2915656547382133.json", (data: Array<FileData.Poisson>) => {
+      System.task!.open("./data/samplePoints-all.json", (data: Array<FileData.Poisson>) => {
         this.map!.load(System.data, data);
       }).catch((err: any) => {
         console.error(err);

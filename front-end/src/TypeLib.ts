@@ -44,6 +44,7 @@ export namespace FileData {
     };
 
     export type Poisson = {
+        c_index: number;
         id: number;
         lat: number;
         lng: number;
