@@ -29,10 +29,11 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                 <div
                 style={{
                     width: "96%",
-                    margin: "2%",
+                    padding: "2.7% 1.8%",
                     height: this.props.height,
                     border: "1.6px solid " + ColorThemes.NakiriAyame.Green,
-                    paddingTop: '0.4%'
+                    background: ColorThemes.NakiriAyame.OuterBackground,
+                    color: ColorThemes.NakiriAyame.InnerBackground
                 }}
                 onMouseOut={
                     () => {

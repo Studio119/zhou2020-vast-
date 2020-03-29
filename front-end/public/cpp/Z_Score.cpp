@@ -211,11 +211,13 @@ public:
     }
     /* 返回指定点的标准化观测值 */
     const float stdIdx(unsigned int index) {
-        return this->score[index][0];
+        const float x = this->score[index][0];
+        return isnan(x) ? 0 : x;
     }
     /* 返回指定点的空间滞后值 */
     const float lagIdx(unsigned int index) {
-        return this->score[index][1];
+        const float y = this->score[index][1];
+        return isnan(y) ? 0 : y;
     }
 };
 

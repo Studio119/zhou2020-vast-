@@ -39,14 +39,16 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
             style={{
                 width: this.props.width - this.props.padding[1] * 2,
                 height: this.props.height - this.props.padding[0] * 2,
-                padding: `${ this.props.padding[0] }px ${ this.props.padding[1] }px`
+                padding: `${ this.props.padding[0] }px ${ this.props.padding[1] }px`,
+                background: ColorThemes.NakiriAyame.OuterBackground,
+                color: ColorThemes.NakiriAyame.InnerBackground
             }} >
                 <div key="loadfile" style={{
                     width: this.props.width - this.props.padding[1] * 2 - 23,
                     height: '70px',
                     overflow: "hidden",
                     padding: '8px 10px',
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green
+                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground
                 }} >
                     <form style={{
                         width: "100%",
@@ -81,7 +83,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 marginBottom: "-6px",
                                 color: this.state.filepath
                                             ? "rgb(0,120,215)"
-                                            : ColorThemes.NakiriAyame.Grey,
+                                            : ColorThemes.NakiriAyame.Green,
                                 textDecorationLine: this.state.filepath
                                             ? "underline"
                                             : "none"
@@ -116,7 +118,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                 <div key="params"
                 style={{
                     width: this.props.width - this.props.padding[1] * 2 - 3,
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green,
+                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground,
                     padding: "0 0 6px"
                 }} >
                     <div key="1"
@@ -163,7 +165,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                 <table
                 style={{
                     width: this.props.width - this.props.padding[1] * 2,
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green
+                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground
                 }} >
                     <tbody>
                         <tr key="names"
@@ -172,7 +174,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         }} >
                             <th key="1"
                             style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 width: "33.3%",
                                 padding: "2px 0"
                             }} >
@@ -180,7 +182,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             </th>
                             <th key="2"
                             style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 width: "33.3%",
                                 padding: "2px 0"
                             }} >
@@ -188,7 +190,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             </th>
                             <th key="3"
                             style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 width: "33.3%",
                                 padding: "2px 0"
                             }} >
@@ -198,7 +200,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         <tr key="buttons" >
                             <td key="1"
                             style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 padding: "6px 0"
                             }} >
                                 <SyncButton theme="NakiriAyame" text={ "o" }
@@ -206,7 +208,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             </td>
                             <td key="2"
                             style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 padding: "6px 0"
                             }} >
                                 <SyncButton theme="NakiriAyame" text={ "o" }
@@ -214,7 +216,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             </td>
                             <td key="3"
                             style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.Green,
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 padding: "6px 0"
                             }} >
                                 <SyncButton theme="NakiriAyame" text={ "o" }

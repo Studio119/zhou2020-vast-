@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-24 16:43:18
+ * @Last Modified time: 2020-03-29 18:57:12
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -52,7 +52,7 @@ class App extends Component<{}, {}, null> {
           <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 12 } />
         </div>
         <Container theme="NakiriAyame" title="MAP VIEW" >
-          <Map ref="map" id="map" minZoom={ 3 } zoom={ 7.5 } maxZoom={ 11 } center={[-0.21, 51.46]}
+          <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 11 } center={[-0.21, 51.46]}
           width={ 1149 } height={ 837 } scaleType={ this.scale } filter={ true }
           mode="circle" />
         </Container>

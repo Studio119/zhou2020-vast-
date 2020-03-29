@@ -1,1 +1,1 @@
-node ./front-end/server.js
+cd ./front-end & node server.js
