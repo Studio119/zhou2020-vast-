@@ -2,11 +2,11 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 15:08:14 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-23 22:03:49
+ * @Last Modified time: 2020-03-30 01:51:47
  */
 
 import { DataItem, LISAtype } from "./TypeLib";
-import TaskQueue from "./tools/TaskQueue";
+// import TaskQueue from "./tools/TaskQueue";
 
 interface SystemType {
     filepath: string | null;
@@ -16,7 +16,7 @@ interface SystemType {
     picked: Array<number>;
     colorF: (value: LISAtype) => [string, string];
     colorP: (value: number) => string;
-    task?: TaskQueue<null>;
+    // task?: TaskQueue<null>;
     highlight: (value: LISAtype | "none") => void;
     initialize: () => void;
     update: () => void;

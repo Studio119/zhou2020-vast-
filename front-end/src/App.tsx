@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-29 18:57:12
+ * @Last Modified time: 2020-03-30 01:51:24
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -10,7 +10,7 @@ import { Map } from './Map';
 import { Container } from './prototypes/Container';
 // import { Tree } from './Tree';
 import { ControlCenter } from './ControlCenter';
-import TaskQueue from './tools/TaskQueue';
+// import TaskQueue from './tools/TaskQueue';
 // import { FileData, TreeNode, DataItem } from './TypeLib';
 import { FileData, DataItem } from './TypeLib';
 import { System } from './Globe';
@@ -33,7 +33,7 @@ class App extends Component<{}, {}, null> {
   public render(): JSX.Element {
     return (
       <div className="App">
-        <TaskQueue<null> control={ null } ref="task" />
+        {/* <TaskQueue<null> control={ null } ref="task" /> */}
         {/* <Command /> */}
         <Loading ref="loading" />
         <div style={{
@@ -62,7 +62,7 @@ class App extends Component<{}, {}, null> {
 
   public componentDidMount(): void {
     this.map = (this.refs["map"] as Map);
-    System.task = (this.refs["task"] as TaskQueue<null>);;
+    // System.task = (this.refs["task"] as TaskQueue<null>);
     this.sct = (this.refs["sct"] as MoranScatter);
   }
 
