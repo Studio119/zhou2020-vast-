@@ -19,10 +19,13 @@ with open("Chicago_Crimes_2012.csv", mode='r') as ifile:
 				if index in table:
 					table[index][2] += 1
 				else:
-					table[index] = [items[20], items[21], 1]
+					table[index] = [lat, lng, 1]
 			except:
 				continue
 
-		for t in table:
-			record = table[t]
+		table = [table[t] for t in table]
+
+		table.sort(key=lambda d: d[0])
+
+		for record in table[:20005]:
 			ofile.write("{},{},{}\n".format(record[0], record[1], float(record[2])))

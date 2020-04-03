@@ -7,22 +7,22 @@ using namespace std;
 
 const unsigned short int CHAR_COMMA = 44;
 const unsigned short int CHAR_NEWLINE = 10;
-const float PI = 3.1415926535;
+const double PI = 3.1415926535;
 
 struct Point {
-    Point(float lat, float lng, float value) {
+    Point(double lat, double lng, double value) {
         this->lat = lat;
         this->lng = lng;
         this->value = value;
     }
-    float lat;
-    float lng;
-    float value;
+    double lat;
+    double lng;
+    double value;
 };
 
 struct Neighbor {
     Neighbor() {}
-    Neighbor(unsigned int index, float value, float weight) {
+    Neighbor(unsigned int index, double value, double weight) {
         this->index = index;
         this->value = value;
         this->weight = weight;
@@ -34,11 +34,11 @@ struct Neighbor {
        return this->weight > b.weight; 
     }
     unsigned int index;
-    float value;
-    float weight;
+    double value;
+    double weight;
 };
 
-float toFloat(string str);
+double toDouble(string str);
 string toString(const unsigned int* list, unsigned int len);
 unique_ptr< vector<Point> > loadFromCSV();
 
@@ -51,14 +51,14 @@ private:
     /* 每个点选取的邻近点的索引列表 */
     unsigned int** neighbors;
     /* Z 得分 */
-    float** score;
+    double** score;
     /* 计算两点距离 */
-    static float diff(const Point& a, const Point& b) {
-        float lng1 = a.lng / 180.0 * PI;
-        float lng2 = b.lng / 180.0 * PI;
-        float lat1 = a.lat / 180.0 * PI;
-        float lat2 = b.lat / 180.0 * PI;
-        float e = pow(sin((lat2 - lat1) / 2), 2)
+    static double diff(const Point& a, const Point& b) {
+        double lng1 = a.lng / 180.0 * PI;
+        double lng2 = b.lng / 180.0 * PI;
+        double lat1 = a.lat / 180.0 * PI;
+        double lat2 = b.lat / 180.0 * PI;
+        double e = pow(sin((lat2 - lat1) / 2), 2)
                     + cos(lat1) * cos(lat2) * pow(sin((lng2 - lng1) / 2), 2);
         return 2 * asin(sqrt(e)) * 6.371;
     }
@@ -94,11 +94,11 @@ public:
         }
 
         /* 标准化属性值列表 */
-        float* val = new float[this->length];
+        double* val = new double[this->length];
         /* 全局属性值均值 */
-        float mean = 0;
+        double mean = 0;
         /* 全局属性值标准差 */
-        float std = 0;
+        double std = 0;
 
         for (int i = 0; i < this->length; i++) {
             val[i] = vect[i].value;
@@ -116,7 +116,7 @@ public:
         }
 
         this->neighbors = new unsigned int*[this->length];
-        this->score = new float*[this->length];
+        this->score = new double*[this->length];
 
         cout << "[";
 
@@ -136,9 +136,9 @@ public:
                     vect[j].lat, vect[j].lng, val[j]
                 });
                 /* 两点距离 */
-                float dist = diff(a, b);
+                double dist = diff(a, b);
                 order->push_back(Neighbor({
-                    j, b.value, float(1.0 / dist)
+                    j, b.value, double(1.0 / dist)
                 }));
                 sort(order->begin(), order->end());
                 if (order->size() > this->k) {
@@ -147,11 +147,11 @@ public:
             }
             this->neighbors[i] = new unsigned int[this->k];
             /* 邻近点空间权重列向量 */
-            float* weights = new float[this->k];
+            double* weights = new double[this->k];
             /* 邻近点值列向量 */
-            float* values = new float[this->k];
+            double* values = new double[this->k];
             /* 权重和 */
-            float sum = 0;
+            double sum = 0;
             for (int p = 0; p < this->k; p++) {
                 const Neighbor neighbor = (*order)[p];
                 this->neighbors[i][p] = neighbor.index;
@@ -162,16 +162,16 @@ public:
             delete order;
             order = nullptr;
             /* 标准化观测值 */
-            const float x = a.value;
+            const double x = a.value;
             /* 空间滞后值 */
-            float lag = 0;
+            double lag = 0;
             // 权重归一化，计算空间滞后值
             for (int p = 0; p < this->k; p++) {
                 weights[p] /= sum;
                 lag += values[p] * weights[p] / sum;
             }
             // 存储结果
-            this->score[i] = new float[2];
+            this->score[i] = new double[2];
             this->score[i][0] = x;
             this->score[i][1] = lag;
             delete[] weights;
@@ -182,13 +182,19 @@ public:
             }
 
             cout << "{"
-                << "\"type\": \"" << this->typeIdx(i) << "\", "
-                << "\"lng\": " << vect[i].lng << ", "
-                << "\"lat\": " << vect[i].lat << ", "
-                << "\"value\": " << vect[i].value << ", "
-                << "\"mx\": " << this->stdIdx(i) << ", "
-                << "\"my\": " << this->lagIdx(i) << ", "
-                << "\"neighbors\": " << toString(this->neighborIdx(i), 10)
+                << "\"type\": \"" << this->typeIdx(i) << "\", ";
+            printf("\"lng\": %lf, ", vect[i].lng);
+                // << "\"lng\": " << vect[i].lng << ", "
+            printf("\"lat\": %lf, ", vect[i].lat);
+                // << "\"lat\": " << vect[i].lat << ", "
+            printf("\"value\": %lf, ", vect[i].value);
+                // << "\"value\": " << vect[i].value << ", "
+            printf("\"mx\": %lf, ", this->stdIdx(i));
+                // << "\"mx\": " << this->stdIdx(i) << ", "
+            printf("\"my\": %lf, ", this->lagIdx(i));
+                // << "\"my\": " << this->lagIdx(i) << ", "
+            cout
+                << "\"neighbors\": " << toString(this->neighborIdx(i), this->k)
             << "}";
         }
         delete[] val;
@@ -210,13 +216,13 @@ public:
         return this->neighbors[index];
     }
     /* 返回指定点的标准化观测值 */
-    const float stdIdx(unsigned int index) {
-        const float x = this->score[index][0];
+    const double stdIdx(unsigned int index) {
+        const double x = this->score[index][0];
         return isnan(x) ? 0 : x;
     }
     /* 返回指定点的空间滞后值 */
-    const float lagIdx(unsigned int index) {
-        const float y = this->score[index][1];
+    const double lagIdx(unsigned int index) {
+        const double y = this->score[index][1];
         return isnan(y) ? 0 : y;
     }
 };
@@ -226,7 +232,7 @@ int main(int argc, char const *argv[]) {
     // 读取 csv 文件
     unique_ptr< vector<Point> > ptr_origin = loadFromCSV();
 
-    unique_ptr<Z_Score> z_score(new Z_Score(10));
+    unique_ptr<Z_Score> z_score(new Z_Score(8));
 
     // 计算 Z_Score
     z_score->fit(*ptr_origin);
@@ -267,8 +273,8 @@ unique_ptr< vector<Point> > loadFromCSV() {
 
     string str = "";
 
-    float lat;
-    float lng;
+    double lat;
+    double lng;
 
     enum class ATTR {
         LAT, LNG, VALUE
@@ -279,19 +285,19 @@ unique_ptr< vector<Point> > loadFromCSV() {
         if (c == CHAR_COMMA) {
             switch (flag) {
             case ATTR::LAT:
-                lat = toFloat(str);
+                lat = toDouble(str);
                 str = "";
                 flag = ATTR::LNG;
                 break;
             case ATTR::LNG:
-                lng = toFloat(str);
+                lng = toDouble(str);
                 str = "";
                 flag = ATTR::VALUE;
                 break;
             }
         } else if (c == CHAR_NEWLINE) {
             ptr_vect->push_back(Point({
-                lat, lng, toFloat(str)
+                lat, lng, toDouble(str)
             }));
             str = "";
             flag = ATTR::LAT;
@@ -305,8 +311,8 @@ unique_ptr< vector<Point> > loadFromCSV() {
     return ptr_vect;
 }
 
-float toFloat(string str) {
-    float num = 0;
+double toDouble(string str) {
+    double num = 0;
     short digit = -1;
     int i = str[0] == '-' ? 1 : 0;
     short flag = str[0] == '-' ? -1 : 1;
@@ -332,7 +338,7 @@ float toFloat(string str) {
 
 string toString(const unsigned int* list, unsigned int len) {
     string str = "[";
-    for (int i = 0; i < len - 2; i++) {
+    for (int i = 0; i <= len - 2; i++) {
         str += to_string(list[i]) + ", ";
     }
     str += to_string(list[len - 1]);
