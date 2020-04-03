@@ -8,33 +8,24 @@ import React, { Component } from 'react';
 import './App.css';
 import { Map } from './Map';
 import { Container } from './prototypes/Container';
-// import { Tree } from './Tree';
 import { ControlCenter } from './ControlCenter';
-// import TaskQueue from './tools/TaskQueue';
-// import { FileData, TreeNode, DataItem } from './TypeLib';
 import { FileData, DataItem } from './TypeLib';
 import { System } from './Globe';
-// import { Command } from './Command';
 import { MoranScatter } from './MoranScatter';
 import { HighlightItems } from './HighlightItems';
 import axios, { AxiosResponse } from 'axios';
 import { CommandResult, CommandError } from './Command';
 import { Loading } from './Loading';
-// import { RankingView } from './RankingView';
 
 
 class App extends Component<{}, {}, null> {
   private map?: Map;
   private sct?: MoranScatter;
-  // private map2?: Map;
-  // private tree?: Tree;
   private scale: "linear" | "sqrt" | "log" | "log2" | "log10" | "quick" = "sqrt";
 
   public render(): JSX.Element {
     return (
       <div className="App">
-        {/* <TaskQueue<null> control={ null } ref="task" /> */}
-        {/* <Command /> */}
         <Loading ref="loading" />
         <div style={{
           width: "386px",
@@ -62,17 +53,15 @@ class App extends Component<{}, {}, null> {
 
   public componentDidMount(): void {
     this.map = (this.refs["map"] as Map);
-    // System.task = (this.refs["task"] as TaskQueue<null>);
     this.sct = (this.refs["sct"] as MoranScatter);
   }
 
   private apply(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     try {
+      System.type = "sample";
       this.map!.closeSketcher();
       this.map!.load(System.data);
-      this.sct!.setState({
-        list: []
-      });
+      this.sct!.load(System.data);
       (this.refs["loading"] as Loading).setState({
         show: true
       });
@@ -127,16 +116,12 @@ class App extends Component<{}, {}, null> {
           count++;
         }
       }
-      System.picked = [];
+      System.type = "sample";
       this.map!.load([]);
-      this.sct!.setState({
-        list: []
-      });
+      this.sct!.load([]);
       setTimeout(() => {
         this.sct!.run((s: boolean) => {
           if (s) {
-            System.active = [];
-            System.data = [];
             this.fetch(() => {
               resolve();
               (this.refs["loading"] as Loading).setState({
@@ -148,7 +133,7 @@ class App extends Component<{}, {}, null> {
               (this.refs["loading"] as Loading).setState({
                 show: false
               });
-            }, "temp");
+            }, "sample");
           } else {
             reject();
             (this.refs["loading"] as Loading).setState({
@@ -168,29 +153,50 @@ class App extends Component<{}, {}, null> {
   private async fetch(
     resolve: (value?: void | PromiseLike<void> | undefined) => void,
     reject: (reason?: any) => void,
-    path?: string
+    type: "dataset" | "sample"
   ): Promise<AxiosResponse<CommandResult<FileData.Origin|CommandError>>> {
     const p: Promise<AxiosResponse<CommandResult<FileData.Origin|CommandError>>> = axios.get(
-      `/zs/${ (path ? path : System.filepath!).split(".").join("_dot") }`, {
+      `/zs/${ (type === "sample" ? "temp" : System.filepath!).split(".").join("_dot") }`, {
           headers: 'Content-type:text/html;charset=utf-8'
       }
     );
     p.then((value: AxiosResponse<CommandResult<FileData.Origin|CommandError>>) => {
       if (value.data.state === "successed") {
-        System.data = (value.data.value as FileData.Origin).map((item: DataItem) => {
-          System.active.push(true);
-          return {
-            ...item
-          };
-        });
+        if (type === "dataset") {
+          System.active = [];
+          System.data = [];
+          System.data = (value.data.value as FileData.Origin).map((item: DataItem) => {
+            System.active.push(true);
+            return {
+              ...item
+            };
+          });
+        } else {
+          const list: Array<number> = Object.entries(
+            System.active
+          ).filter((value: [string, boolean]) => {
+            return value[1];
+          }).map((entry: [string, boolean]) => {
+            return parseInt(entry[0]);
+          });
+          (value.data.value as FileData.Origin).forEach((item: DataItem, i: number) => {
+            const index: number = list[i];
+            System.data[index].target = {
+              type: item.type,
+              mx: item.mx,
+              my: item.my
+            };
+          });
+        }
 
         this.map!.load(System.data);
 
-        if (!path) {
+        if (type === "dataset") {
           System.initialize();
         }
 
         setTimeout(() => {
+          System.type = type;
           this.sct!.load(System.data);
           resolve();
           (this.refs["loading"] as Loading).setState({
@@ -214,14 +220,16 @@ class App extends Component<{}, {}, null> {
       return;
     }
 
+    System.type = "dataset";
+
     this.map!.load([]);
-    this.sct!.setState({ list: [] });
+    this.sct!.load([]);
     System.active = [];
     (this.refs["loading"] as Loading).setState({
       show: true
     });
 
-    this.fetch(resolve, reject);
+    this.fetch(resolve, reject, "dataset");
   }
 }
 

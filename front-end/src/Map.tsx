@@ -8,7 +8,7 @@ import React, { Component } from 'react';
 import $ from 'jquery';
 import MapBox from './react-mapbox/MapBox';
 import Color, { ColorThemes } from './preference/Color';
-import { DataItem, LISAtype/*, FileData*/ } from './TypeLib';
+import { DataItem, LISAtype } from './TypeLib';
 import { System } from './Globe';
 
 
@@ -35,7 +35,6 @@ export interface MapViewState<T> {
         value: T;
         projection: number;
     }>;
-    // poissons: Array<FileData.Poisson>;
 }
 
 export interface Sketch {
@@ -57,13 +56,14 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private highlighted: Array<number>;
     private canvas2: null | HTMLCanvasElement;
     private ctx2: null | CanvasRenderingContext2D;
+    private canvas_r: null | HTMLCanvasElement;
+    private ctx_r: null | CanvasRenderingContext2D;
     private canvas_s: null | HTMLCanvasElement;
     private ctx_s: null | CanvasRenderingContext2D;
     private canvas_d: null | HTMLCanvasElement;
     private ctx_d: null | CanvasRenderingContext2D;
-    // private canvas_p: null | HTMLCanvasElement;
-    // private ctx_p: null | CanvasRenderingContext2D;
     private ready2: Array<Array<[number, number, [string, string]]>>;
+    private ready_r: Array<[number, number, [string, string, string]]>;
     private timers: Array<NodeJS.Timeout>;
     private cloneObserver: Array<Map>;
     private recursiveLock: boolean;
@@ -76,8 +76,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         super(props);
         this.mounted = false;
         this.state = {
-            data: [],
-            // poissons: []
+            data: []
         };
         this.canvas = null;
         this.ctx = null;
@@ -86,13 +85,14 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.highlighted = [];
         this.canvas2 = null;
         this.ctx2 = null;
+        this.canvas_r = null;
+        this.ctx_r = null;
         this.canvas_s = null;
         this.ctx_s = null;
         this.canvas_d = null;
         this.ctx_d = null;
-        // this.canvas_p = null;
-        // this.ctx_p = null;
         this.ready2 = [];
+        this.ready_r = [];
         this.cloneObserver = [];
         this.recursiveLock = false;
         this.keyboardDebounce = false;
@@ -168,19 +168,23 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     left: '0px',
                     top: '-100%'
                 }} >
-                    {/* <canvas key="p" id={ this.props.id + "_poisson" } ref="poisson"
-                    width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
-                        position: 'initial',
-                        pointerEvents: 'none'
-                    }} /> */}
                     <canvas key="1" id={ this.props.id + "_canvas" } ref="canvas"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        opacity: System.type === "dataset" ? 1 : 0.33
                     }} />
                     <canvas key="2" id={ this.props.id + "_canvas2" } ref="canvas2"
+                    width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        pointerEvents: 'none',
+                        opacity: System.type === "dataset" ? 1 : 0.33
+                    }} />
+                    <canvas key="r" id={ this.props.id + "_canvas_r" } ref="canvas_r"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
                         position: 'absolute',
                         top: 0,
@@ -312,14 +316,12 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         $(this.refs["cover"]).hide();
         $(this.refs["tool-line"]).hide();
         this.mounted = true;
-        // this.canvas_p = document.getElementById(this.props.id + "_poisson") as HTMLCanvasElement;
-        // this.ctx_p = this.canvas_p!.getContext("2d");
-        // this.ctx_p!.strokeStyle = "#7A1B27";
-        // this.ctx_p!.globalAlpha = 0.4;
         this.canvas = document.getElementById(this.props.id + "_canvas") as HTMLCanvasElement;
         this.ctx = this.canvas!.getContext("2d");
         this.canvas2 = document.getElementById(this.props.id + "_canvas2") as HTMLCanvasElement;
         this.ctx2 = this.canvas2!.getContext("2d");
+        this.canvas_r = document.getElementById(this.props.id + "_canvas_r") as HTMLCanvasElement;
+        this.ctx_r = this.canvas_r!.getContext("2d");
         this.canvas_s = document.getElementById(this.props.id + "_canvas_s") as HTMLCanvasElement;
         this.ctx_s = this.canvas_s!.getContext("2d");
         this.canvas_d = document.getElementById(this.props.id + "_canvas_d") as HTMLCanvasElement;
@@ -346,8 +348,6 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 this.highlight(value);
             }
         };
-
-        // this.showPoisson();
     }
 
     public componentWillUnmount(): void {
@@ -755,6 +755,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.timers.forEach((timer: NodeJS.Timeout) => {
             clearTimeout(timer);
         });
+        this.ready_r = [];
         this.timers = [];
         if (source === "all") {
             this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
@@ -771,13 +772,26 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[index])) {
                         return;
                     }
-                    this.ready[index % nParts].push([d.lng, d.lat, System.colorF(d.value)]);
+                    const type: LISAtype = System.data[index].target
+                        ? System.data[index].target!.type : d.value;
+                    if (type === d.value) {
+                        this.ready[index % nParts].push([
+                            d.lng,
+                            d.lat,
+                            System.colorF(type)
+                        ]);
+                    }
                 });
             }
-            this.ready.forEach((list: Array<[number, number, [string, string]]>, index: number) => {
+            this.ready.forEach((
+                list: Array<[number, number, [string, string]]>,
+                index: number
+            ) => {
                 this.timers.push(
                     setTimeout(() => {
-                        list.forEach((d: [number, number, [string, string]]) => {
+                        list.forEach((
+                            d: [number, number, [string, string]]
+                        ) => {
                             this.addPoint(d[0], d[1], d[2], "1");
                         });
                     }, index * 10)
@@ -785,6 +799,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             });
         }
         this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
         if (this.highlighted.length) {
             $(this.canvas!).css("opacity", 0.33);
             if (this.ready2.length === 0) {
@@ -801,24 +816,87 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[id])) {
                         return;
                     }
-                    this.ready2[index % nParts].push([d.lng, d.lat, System.colorF(d.value)]);
+                    const type: LISAtype = System.data[id].target
+                        ? System.data[id].target!.type : d.value;
+                    if (type === d.value) {
+                        this.ready2[index % nParts].push([
+                            d.lng,
+                            d.lat,
+                            System.colorF(type)
+                        ]);
+                    }
                 });
             }
-            this.ready2.forEach((list: Array<[number, number, [string, string]]>, index: number) => {
+            this.ready2.forEach((
+                list: Array<[number, number, [string, string]]>,
+                index: number
+            ) => {
                 this.timers.push(
                     setTimeout(() => {
-                        list.forEach((d: [number, number, [string, string]]) => {
+                        list.forEach((
+                            d: [number, number, [string, string]]
+                        ) => {
                             this.addPoint(d[0], d[1], d[2], "2");
                         });
                     }, index * 10)
                 );
             });
-        } else {
-            $(this.canvas!).css("opacity", 1);
-        }
 
-        // this.ctx_p!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
-        // this.showPoisson();
+            this.highlighted.forEach((id: number) => {
+                const d: { lng: number; lat: number; value: LISAtype; } = this.state.data[id];
+                if (isNaN(d.lat) || isNaN(d.lng) || (this.props.filter && !System.active[id])) {
+                    return;
+                }
+                const type: LISAtype = System.data[id].target
+                    ? System.data[id].target!.type : d.value;
+                if (type !== d.value) {
+                    this.ready_r.push([
+                        d.lng,
+                        d.lat,
+                        [
+                            System.colorF(type)[0],
+                            System.colorF(type)[1],
+                            System.colorF(d.value)[0]
+                        ]
+                    ]);
+                }
+            });
+        } else {
+            $(this.canvas!).css("opacity", System.type === "dataset" ? 1 : 0.33);
+
+            this.state.data.forEach((d: { lng: number; lat: number; value: LISAtype; }, index: number) => {
+                if (isNaN(d.lat) || isNaN(d.lng) || !System.data[index].target) {
+                    return;
+                }
+                const type: LISAtype = System.data[index].target!.type;
+                if (type !== d.value) {
+                    this.ready_r.push([
+                        d.lng,
+                        d.lat,
+                        [
+                            System.colorF(type)[0],
+                            System.colorF(type)[1],
+                            System.colorF(d.value)[0]
+                        ]
+                    ]);
+                }
+            });
+        }
+        this.ready_r.map(
+            (item: [number, number, [string, string, string]]) => [...item] as [number, number, [string, string, string]]
+        ).sort((a: [number, number, [string, string, string]], b: [number, number, [string, string, string]]) => {
+            return b[1] - a[1];
+        });
+        this.ready_r.forEach((
+            d: [number, number, [string, string, string]],
+            index: number
+        ) => {
+            this.timers.push(
+                setTimeout(() => {
+                    this.outstand(d[0], d[1], d[2]);
+                }, index * 4)
+            );
+        });
     }
 
     public synchronize(clone: Map): void {
@@ -841,7 +919,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     public highlight(type: LISAtype): void {
         this.highlighted = [];
         this.state.data.forEach((item: {value: LISAtype;}, index: number) => {
-            if (item.value === type && (!this.props.filter || System.active[index])) {
+            const _t: LISAtype = System.data[index].target
+                ? System.data[index].target!.type : item.value;
+            if (_t === type && (!this.props.filter || System.active[index])) {
                 this.highlighted.push(index);
             }
         });
@@ -910,51 +990,36 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }
     }
 
-    // private diff(a: {lng: number; lat: number;}, b: {lng: number; lat: number;}): number {
-    //     const lng1: number = a.lng * Math.PI / 180;
-    //     const lat1: number = a.lat * Math.PI / 180;
-    //     const lng2: number = b.lng * Math.PI / 180;
-    //     const lat2: number = b.lat * Math.PI / 180;
-    //     return Math.asin(
-    //         Math.sqrt(
-    //             Math.pow(
-    //                 Math.sin((lat2 - lat1) / 2), 2
-    //             ) + Math.cos(lat1) * Math.cos(lat2) * Math.pow(
-    //                 Math.sin((lng2 - lng1) / 2), 2
-    //             )
-    //         )
-    //     ) * 12742;
-    // }
+    private outstand(x: number, y: number, style: [string, string, string]): void {
+        if (this.props.mode === "rect") {
+            x = this.fx(x) - 3;
+            y = this.fy(y) - 3;
+            this.ctx_r!.fillStyle = style[0];
+            this.ctx_r!.strokeStyle = style[1];
+            this.ctx_r!.fillRect(x, y, 6, 6);
+        } else {
+            x = this.fx(x);
+            y = this.fy(y);
+            this.ctx_r!.fillStyle = style[0];
+            this.ctx_r!.strokeStyle = style[1];
+            this.ctx_r!.beginPath();
+            this.ctx_r!.arc(x, y, 4, 0, 2 * Math.PI);
+            this.ctx_r!.stroke();
+            this.ctx_r!.fill();
+        }
+        this.ctx_r!.fillStyle = style[2];
+        this.ctx_r!.strokeStyle = 'rgb(156,156,156)';
+        this.ctx_r!.beginPath();
+        this.ctx_r!.moveTo(x, y);
+        this.ctx_r!.lineTo(x, y - 24);
+        this.ctx_r!.lineTo(x + 13, y - 17);
+        this.ctx_r!.lineTo(x, y - 12);
+        this.ctx_r!.closePath();
+        this.ctx_r!.stroke();
+        this.ctx_r!.fill();
+    }
 
-    // private showPoisson(): void {
-    //     this.state.poissons.forEach((p: FileData.Poisson) => {
-    //         const x: number = this.fx(p.lng);
-    //         const y: number = this.fy(p.lat);
-    //         const r: number = Math.max(
-    //             ...p.pointsInDisk.map((d: {
-    //                 lat: number;
-    //                 lng: number;
-    //             }) => {
-    //                 return Math.sqrt(
-    //                     Math.pow(
-    //                         x - this.fx(d.lng), 2
-    //                     ) + Math.pow(
-    //                         y - this.fy(d.lat), 2
-    //                     )
-    //                 )
-    //             })
-    //         );
-
-    //         this.ctx_p!.fillStyle = System.colorF(p.type);
-
-    //         this.ctx_p!.beginPath();
-    //         this.ctx_p!.arc(x, y, r + 4, 0, 2 * Math.PI);
-    //         this.ctx_p!.fill();
-    //         this.ctx_p!.stroke();
-    //     });
-    // }
-
-    public load(data: Array<DataItem>/*, poissons?: Array<FileData.Poisson>*/): void {
+    public load(data: Array<DataItem>): void {
         if (!this.mounted) {
             let count: number = 3;
             setTimeout(() => {
@@ -982,7 +1047,6 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         : Math.sqrt(d.value / System.maxValue)
                 };
             }),
-            // poissons: poissons ? poissons : this.state.poissons
         })
     }
 

@@ -5,19 +5,8 @@
  * @Last Modified time: 2020-03-11 21:22:11
  */
 
-export type LISAtype = "NS" | "HH" | "LH" | "LL" | "HL";
+export type LISAtype = "HH" | "LH" | "LL" | "HL";
 
-export namespace Snapshot {
-    export type TreeNode = {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        node: _treenode;
-        value: number;
-        accuracy?: number;
-    };
-};
 
 export type DataItem = {
     type: LISAtype;
@@ -27,6 +16,11 @@ export type DataItem = {
     mx: number;
     my: number;
     neighbors: Array<number>;
+    target?: {
+        type: LISAtype;
+        mx: number;
+        my: number;
+    }
 };
 
 export namespace FileData {
@@ -42,32 +36,4 @@ export namespace FileData {
     export type Sampled = {
         [id: number]: Array<number>;
     };
-
-    // export type Poisson = {
-    //     id: number;
-    //     lat: number;
-    //     lng: number;
-    //     value: number;
-    //     type: LISAtype;
-    //     r: number;
-    //     pointsInDisk: Array<{
-    //         id: number;
-    //         lat: number;
-    //         lng: number;
-    //         value: number;
-    //         type: LISAtype;
-    //     }>;
-    // };
 };
-
-export type TreeNode = {
-    id: number;
-    value: number;
-    level: number;
-    parent: TreeNode | null;
-    children: Array<TreeNode>;
-    leaves: number;
-    containning?: Array<number>;
-};
-
-type _treenode = TreeNode;

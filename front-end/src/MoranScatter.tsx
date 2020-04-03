@@ -27,15 +27,24 @@ export interface MoranScatterState {
         type: LISAtype;
         mx: number;
         my: number;
+        target?: {
+            type: LISAtype;
+            mx: number;
+            my: number;
+        };
     }>;
 };
 
 export class MoranScatter extends Component<MoranScatterProps, MoranScatterState, null> {
-    private canvas: null | HTMLCanvasElement;
-    private ctx: null | CanvasRenderingContext2D;
+    private canvas1: null | HTMLCanvasElement;
+    private ctx1: null | CanvasRenderingContext2D;
+    private canvas2: null | HTMLCanvasElement;
+    private ctx2: null | CanvasRenderingContext2D;
     private width: number;
     private timers: Array<NodeJS.Timeout>;
     private snapshots: {
+        x: [number, number];
+        y: [number, number];
         fx: (d: number) => number;
         fy: (d: number) => number;
     };
@@ -45,11 +54,15 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.state = {
             list: []
         };
-        this.canvas = null;
-        this.ctx = null;
+        this.canvas1 = null;
+        this.canvas2 = null;
+        this.ctx1 = null;
+        this.ctx2 = null;
         this.width = 0;
         this.timers = [];
         this.snapshots = {
+            x: [NaN, NaN],
+            y: [NaN, NaN],
             fx: () => NaN,
             fy: () => NaN
         };
@@ -62,79 +75,131 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
     }
 
     public render(): JSX.Element {
-        const xAll: Array<number> = this.state.list.map(
-            (item: { type: LISAtype; mx: number; my: number; }) => item.mx
-        );
-        // let xMin: number = Math.min(xAll.length ? Math.min(...xAll) : -1, -1);
-        // let xMax: number = Math.max(xAll.length ? Math.max(...xAll) : 1, 1);
-        let xMin: number = xAll.length ? Math.min(...xAll) : -1;
-        let xMax: number = xAll.length ? Math.max(...xAll) : 1;
-        
-        const yAll: Array<number> = this.state.list.map(
-            (item: { type: LISAtype; mx: number; my: number; }) => item.my
-        );
-        // let yMin: number = Math.min(yAll.length ? Math.min(...yAll) : -1, -1);
-        // let yMax: number = Math.max(yAll.length ? Math.max(...yAll) : 1, 1);
-        let yMin: number = yAll.length ? Math.min(...yAll) : -1;
-        let yMax: number = yAll.length ? Math.max(...yAll) : 1;
+        if (System.type === "dataset" || this.state.list.length) {
+            const xAll: Array<number> = this.state.list.filter(
+                (item: {
+                    target?: {};
+                }) => System.type === "dataset" || item.target
+            ).map(
+                (item: {
+                    type: LISAtype;
+                    mx: number;
+                    my: number;
+                    target?: {
+                        type: LISAtype;
+                        mx: number;
+                        my: number;
+                    };
+                }) => item.target ? item.target.mx : item.mx
+            );
+            let xMin: number = xAll.length ? Math.min(...xAll) : -1;
+            let xMax: number = xAll.length ? Math.max(...xAll) : 1;
+            
+            const yAll: Array<number> = this.state.list.filter(
+                (item: {
+                    target?: {};
+                }) => System.type === "dataset" || item.target
+            ).map(
+                (item: {
+                    type: LISAtype;
+                    mx: number;
+                    my: number;
+                    target?: {
+                        type: LISAtype;
+                        mx: number;
+                        my: number;
+                    };
+                }) => item.target ? item.target.my : item.my
+            );
+            let yMin: number = yAll.length ? Math.min(...yAll) : -1;
+            let yMax: number = yAll.length ? Math.max(...yAll) : 1;
+    
+            this.snapshots.x = [xMin - (xMax - xMin) / 10, xMax + (xMax - xMin) / 10];
+            this.snapshots.y = [yMin - (yMax - yMin) / 10, yMax + (yMax - yMin) / 10];
 
+            this.snapshots.fx = (d: number) => {
+                return this.props.padding + (
+                    100 - this.props.padding * 2
+                ) * (d - this.snapshots.x[0]) / (this.snapshots.x[1] - this.snapshots.x[0]);
+            };
+            
+            this.snapshots.fy = (d: number) => {
+                return this.props.padding + (
+                    100 - this.props.padding * 2
+                ) * (this.snapshots.y[1] - d) / (this.snapshots.y[1] - this.snapshots.y[0]);
+            };
+        }
+        
         let xTicks: Array<number> = [];
 
-        if (xMin > -1) {
-            xTicks.push(xMin);
+        if (this.snapshots.x[0] > -1) {
+            xTicks.push(this.snapshots.x[0]);
         }
-        for (let i: number = Math.floor(xMin); i <= Math.ceil(xMax); i++) {
+        for (
+            let i: number = Math.floor(this.snapshots.x[0]);
+            i <= Math.ceil(this.snapshots.x[1]);
+            i++
+        ) {
             if (i !== 0) {
                 xTicks.push(i);
             }
         }
-        if (xMax < 1) {
-            xTicks.push(xMax);
+        if (this.snapshots.x[1] < 1) {
+            xTicks.push(this.snapshots.x[1]);
         }
 
         let yTicks: Array<number> = [];
 
-        if (yMin > -1) {
-            yTicks.push(yMin);
+        if (this.snapshots.y[0] > -1) {
+            yTicks.push(this.snapshots.y[0]);
         }
-        for (let i: number = Math.floor(yMin); i <= Math.ceil(yMax); i++) {
+        for (
+            let i: number = Math.floor(this.snapshots.y[0]);
+            i <= Math.ceil(this.snapshots.y[1]);
+            i++
+        ) {
             if (i !== 0) {
                 yTicks.push(i);
             }
         }
-        if (yMax < 1) {
-            yTicks.push(yMax);
+        if (this.snapshots.y[1] < 1) {
+            yTicks.push(this.snapshots.y[1]);
         }
-
-        [xMin, xMax] = [xMin - (xMax - xMin) / 10, xMax + (xMax - xMin) / 10];
-        [yMin, yMax] = [yMin - (yMax - yMin) / 10, yMax + (yMax - yMin) / 10];
-
-        this.snapshots.fx = (d: number) => {
-            return this.props.padding + (
-                100 - this.props.padding * 2
-            ) * (d - xMin) / (xMax - xMin);
-        };
-        
-        this.snapshots.fy = (d: number) => {
-            return this.props.padding + (
-                100 - this.props.padding * 2
-            ) * (yMax - d) / (yMax - yMin);
-        };
 
         return (
             <Container theme="NakiriAyame" title="MORAN SCATTER" >
-                <canvas ref="canvas" key="canvas" id={ this.props.id + "_canvas" }
-                width={ this.props.width ? this.props.width : "100%" }
-                height={ this.props.height }
+                <div key="background"
                 style={{
                     width: this.props.width ? this.props.width : "100%",
                     height: this.props.height,
                     backgroundColor: ColorThemes.NakiriAyame.OuterBackground,
                     marginBottom: '-4px'
                 }} />
-                <svg style={{
+                <canvas ref="canvas1" key="canvas1" id={ this.props.id + "_canvas1" }
+                width={ this.props.width ? this.props.width : "100%" }
+                height={ this.props.height }
+                style={{
                     position: "relative",
                     top: -1 * this.props.height,
+                    width: this.props.width ? this.props.width : "100%",
+                    height: this.props.height,
+                    marginBottom: '-4px',
+                    opacity: System.type === "dataset" ? 1 : 0.33
+                }} />
+                <canvas ref="canvas2" key="canvas2" id={ this.props.id + "_canvas2" }
+                width={ this.props.width ? this.props.width : "100%" }
+                height={ this.props.height }
+                style={{
+                    position: "relative",
+                    top: -2 * this.props.height,
+                    width: this.props.width ? this.props.width : "100%",
+                    height: this.props.height,
+                    marginBottom: '-4px',
+                    opacity: System.type === "dataset" ? 0 : 1
+                }} />
+                <svg style={{
+                    position: "relative",
+                    top: -3 * this.props.height,
                     width: this.props.width ? this.props.width : "100%",
                     height: this.props.height,
                     marginBottom: '-4px'
@@ -173,7 +238,8 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
     }
 
     public getSnapshotBeforeUpdate(): null {
-        this.ctx!.clearRect(0, 0, this.width, this.props.height);
+        this.ctx1!.clearRect(0, 0, this.width, this.props.height);
+        this.ctx2!.clearRect(0, 0, this.width, this.props.height);
         this.timers.forEach((timer: NodeJS.Timeout) => {
             clearTimeout(timer);
         });
@@ -187,28 +253,73 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
     }
 
     public componentDidMount(): void {
-        this.canvas = document.getElementById(this.props.id + "_canvas") as HTMLCanvasElement;
-        this.ctx = this.canvas!.getContext("2d");
-        this.width = $(this.canvas).width()!;
+        this.canvas1 = document.getElementById(this.props.id + "_canvas1") as HTMLCanvasElement;
+        this.ctx1 = this.canvas1!.getContext("2d");
+        this.width = $(this.canvas1).width()!;
+        this.canvas2 = document.getElementById(this.props.id + "_canvas2") as HTMLCanvasElement;
+        this.ctx2 = this.canvas2!.getContext("2d");
     }
 
-    private tick(list: Array<{color: [string, string]; x: number; y: number;}>): void {
+    private tick(
+        list: Array<{
+            color: [string, string];
+            x: number;
+            y: number;
+        }>
+    ): void {
         list.forEach((item: {
             color: [string, string]; x: number; y: number;
         }) => {
-            this.ctx!.strokeStyle = item.color[1];
-            this.ctx!.fillStyle = item.color[0];
+            this.ctx1!.strokeStyle = item.color[1];
+            this.ctx1!.fillStyle = item.color[0];
 
-            this.ctx!.beginPath();
-            this.ctx!.arc(item.x, item.y, 3, 0, 2 * Math.PI);
-            this.ctx!.stroke();
-            this.ctx!.fill();
+            this.ctx1!.beginPath();
+            this.ctx1!.arc(item.x, item.y, 3, 0, 2 * Math.PI);
+            this.ctx1!.stroke();
+            this.ctx1!.fill();
+        });
+    }
+
+    private link(
+        list: Array<{
+            color: [string, string];
+            x: number;
+            y: number;
+            prevX: number;
+            prevY: number;
+        }>
+    ): void {
+        list.forEach((item: {
+            color: [string, string]; x: number; y: number; prevX: number; prevY: number;
+        }) => {
+            this.ctx2!.strokeStyle = item.color[1];
+            this.ctx2!.fillStyle = item.color[0];
+            
+            this.ctx2!.beginPath();
+            this.ctx2!.arc(item.prevX, item.prevY, 2, 0, 2 * Math.PI);
+            this.ctx2!.stroke();
+            this.ctx2!.strokeStyle = 'rgb(182,26,23)';
+            this.ctx2!.moveTo(item.prevX, item.prevY);
+            this.ctx2!.lineTo(item.x, item.y);
+            this.ctx2!.lineWidth = 0.8;
+            this.ctx2!.stroke();
+
+            this.ctx2!.strokeStyle = item.color[1];
+
+            this.ctx2!.beginPath();
+            this.ctx2!.arc(item.x, item.y, 3, 0, 2 * Math.PI);
+            this.ctx2!.stroke();
+            this.ctx2!.fill();
         });
     }
 
     private paint(fx: (d: number) => number, fy: (d: number) => number): void {
         let ready: Array<Array<{
             color: [string, string]; x: number; y: number;
+        }>> = [];
+
+        let ready2: Array<Array<{
+            color: [string, string]; x: number; y: number; prevX: number; prevY: number;
         }>> = [];
 
         let nParts = Math.floor(Math.pow((this.state.list.length - 400) / 100, 0.8));
@@ -218,18 +329,44 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
 
         for (let i: number = 0; i < nParts; i++) {
             ready.push([]);
+            ready2.push([]);
         }
 
         this.state.list.forEach((item: {
-            type: LISAtype; mx: number; my: number;
+            type: LISAtype;
+            mx: number;
+            my: number;
+            target?: {
+                type: LISAtype;
+                mx: number;
+                my: number;
+            };
         }, index: number) => {
             const color: [string, string] = System.colorF(item.type);
 
-            ready[index % nParts].push({
-                color: color,
-                x: fx(item.mx) / 100 * this.width,
-                y: fy(item.my) / 100 * this.props.height
-            });
+            if (System.type === "dataset") {
+                ready[index % nParts].push({
+                    color: color,
+                    x: fx(item.mx) / 100 * this.width,
+                    y: fy(item.my) / 100 * this.props.height
+                });
+            } else if (item.target) {
+                if (item.type === item.target.type) {
+                    ready[index % nParts].push({
+                        color: color,
+                        x: fx(item.target.mx) / 100 * this.width,
+                        y: fy(item.target.my) / 100 * this.props.height
+                    });
+                } else {
+                    ready2[index % nParts].push({
+                        color: System.colorF(item.target!.type),
+                        x: fx(item.target.mx) / 100 * this.width,
+                        y: fy(item.target.my) / 100 * this.props.height,
+                        prevX: fx(item.mx) / 100 * this.width,
+                        prevY: fy(item.my) / 100 * this.props.height
+                    });
+                }
+            }
         });
 
         ready.forEach((li: Array<{
@@ -239,6 +376,14 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                 this.tick(li);
             }, (index + 1) * 5));
         });
+
+        ready2.forEach((li: Array<{
+            color: [string, string]; x: number; y: number; prevX: number; prevY: number;
+        }>, index: number) => {
+            this.timers.push(setTimeout(() => {
+                this.link(li);
+            }, (index + 1) * 5));
+        });
     }
 
     public async run(send: (s: boolean) => void): Promise<boolean> {
@@ -246,7 +391,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             list: []
         });
 
-        const items: Array<number> = System.data.map((d: DataItem, i: number) => {
+        const items: Array<number> = System.data.map((_: DataItem, i: number) => {
             return i;
         }).filter((i: number) => {
             return System.active[i];
@@ -364,18 +509,8 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
     }
 
     public load(data: Array<DataItem>): void {
-        const items: Array<{type: LISAtype; mx: number; my: number;}> = data.map((d: DataItem) => {
-            return {
-                type: d.type,
-                mx: d.mx,
-                my: d.my
-            };
-        }).filter((item: {type: LISAtype; mx: number; my: number;}, index: number) => {
-            return System.active[index];
-        });
-
         this.setState({
-            list: items
+            list: data
         });
     }
 }

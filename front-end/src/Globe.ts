@@ -6,17 +6,15 @@
  */
 
 import { DataItem, LISAtype } from "./TypeLib";
-// import TaskQueue from "./tools/TaskQueue";
 
 interface SystemType {
     filepath: string | null;
     maxValue: number;
     data: Array<DataItem>;
     active: Array<boolean>;
-    picked: Array<number>;
+    type: "dataset" | "sample";
     colorF: (value: LISAtype) => [string, string];
     colorP: (value: number) => string;
-    // task?: TaskQueue<null>;
     highlight: (value: LISAtype | "none") => void;
     initialize: () => void;
     update: () => void;
@@ -25,17 +23,17 @@ interface SystemType {
 const colorD: {[type: string]: [string, string]} = {
     "NS": ["#B2B2B2", "#000000"],
     "HH": ["#000000", "rgb(226,226,226)"],
-    "HL": ["#F3BD00", "rgb(185,64,45)"],
+    "HL": ["#F3BD00", "rgb(35,24,27)"],
     "LL": ["#509DC2", "rgb(34,34,34)"],
-    "LH": ["#E70000", "rgb(217,201,198)"]
+    "LH": ["#E70000", "rgb(45,31,30)"]
 };
 
 export const System: SystemType = {
     filepath: null,
     maxValue: 1,
     data: [],
+    type: "dataset",
     active: [],
-    picked: [],
     colorF: (value: LISAtype): [string, string] => {
         return colorD[value]; 
     },
