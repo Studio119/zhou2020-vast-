@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-29 18:29:12
+ * @Last Modified time: 2020-04-04 15:11:18
  */
 
 const express = require('express');
@@ -111,6 +111,31 @@ app.get("/zs/:filepath", (req, res) => {
 });
 
 
+app.get("/get/:filepath", (req, res) => {
+    const output_path = pathOutput + req.params["filepath"].replace("_dotcsv", "_m.json");
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+    fs.readFile(output_path, {encoding: "utf-8"}, (err, data) => {
+        if (err) {
+            res.json(
+                formatResult(
+                    "get sampled",
+                    false,
+                    err
+                )
+            );
+        } else {
+            res.json(
+                formatResult(
+                    "get sampled",
+                    true,
+                    JSON.parse(data)
+                )
+            );
+        }
+    });
+});
+
+
 app.post("/take", (req, res) => {
     const body = JSON.parse(Object.keys(req.body)[0]);
     const file = body["dataset"];
@@ -150,7 +175,7 @@ app.post("/take", (req, res) => {
                 );
             }
         });
-    });;
+    });
 });
 
 

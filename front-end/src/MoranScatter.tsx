@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-23 23:02:05
+ * @Last Modified time: 2020-04-04 15:36:39
  */
 
 import React, { Component } from "react";
@@ -184,7 +184,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     width: this.props.width ? this.props.width : "100%",
                     height: this.props.height,
                     marginBottom: '-4px',
-                    opacity: System.type === "dataset" ? 1 : 0.33
+                    opacity: System.type === "dataset" ? 1 : 0.25
                 }} />
                 <canvas ref="canvas2" key="canvas2" id={ this.props.id + "_canvas2" }
                 width={ this.props.width ? this.props.width : "100%" }
@@ -400,6 +400,47 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         return await new Promise<boolean>((resolve: (value?: boolean | PromiseLike<boolean> | undefined) => void) => {
             const p: Promise<AxiosResponse<CommandResult<string|CommandError>>> = axios.post(
                 `/take`, {
+                    dataset: System.filepath,
+                    list: items
+                }, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    }
+                }
+            );
+            p.then((value: AxiosResponse<CommandResult<string|CommandError>>) => {
+                if (value.data.state === "successed") {
+                    resolve(true);
+                    send(true);
+                } else {
+                    resolve(false);
+                    send(false);
+                    if (typeof(value.data.value) === "string") {
+                        console.error(decodeURI(value.data.value));
+                    } else {
+                        console.error(`Command failed with code ${
+                            (value.data.value as CommandError).code
+                        }`);
+                    }
+                }
+            }).catch((reason: any) => {
+                console.warn(reason);
+                resolve(false);
+                send(false);
+            });
+        });
+    }
+
+    public async apply(send: (s: boolean) => void): Promise<boolean> {
+        const items: Array<number> = System.data.map((_: DataItem, i: number) => {
+            return i;
+        }).filter((i: number) => {
+            return System.active[i];
+        });
+
+        return await new Promise<boolean>((resolve: (value?: boolean | PromiseLike<boolean> | undefined) => void) => {
+            const p: Promise<AxiosResponse<CommandResult<string|CommandError>>> = axios.post(
+                `/get`, {
                     dataset: System.filepath,
                     list: items
                 }, {

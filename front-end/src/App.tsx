@@ -2,14 +2,14 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-30 01:51:24
+ * @Last Modified time: 2020-04-04 15:20:22
  */
 import React, { Component } from 'react';
 import './App.css';
 import { Map } from './Map';
 import { Container } from './prototypes/Container';
 import { ControlCenter } from './ControlCenter';
-import { FileData, DataItem } from './TypeLib';
+import { FileData, DataItem, LISAtype } from './TypeLib';
 import { System } from './Globe';
 import { MoranScatter } from './MoranScatter';
 import { HighlightItems } from './HighlightItems';
@@ -57,36 +57,55 @@ class App extends Component<{}, {}, null> {
   }
 
   private apply(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-    try {
-      System.type = "sample";
-      this.map!.closeSketcher();
-      this.map!.load(System.data);
-      this.sct!.load(System.data);
-      (this.refs["loading"] as Loading).setState({
-        show: true
-      });
-      setTimeout(() => {
-        this.sct!.run((s: boolean) => {
-          if (s) {
-            resolve();
-            (this.refs["loading"] as Loading).setState({
-              show: false
-            });
-            System.update();
-          } else {
-            reject();
-            (this.refs["loading"] as Loading).setState({
-              show: false
-            });
-          }
+    System.type = "sample";
+
+    this.map!.load([]);
+    this.sct!.load([]);
+    System.active = [];
+    (this.refs["loading"] as Loading).setState({
+      show: true
+    });
+
+    const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
+      `/get/${ System.filepath!.split(".").join("_dot") }`, {
+          headers: 'Content-type:text/html;charset=utf-8'
+      }
+    );
+    p.then((value: AxiosResponse<CommandResult<FileData.Mode|CommandError>>) => {
+      console.log(value.data.value);
+      if (value.data.state === "successed") {
+        (value.data.value as FileData.Mode).forEach((item: {
+            id: number;
+            type: LISAtype;
+            mx: number;
+            my: number;
+        }) => {
+          const index: number = item.id;
+          System.active[index] = true;
+          System.data[index].target = {
+            type: item.type,
+            mx: item.mx,
+            my: item.my
+          };
         });
-      }, 2000);
-    } catch(err) {
-      reject(err);
-      (this.refs["loading"] as Loading).setState({
-        show: false
-      });
-    }
+
+        this.map!.load(System.data);
+
+        setTimeout(() => {
+          this.sct!.load(System.data);
+          resolve();
+          (this.refs["loading"] as Loading).setState({
+            show: false
+          });
+          System.update();
+        }, 0);
+      } else {
+        reject();
+        (this.refs["loading"] as Loading).setState({
+          show: false
+        });
+      }
+    });
   }
 
   private randomSample(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {

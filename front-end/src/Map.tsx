@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-21 16:57:35
+ * @Last Modified time: 2020-04-04 15:38:19
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -174,7 +174,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: System.type === "dataset" ? 1 : 0.33
+                        opacity: System.type === "dataset" ? 1 : 0.25
                     }} />
                     <canvas key="2" id={ this.props.id + "_canvas2" } ref="canvas2"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
@@ -182,7 +182,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: System.type === "dataset" ? 1 : 0.33
+                        opacity: System.type === "dataset" ? 1 : 0.25
                     }} />
                     <canvas key="r" id={ this.props.id + "_canvas_r" } ref="canvas_r"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
@@ -604,7 +604,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     this.ctx_d!.fillStyle = Color.interpolate(
                         Color.Nippon.Rurikonn, Color.Nippon.Karakurenai, value
                     );
-                    this.ctx_d!.globalAlpha = 0.3;
+                    this.ctx_d!.globalAlpha = 0.25;
                     this.ctx_d!.beginPath();
                     this.ctx_d!.moveTo(
                         x0 - w / 2 * line.A / rootV,
@@ -801,7 +801,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
         this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
         if (this.highlighted.length) {
-            $(this.canvas!).css("opacity", 0.33);
+            $(this.canvas!).css("opacity", 0.25);
             if (this.ready2.length === 0) {
                 let nParts = Math.floor(Math.pow((this.highlighted.length - 400) / 100, 0.8));
                 if (!nParts || nParts < 1) {
@@ -862,7 +862,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }
             });
         } else {
-            $(this.canvas!).css("opacity", System.type === "dataset" ? 1 : 0.33);
+            $(this.canvas!).css("opacity", System.type === "dataset" ? 1 : 0.25);
 
             this.state.data.forEach((d: { lng: number; lat: number; value: LISAtype; }, index: number) => {
                 if (isNaN(d.lat) || isNaN(d.lng) || !System.data[index].target) {
@@ -882,9 +882,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }
             });
         }
-        this.ready_r.map(
-            (item: [number, number, [string, string, string]]) => [...item] as [number, number, [string, string, string]]
-        ).sort((a: [number, number, [string, string, string]], b: [number, number, [string, string, string]]) => {
+        this.ready_r.sort((a: [number, number, [string, string, string]], b: [number, number, [string, string, string]]) => {
             return b[1] - a[1];
         });
         this.ready_r.forEach((
@@ -894,7 +892,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             this.timers.push(
                 setTimeout(() => {
                     this.outstand(d[0], d[1], d[2]);
-                }, index * 4)
+                }, index)
             );
         });
     }
@@ -1009,6 +1007,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }
         this.ctx_r!.fillStyle = style[2];
         this.ctx_r!.strokeStyle = 'rgb(156,156,156)';
+        this.ctx_r!.lineWidth = 1.8;
         this.ctx_r!.beginPath();
         this.ctx_r!.moveTo(x, y);
         this.ctx_r!.lineTo(x, y - 24);
@@ -1017,6 +1016,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.ctx_r!.closePath();
         this.ctx_r!.stroke();
         this.ctx_r!.fill();
+        this.ctx_r!.lineWidth = 1;
     }
 
     public load(data: Array<DataItem>): void {
@@ -1050,7 +1050,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         })
     }
 
-    public random(cx: number, cy: number, r: number, amount: number, gamma: number = 1, diff: number = 0.3): Array<{
+    public random(cx: number, cy: number, r: number, amount: number, gamma: number = 1, diff: number = 0.25): Array<{
         lng: number;
         lat: number;
         value: number;
