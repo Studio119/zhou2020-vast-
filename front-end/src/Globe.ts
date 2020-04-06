@@ -15,7 +15,7 @@ interface SystemType {
     type: "dataset" | "sample";
     colorF: (value: LISAtype) => [string, string];
     colorP: (value: number) => string;
-    highlight: (value: LISAtype | "none") => void;
+    highlight: (value: LISAtype | "none", value2?: LISAtype) => void;
     initialize: () => void;
     update: () => void;
 };

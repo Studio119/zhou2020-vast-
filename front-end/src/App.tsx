@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-04 15:20:22
+ * @Last Modified time: 2020-04-04 21:42:35
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -34,7 +34,7 @@ class App extends Component<{}, {}, null> {
           display: "inline-block",
           margin: "0 -1px -1px 1px"
         }}>
-          <Container theme="NakiriAyame" title="CONTROLLER">
+          <Container theme="NakiriAyame" title="Data View">
             <ControlCenter width={ 386 } height={ 267 } padding={ [20, 20] }
             apply={ this.apply.bind(this) } randomSample={ this.randomSample.bind(this) }
             reset={ this.load.bind(this) } />
@@ -42,7 +42,7 @@ class App extends Component<{}, {}, null> {
           <HighlightItems ref="hl" height={ 104 } />
           <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 12 } />
         </div>
-        <Container theme="NakiriAyame" title="MAP VIEW" >
+        <Container theme="NakiriAyame" title="Map View" >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 11 } center={[-0.21, 51.46]}
           width={ 1149 } height={ 837 } scaleType={ this.scale } filter={ true }
           mode="circle" />
@@ -72,7 +72,6 @@ class App extends Component<{}, {}, null> {
       }
     );
     p.then((value: AxiosResponse<CommandResult<FileData.Mode|CommandError>>) => {
-      console.log(value.data.value);
       if (value.data.state === "successed") {
         (value.data.value as FileData.Mode).forEach((item: {
             id: number;

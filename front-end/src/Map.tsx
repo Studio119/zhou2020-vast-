@@ -340,12 +340,12 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.sketchers = [];
         this.redraw();
 
-        System.highlight = (value: LISAtype | "none") => {
+        System.highlight = (value: LISAtype | "none", value2?: LISAtype) => {
             if (value === "none") {
                 this.highlighted = [];
                 this.redraw();
             } else {
-                this.highlight(value);
+                this.highlight(value, value2);
             }
         };
     }
@@ -914,13 +914,22 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.redraw();
     }
 
-    public highlight(type: LISAtype): void {
+    public highlight(type: LISAtype, type2?: LISAtype): void {
         this.highlighted = [];
         this.state.data.forEach((item: {value: LISAtype;}, index: number) => {
-            const _t: LISAtype = System.data[index].target
-                ? System.data[index].target!.type : item.value;
-            if (_t === type && (!this.props.filter || System.active[index])) {
-                this.highlighted.push(index);
+            if (type2) {
+                if (item.value === type && (!this.props.filter || System.active[index])) {
+                    if (System.data[index].target!.type === type2) {
+                        this.highlighted.push(index);
+                    }
+                }
+            } else if (System.type === "dataset" || System.data[index].target) {
+                const t1: LISAtype = System.type === "dataset"
+                    ? item.value
+                    : System.data[index].target!.type;
+                if (t1 === type) {
+                    this.highlighted.push(index);
+                }
             }
         });
         this.ready2 = [];

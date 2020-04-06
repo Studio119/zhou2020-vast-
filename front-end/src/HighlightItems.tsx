@@ -6,11 +6,10 @@
  */
 
 import React, { Component } from "react";
-import $ from "jquery";
 import { Container } from "./prototypes/Container";
 import { ColorThemes } from "./preference/Color";
 import { System } from "./Globe";
-import { DataItem, LISAtype } from "./TypeLib";
+import { DataItem } from "./TypeLib";
 
 
 export interface HighlightItemsProps {
@@ -18,256 +17,638 @@ export interface HighlightItemsProps {
     height: number;
 };
 
-export interface HighlightItemsState {};
+export interface HighlightItemsState {
+    before: {
+        HH: number;
+        LH: number;
+        LL: number;
+        HL: number;
+    },
+    after?: {
+        HH: {
+            HH: number;
+            LH: number;
+            LL: number;
+            HL: number;
+        };
+        LH: {
+            HH: number;
+            LH: number;
+            LL: number;
+            HL: number;
+        };
+        LL: {
+            HH: number;
+            LH: number;
+            LL: number;
+            HL: number;
+        };
+        HL: {
+            HH: number;
+            LH: number;
+            LL: number;
+            HL: number;
+        };
+    }
+};
 
 export class HighlightItems extends Component<HighlightItemsProps, HighlightItemsState, {}> {
+    public constructor(props: HighlightItemsProps) {
+        super(props);
+        this.state = {
+            before: {
+                HH: 0,
+                LH: 0,
+                LL: 0,
+                HL: 0,
+            }
+        };
+    }
+
     public render(): JSX.Element {
+        let width: number = 0;
+        let count: number = 0;
+
         return (
-            <Container theme="NakiriAyame" title="Highlight..."
+            <Container theme="NakiriAyame" title="Labels"
             width={ this.props.width ? this.props.width : "100%" }
             height="auto" >
                 <div
                 style={{
-                    width: "96%",
+                    width: "98%",
                     padding: "2.7% 1.8%",
                     height: this.props.height,
                     border: "1.6px solid " + ColorThemes.NakiriAyame.Green,
                     background: ColorThemes.NakiriAyame.OuterBackground,
                     color: ColorThemes.NakiriAyame.InnerBackground
-                }}
-                onMouseOut={
-                    () => {
-                        System.highlight("none");
-                    }
-                } >
-                    <div key="2"
-                    style={{
-                        width: "25%",
-                        height: this.props.height,
-                        float: "left"
-                    }} >
-                        <div
+                }} >
+                    <svg width="100%" height={ this.props.height }
+                    onMouseOut={
+                        () => {
+                            System.highlight("none");
+                        }
+                    } >
+                        <rect key="iconHH"
+                        x={ "2%" } y={ 0 }
+                        width={ "10%" } height = { "22%" }
                         style={{
-                            margin: "5%",
-                            width: "90%",
-                            height: "90%",
-                            fontSize: "12px",
-                            border: "1px solid " + ColorThemes.NakiriAyame.Grey
+                            fill: System.colorF("HH")[0]
                         }}
                         onMouseOver={
                             () => {
                                 System.highlight("HH");
                             }
-                        } >
-                            <div ref="prev_hh" key="prev"
-                            style={{
-                                height: "20%",
-								padding: "4%"
-                            }} >
-                                ???
-                            </div>
-                            <header key="label"
-                            style={{
-                                height: "29%",
-								textTransform: "uppercase",
-								fontWeight: "bold",
-                                padding: "15% 6px 4px",
-                                pointerEvents: "none",
-                                background: System.colorF("HH")[0],
-                                color: System.colorF("HH")[1],
-                                letterSpacing: '-0.1px'
-                            }} >
-                                High - High
-                            </header>
-                            <div ref="next_hh" key="next"
-                            style={{
-                                height: "20%",
-								padding: "4%"
-                            }} >
-                                ???
-                            </div>
-                        </div>
-                    </div>
-                    <div key="3"
-                    style={{
-                        width: "25%",
-                        height: this.props.height,
-                        float: "left"
-                    }} >
-                        <div
+                        } />
+                        <text key="labelHH"
+                        x={ "7%" } y={ "16%" }
+                        textAnchor="middle"
                         style={{
-                            margin: "5%",
-                            width: "90%",
-                            height: "90%",
-                            fontSize: "12px",
-                            border: "1px solid " + ColorThemes.NakiriAyame.Grey
+                            fill: System.colorF("HH")[1],
+                            pointerEvents: "none"
+                        }} >
+                            HH
+                        </text>
+                        <rect key="iconLH"
+                        x={ "2%" } y={ "26%" }
+                        width={ "10%" } height = { "22%" }
+                        style={{
+                            fill: System.colorF("LH")[0]
                         }}
                         onMouseOver={
                             () => {
                                 System.highlight("LH");
                             }
-                        } >
-                            <div ref="prev_lh" key="prev"
-                            style={{
-                                height: "20%",
-								padding: "4%"
-                            }} >
-                                ???
-                            </div>
-                            <header key="label"
-                            style={{
-                                height: "29%",
-								textTransform: "uppercase",
-								fontWeight: "bold",
-                                padding: "15% 6px 4px",
-                                pointerEvents: "none",
-                                background: System.colorF("LH")[0],
-                                color: System.colorF("LH")[1]
-                            }} >
-                                Low - High
-                            </header>
-                            <div ref="next_lh" key="next"
-                            style={{
-                                height: "20%",
-								padding: "4%"
-                            }} >
-                                ???
-                            </div>
-                        </div>
-                    </div>
-                    <div key="4"
-                    style={{
-                        width: "25%",
-                        height: this.props.height,
-                        float: "left"
-                    }} >
-                        <div
+                        } />
+                        <text key="labelLH"
+                        x={ "7%" } y={ "42%" }
+                        textAnchor="middle"
                         style={{
-                            margin: "5%",
-                            width: "90%",
-                            height: "90%",
-                            fontSize: "12px",
-                            border: "1px solid " + ColorThemes.NakiriAyame.Grey
+                            fill: System.colorF("LH")[1],
+                            pointerEvents: "none"
+                        }} >
+                            LH
+                        </text>
+                        <rect key="iconLL"
+                        x={ "2%" } y={ "52%" }
+                        width={ "10%" } height = { "22%" }
+                        style={{
+                            fill: System.colorF("LL")[0]
                         }}
                         onMouseOver={
                             () => {
                                 System.highlight("LL");
                             }
-                        } >
-                            <div ref="prev_ll" key="prev"
-                            style={{
-                                height: "20%",
-								padding: "4%"
-                            }} >
-                                ???
-                            </div>
-                            <header key="label"
-                            style={{
-                                height: "29%",
-								textTransform: "uppercase",
-								fontWeight: "bold",
-                                padding: "15% 6px 4px",
-                                pointerEvents: "none",
-                                background: System.colorF("LL")[0],
-                                color: System.colorF("LL")[1]
-                            }} >
-                                Low - Low
-                            </header>
-                            <div ref="next_ll" key="next"
-                            style={{
-                                height: "20%",
-								padding: "4%"
-                            }} >
-                                ???
-                            </div>
-                        </div>
-                    </div>
-                    <div key="5"
-                    style={{
-                        width: "25%",
-                        height: this.props.height,
-                        float: "left"
-                    }} >
-                        <div
+                        } />
+                        <text key="labelLL"
+                        x={ "7%" } y={ "68%" }
+                        textAnchor="middle"
                         style={{
-                            margin: "5%",
-                            width: "90%",
-                            height: "90%",
-                            fontSize: "12px",
-                            border: "1px solid " + ColorThemes.NakiriAyame.Grey
+                            fill: System.colorF("LL")[1],
+                            pointerEvents: "none"
+                        }} >
+                            LL
+                        </text>
+                        <rect key="iconHL"
+                        x={ "2%" } y={ "78%" }
+                        width={ "10%" } height = { "22%" }
+                        style={{
+                            fill: System.colorF("HL")[0]
                         }}
                         onMouseOver={
                             () => {
                                 System.highlight("HL");
                             }
-                        } >
-                            <div ref="prev_hl" key="prev"
-                            style={{
-                                height: "20%",
-								padding: "4%"
-                            }} >
-                                ???
-                            </div>
-                            <header key="label"
-                            style={{
-                                height: "29%",
-								textTransform: "uppercase",
-								fontWeight: "bold",
-                                padding: "15% 6px 4px",
-                                pointerEvents: "none",
-                                background: System.colorF("HL")[0],
-                                color: System.colorF("HL")[1]
-                            }} >
-                                High - Low
-                            </header>
-                            <div ref="next_hl" key="next"
-                            style={{
-                                height: "20%",
-								padding: "4%"
-                            }} >
-                                ???
-                            </div>
-                        </div>
-                    </div>
+                        } />
+                        <text key="labelHL"
+                        x={ "7%" } y={ "94%" }
+                        textAnchor="middle"
+                        style={{
+                            fill: System.colorF("HL")[1],
+                            pointerEvents: "none"
+                        }} >
+                            HL
+                        </text>
+                        {
+                            this.state.after ? (
+                                <>
+                                    <rect key="rectHH-HH"
+                                    x={ "13%" } y={ 0 }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.HH.HH / (
+                                                this.state.after.HH.HH
+                                                + this.state.after.HH.LH
+                                                + this.state.after.HH.LL
+                                                + this.state.after.HH.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HH", "HH");
+                                        }
+                                    } />
+                                    <rect key="rectHH-LH"
+                                    x={ 13 + 82 * count + "%" } y={ 0 }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.HH.LH / (
+                                                this.state.after.HH.HH
+                                                + this.state.after.HH.LH
+                                                + this.state.after.HH.LL
+                                                + this.state.after.HH.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HH", "LH");
+                                        }
+                                    } />
+                                    <rect key="rectHH-LL"
+                                    x={ 13 + 82 * count + "%" } y={ 0 }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.HH.LL / (
+                                                this.state.after.HH.HH
+                                                + this.state.after.HH.LH
+                                                + this.state.after.HH.LL
+                                                + this.state.after.HH.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HH", "LL");
+                                        }
+                                    } />
+                                    <rect key="rectHH-HL"
+                                    x={ 13 + 82 * count + "%" } y={ 0 }
+                                    width={
+                                        (() => {
+                                            width = 1 - count;
+                                            count = 0;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HH", "HL");
+                                        }
+                                    } />
+
+                                    <rect key="rectLH-HH"
+                                    x={ "13%" } y={ "26%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LH.HH / (
+                                                this.state.after.LH.HH
+                                                + this.state.after.LH.LH
+                                                + this.state.after.LH.LL
+                                                + this.state.after.LH.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LH", "HH");
+                                        }
+                                    } />
+                                    <rect key="rectLH-LH"
+                                    x={ 13 + 82 * count + "%" } y={ "26%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LH.LH / (
+                                                this.state.after.LH.HH
+                                                + this.state.after.LH.LH
+                                                + this.state.after.LH.LL
+                                                + this.state.after.LH.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LH", "LH");
+                                        }
+                                    } />
+                                    <rect key="rectLH-LL"
+                                    x={ 13 + 82 * count + "%" } y={ "26%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LH.LL / (
+                                                this.state.after.LH.HH
+                                                + this.state.after.LH.LH
+                                                + this.state.after.LH.LL
+                                                + this.state.after.LH.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LH", "LL");
+                                        }
+                                    } />
+                                    <rect key="rectLH-HL"
+                                    x={ 13 + 82 * count + "%" } y={ "26%" }
+                                    width={
+                                        (() => {
+                                            width = 1 - count;
+                                            count = 0;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LH", "HL");
+                                        }
+                                    } />
+
+                                    <rect key="rectLL-HH"
+                                    x={ "13%" } y={ "52%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LL.HH / (
+                                                this.state.after.LL.HH
+                                                + this.state.after.LL.LH
+                                                + this.state.after.LL.LL
+                                                + this.state.after.LL.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LL", "HH");
+                                        }
+                                    } />
+                                    <rect key="rectLL-LH"
+                                    x={ 13 + 82 * count + "%" } y={ "52%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LL.LH / (
+                                                this.state.after.LL.HH
+                                                + this.state.after.LL.LH
+                                                + this.state.after.LL.LL
+                                                + this.state.after.LL.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LL", "LH");
+                                        }
+                                    } />
+                                    <rect key="rectLL-LL"
+                                    x={ 13 + 82 * count + "%" } y={ "52%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LL.LL / (
+                                                this.state.after.LL.HH
+                                                + this.state.after.LL.LH
+                                                + this.state.after.LL.LL
+                                                + this.state.after.LL.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LL", "LL");
+                                        }
+                                    } />
+                                    <rect key="rectLL-HL"
+                                    x={ 13 + 82 * count + "%" } y={ "52%" }
+                                    width={
+                                        (() => {
+                                            width = 1 - count;
+                                            count = 0;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LL", "HL");
+                                        }
+                                    } />
+
+                                    <rect key="rectHL-HH"
+                                    x={ "13%" } y={ "78%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.HL.HH / (
+                                                this.state.after.HL.HH
+                                                + this.state.after.HL.LH
+                                                + this.state.after.HL.LL
+                                                + this.state.after.HL.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HL", "HH");
+                                        }
+                                    } />
+                                    <rect key="rectHL-LH"
+                                    x={ 13 + 82 * count + "%" } y={ "78%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.HL.LH / (
+                                                this.state.after.HL.HH
+                                                + this.state.after.HL.LH
+                                                + this.state.after.HL.LL
+                                                + this.state.after.HL.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HL", "LH");
+                                        }
+                                    } />
+                                    <rect key="rectHL-LL"
+                                    x={ 13 + 82 * count + "%" } y={ "78%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.HL.LL / (
+                                                this.state.after.HL.HH
+                                                + this.state.after.HL.LH
+                                                + this.state.after.HL.LL
+                                                + this.state.after.HL.HL
+                                            );
+                                            count += width;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HL", "LL");
+                                        }
+                                    } />
+                                    <rect key="rectHL-HL"
+                                    x={ 13 + 82 * count + "%" } y={ "78%" }
+                                    width={
+                                        (() => {
+                                            width = 1 - count;
+                                            count = 0;
+                                            return 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HL", "HL");
+                                        }
+                                    } />
+                                </>
+                            ) : (
+                                <>
+                                    <rect key="rectHH"
+                                    x={ "13%" } y={ 0 }
+                                    width={ "82%" } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HH");
+                                        }
+                                    } />
+                                    <rect key="rectLH"
+                                    x={ "13%" } y={ "26%" }
+                                    width={ "82%" } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LH");
+                                        }
+                                    } />
+                                    <rect key="rectLL"
+                                    x={ "13%" } y={ "52%" }
+                                    width={ "82%" } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("LL");
+                                        }
+                                    } />
+                                    <rect key="rectHL"
+                                    x={ "13%" } y={ "78%" }
+                                    width={ "82%" } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            System.highlight("HL");
+                                        }
+                                    } />
+                                </>
+                            )
+                        }
+                    </svg>
                 </div>
             </Container>
         );
     }
 
     public componentDidMount(): void {
-        const LISA: Array<LISAtype> = ["HH", "LH", "LL", "HL"];
-
-        const LISA2index: (type: LISAtype) => number = (t: LISAtype) => {
-            return LISA.indexOf(t);
-        };
-
         System.initialize = () => {
-            let count: [number, number, number, number] = [0, 0, 0, 0];
+            let count: {
+                HH: number;
+                LH: number;
+                LL: number;
+                HL: number;
+            } = {
+                HH: 0,
+                LH: 0,
+                LL: 0,
+                HL: 0
+            };
 
             System.data.forEach((d: DataItem) => {
-                count[LISA2index(d.type)] ++;
+                count[d.type] ++;
             });
 
-            count.forEach((d: number, i: number) => {
-                $(this.refs[
-                    `prev_${ LISA[i].toLocaleLowerCase() }`
-                ]).text(d);
+            this.setState({
+                before: {
+                    ...count
+                },
+                after: void 0
             });
         };
 
         System.update = () => {
-            let count: [number, number, number, number] = [0, 0, 0, 0];
+            let count: {
+                HH: {
+                    HH: number;
+                    LH: number;
+                    LL: number;
+                    HL: number;
+                };
+                LH: {
+                    HH: number;
+                    LH: number;
+                    LL: number;
+                    HL: number;
+                };
+                LL: {
+                    HH: number;
+                    LH: number;
+                    LL: number;
+                    HL: number;
+                };
+                HL: {
+                    HH: number;
+                    LH: number;
+                    LL: number;
+                    HL: number;
+                };
+            } = {
+                HH: {
+                    HH: 0,
+                    LH: 0,
+                    LL: 0,
+                    HL: 0
+                },
+                LH: {
+                    HH: 0,
+                    LH: 0,
+                    LL: 0,
+                    HL: 0
+                },
+                LL: {
+                    HH: 0,
+                    LH: 0,
+                    LL: 0,
+                    HL: 0
+                },
+                HL: {
+                    HH: 0,
+                    LH: 0,
+                    LL: 0,
+                    HL: 0
+                }
+            };
 
             System.data.forEach((d: DataItem, i: number) => {
                 if (System.active[i]) {
-                    count[LISA2index(d.type)] ++;
+                    count[d.type][d.target!.type] ++;
                 }
             });
 
-            count.forEach((d: number, i: number) => {
-                $(this.refs[
-                    `next_${ LISA[i].toLocaleLowerCase() }`
-                ]).text(d);
+            this.setState({
+                after: count
             });
         };
     }

@@ -60,8 +60,14 @@ export class Container extends Component<ContainerProps, any, React.ReactNode | 
                         color: ColorThemes[this.props.theme].OuterColor,
                         padding: "3px 0px",
                         fontWeight: 'bold',
+                        textAlign: 'left',
                         ...this.props.titleStyle
                     }}>
+                        <i style={{
+                            display: 'inline-block',
+                            width: '1em',
+                            height: '100%'
+                        }} />
                         { this.props.title }
                     </div>
                 }

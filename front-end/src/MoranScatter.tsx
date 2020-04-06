@@ -167,7 +167,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         }
 
         return (
-            <Container theme="NakiriAyame" title="MORAN SCATTER" >
+            <Container theme="NakiriAyame" title="Moran Scatter" >
                 <div key="background"
                 style={{
                     width: this.props.width ? this.props.width : "100%",

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-23 21:00:31
+ * @Last Modified time: 2020-04-06 23:50:26
  */
 
 import React, { Component } from "react";
@@ -26,8 +26,11 @@ export interface ControlCenterState {
 }
 
 export class ControlCenter extends Component<ControlCenterProps, ControlCenterState, null> {
+    private executer: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
+
     public constructor(props: ControlCenterProps) {
         super(props);
+        this.executer = this.props.apply;
         this.state = {
             filepath: null
         };
@@ -45,17 +48,18 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
             }} >
                 <div key="loadfile" style={{
                     width: this.props.width - this.props.padding[1] * 2 - 23,
-                    height: '70px',
+                    height: '54px',
                     overflow: "hidden",
-                    padding: '8px 10px',
+                    padding: '2px 10px',
                     border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground
                 }} >
                     <form style={{
                         width: "100%",
-                        height: "100%"
+                        height: "100%",
+                        textAlign: "left"
                     }} >
                         <label>
-                            Load dataset from...
+                            Import dataset from
                         </label>
                         <input type="file" ref="actualInput" accept=".csv" name="file"
                         onChange={
@@ -70,8 +74,8 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         }} />
                         <div key="fakeInput"
                         style={{
-                            margin: "12px 10px 10px",
-                            height: "24px"
+                            margin: "2px 10px",
+                            textAlign: 'end'
                         }} >
                             <label key="filename" ref="filename"
                             style={{
@@ -123,9 +127,9 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                 }} >
                     <div key="1"
                     style={{
-                        width: "30%",
+                        width: "20%",
                         height: "80%",
-                        padding: "4px 10%",
+                        padding: "4px 5%",
                         display: "inline-block"
                     }} >
                         <label
@@ -143,9 +147,9 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                     </div>
                     <div key="2"
                     style={{
-                        width: "30%",
+                        width: "20%",
                         height: "80%",
-                        padding: "4px 10%",
+                        padding: "4px 5%",
                         display: "inline-block"
                     }} >
                         <label
@@ -155,6 +159,27 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             N_Iter
                         </label>
                         <input name="n_iter" type="number" min="1" max="10" defaultValue="10"
+                        style={{
+                            height: "40%",
+                            width: "100%",
+                            marginTop: "8px"
+                        }} />
+                    </div>
+                    <div key="3"
+                    style={{
+                        width: "30%",
+                        height: "80%",
+                        padding: "4px 5%",
+                        display: "inline-block"
+                    }} >
+                        <label
+                        style={{
+                            height: "40%"
+                        }} >
+                            Sampling Rate
+                        </label>
+                        <input name="rate" type="number" min="0.01" max="1.00"
+                        step="0.01" defaultValue="0.10"
                         style={{
                             height: "40%",
                             width: "100%",
@@ -178,15 +203,51 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 width: "33.3%",
                                 padding: "2px 0"
                             }} >
-                                Load
+                                Load Population
                             </th>
-                            <th key="2"
+                            <th key="2" colSpan={ 2 } rowSpan={ 2 }
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 width: "33.3%",
-                                padding: "2px 0"
+                                padding: 0,
+                                textAlign: 'left'
                             }} >
-                                Test
+                                <label key="this_paper"
+                                style={{
+                                    display: 'block',
+                                    fontWeight: 'normal'
+                                }} >
+                                    <input name="algo" type="radio" value="this_paper"
+                                    onChange={ this.onChanged.bind(this) } />
+                                    This paper
+                                </label>
+                                <label key="random_sampling"
+                                style={{
+                                    display: 'block',
+                                    fontWeight: 'normal'
+                                }} >
+                                    <input name="algo" type="radio" value="random_sampling"
+                                    onChange={ this.onChanged.bind(this) } />
+                                    Random sp
+                                </label>
+                                <label key="blue_noise_sampling"
+                                style={{
+                                    display: 'block',
+                                    fontWeight: 'normal'
+                                }} >
+                                    <input name="algo" type="radio" value="blue_noise_sampling"
+                                    onChange={ this.onChanged.bind(this) } />
+                                    BNS
+                                </label>
+                                <label key="pure_z-order"
+                                style={{
+                                    display: 'block',
+                                    fontWeight: 'normal'
+                                }} >
+                                    <input name="algo" type="radio" value="pure_z-order"
+                                    onChange={ this.onChanged.bind(this) } />
+                                    Z-order
+                                </label>
                             </th>
                             <th key="3"
                             style={{
@@ -194,7 +255,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 width: "33.3%",
                                 padding: "2px 0"
                             }} >
-                                RandomSP
+                                Apply
                             </th>
                         </tr>
                         <tr key="buttons" >
@@ -206,21 +267,13 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 <SyncButton theme="NakiriAyame" text={ "o" }
                                     executer={ this.props.reset } />
                             </td>
-                            <td key="2"
-                            style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                padding: "6px 0"
-                            }} >
-                                <SyncButton theme="NakiriAyame" text={ "o" }
-                                    executer={ this.props.apply } />
-                            </td>
                             <td key="3"
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 padding: "6px 0"
                             }} >
                                 <SyncButton theme="NakiriAyame" text={ "o" }
-                                    executer={ this.props.randomSample } />
+                                    executer={ this.executer.bind(this) } />
                             </td>
                         </tr>
                     </tbody>
@@ -229,10 +282,28 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
         );
     }
 
+    public componentDidMount(): void {
+        $("input[name=algo]").eq(0).attr("checked", "checked");
+    }
+
     private onSelected(path: string): void {
         System.filepath = path;
         this.setState({
             filepath: path
         });
+    }
+
+    private onChanged(): void {
+        const val: string = $("input[name=algo]:checked").val()! as string;
+        if (val === "this_paper") {
+            this.executer = this.props.apply;
+        } else if (val === "random_sampling") {
+            this.executer = this.props.randomSample;
+        } else {
+            this.executer = (_: any, reject: (reason?: any) => void) => {
+                alert("未实装的采样");
+                reject("未实装的采样");
+            };
+        }
     }
 }
