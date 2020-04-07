@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-04 15:11:18
+ * @Last Modified time: 2020-04-07 15:08:14
  */
 
 const express = require('express');
@@ -153,7 +153,7 @@ app.post("/take", (req, res) => {
             throw err;
         }
 
-        fs.writeSync(fd, items.slice(0, items.length - 1).join("\n") + "\n", 0, 'utf-8');
+        fs.writeSync(fd, items.join("\n") + "\n", 0, 'utf-8');
 
         fs.close(fd, err => {
             if (err) {

@@ -66,6 +66,10 @@ class App extends Component<{}, {}, null> {
       show: true
     });
 
+    System.data.forEach((d: DataItem) => {
+      d.target = void 0;
+    });
+
     const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
       `/get/${ System.filepath!.split(".").join("_dot") }`, {
           headers: 'Content-type:text/html;charset=utf-8'
@@ -145,7 +149,6 @@ class App extends Component<{}, {}, null> {
               (this.refs["loading"] as Loading).setState({
                 show: false
               });
-              System.update();
             }, () => {
               reject();
               (this.refs["loading"] as Loading).setState({
@@ -193,6 +196,7 @@ class App extends Component<{}, {}, null> {
           const list: Array<number> = Object.entries(
             System.active
           ).filter((value: [string, boolean]) => {
+            System.data[parseInt(value[0])].target = void 0;
             return value[1];
           }).map((entry: [string, boolean]) => {
             return parseInt(entry[0]);
@@ -211,6 +215,8 @@ class App extends Component<{}, {}, null> {
 
         if (type === "dataset") {
           System.initialize();
+        } else {
+          System.update();
         }
 
         setTimeout(() => {

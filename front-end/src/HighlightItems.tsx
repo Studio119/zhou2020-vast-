@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-13 21:26:18 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-21 16:16:18
+ * @Last Modified time: 2020-04-07 19:35:42
  */
 
 import React, { Component } from "react";
@@ -70,7 +70,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
         let count: number = 0;
 
         return (
-            <Container theme="NakiriAyame" title="Labels"
+            <Container theme="NakiriAyame" title="Label View"
             width={ this.props.width ? this.props.width : "100%" }
             height="auto" >
                 <div

@@ -26,11 +26,8 @@ export interface ControlCenterState {
 }
 
 export class ControlCenter extends Component<ControlCenterProps, ControlCenterState, null> {
-    private executer: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
-
     public constructor(props: ControlCenterProps) {
         super(props);
-        this.executer = this.props.apply;
         this.state = {
             filepath: null
         };
@@ -217,8 +214,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     display: 'block',
                                     fontWeight: 'normal'
                                 }} >
-                                    <input name="algo" type="radio" value="this_paper"
-                                    onChange={ this.onChanged.bind(this) } />
+                                    <input name="algo" type="radio" value="this_paper" />
                                     This paper
                                 </label>
                                 <label key="random_sampling"
@@ -226,8 +222,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     display: 'block',
                                     fontWeight: 'normal'
                                 }} >
-                                    <input name="algo" type="radio" value="random_sampling"
-                                    onChange={ this.onChanged.bind(this) } />
+                                    <input name="algo" type="radio" value="random_sampling" />
                                     Random sp
                                 </label>
                                 <label key="blue_noise_sampling"
@@ -235,8 +230,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     display: 'block',
                                     fontWeight: 'normal'
                                 }} >
-                                    <input name="algo" type="radio" value="blue_noise_sampling"
-                                    onChange={ this.onChanged.bind(this) } />
+                                    <input name="algo" type="radio" value="blue_noise_sampling" />
                                     BNS
                                 </label>
                                 <label key="pure_z-order"
@@ -244,8 +238,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     display: 'block',
                                     fontWeight: 'normal'
                                 }} >
-                                    <input name="algo" type="radio" value="pure_z-order"
-                                    onChange={ this.onChanged.bind(this) } />
+                                    <input name="algo" type="radio" value="pure_z-order" />
                                     Z-order
                                 </label>
                             </th>
@@ -293,17 +286,17 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
         });
     }
 
-    private onChanged(): void {
+
+    private executer(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
         const val: string = $("input[name=algo]:checked").val()! as string;
+        
         if (val === "this_paper") {
-            this.executer = this.props.apply;
+            this.props.apply(resolve, reject);
         } else if (val === "random_sampling") {
-            this.executer = this.props.randomSample;
+            this.props.randomSample(resolve, reject);
         } else {
-            this.executer = (_: any, reject: (reason?: any) => void) => {
-                alert("未实装的采样");
-                reject("未实装的采样");
-            };
+            alert("未实装的采样");
+            reject("未实装的采样");
         }
     }
 }

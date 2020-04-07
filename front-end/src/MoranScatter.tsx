@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-04 15:36:39
+ * @Last Modified time: 2020-04-07 22:46:41
  */
 
 import React, { Component } from "react";
@@ -13,6 +13,7 @@ import { ColorThemes } from "./preference/Color";
 import { Container } from "./prototypes/Container";
 import axios, { AxiosResponse } from "axios";
 import { CommandResult, CommandError } from "./Command";
+import { SyncButton } from "./prototypes/SyncButton";
 
 
 export interface MoranScatterProps {
@@ -33,6 +34,7 @@ export interface MoranScatterState {
             my: number;
         };
     }>;
+    strech: boolean;
 };
 
 export class MoranScatter extends Component<MoranScatterProps, MoranScatterState, null> {
@@ -47,12 +49,23 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         y: [number, number];
         fx: (d: number) => number;
         fy: (d: number) => number;
+        kX: Array<{
+            floor: number;
+            ceil: number;
+            f: (d: number) => number;
+        }>;
+        kY: Array<{
+            floor: number;
+            ceil: number;
+            f: (d: number) => number;
+        }>;
     };
 
     public constructor(props: MoranScatterProps) {
         super(props);
         this.state = {
-            list: []
+            list: [],
+            strech: false
         };
         this.canvas1 = null;
         this.canvas2 = null;
@@ -64,7 +77,9 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             x: [NaN, NaN],
             y: [NaN, NaN],
             fx: () => NaN,
-            fy: () => NaN
+            fy: () => NaN,
+            kX: [],
+            kY: []
         };
     }
 
@@ -117,16 +132,87 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             this.snapshots.x = [xMin - (xMax - xMin) / 10, xMax + (xMax - xMin) / 10];
             this.snapshots.y = [yMin - (yMax - yMin) / 10, yMax + (yMax - yMin) / 10];
 
+            let spansX: Array<number> = [];
+            let spansY: Array<number> = [];
+
+            const nSpan: number = 24;
+
+            if (this.state.strech && this.state.list.length >= nSpan) {
+                this.snapshots.kX = [];
+                this.snapshots.kY = [];
+                for (let i: number = 0; i < nSpan; i++) {
+                    spansX.push(0);
+                    this.snapshots.kX.push({
+                        floor: xMin + (xMax - xMin) * 0.99999 / nSpan * i,
+                        ceil: xMin + (xMax - xMin) * 0.99999 / nSpan * (i + 1),
+                        f: () => NaN
+                    });
+                    spansY.push(0);
+                    this.snapshots.kY.push({
+                        floor: yMin + (yMax - yMin) * 0.99999 / nSpan * i,
+                        ceil: yMin + (yMax - yMin) * 0.99999 / nSpan * (i + 1),
+                        f: () => NaN
+                    });
+                }
+                let xOffset: number = 0;
+                let yOffset: number = 0;
+                this.state.list.forEach((d: {
+                    mx: number;
+                    my: number;
+                }) => {
+                    spansX[Math.floor((d.mx - xMin) / (xMax - xMin) * nSpan * 0.99999)] ++;
+                    spansY[Math.floor((d.my - yMin) / (yMax - yMin) * nSpan * 0.99999)] ++;
+                });
+                for (let i: number = 0; i < nSpan; i++) {
+                    let dx: number = 0.6 * spansX[i] / this.state.list.length + 0.4 / nSpan;
+                    const tx: number = xOffset;
+                    this.snapshots.kX[i].f = (d: number) => {
+                        return tx
+                            + dx * (d - this.snapshots.kX[i].floor)
+                                / (this.snapshots.kX[i].ceil - this.snapshots.kX[i].floor);
+                    };
+                    xOffset += dx;
+                    let dy: number = 0.6 * spansY[i] / this.state.list.length + 0.4 / nSpan;
+                    const ty: number = yOffset;
+                    this.snapshots.kY[i].f = (d: number) => {
+                        return ty
+                            + dy * (d - this.snapshots.kY[i].floor)
+                                / (this.snapshots.kY[i].ceil - this.snapshots.kY[i].floor);
+                    };
+                    yOffset += dy;
+                }
+            }
+
             this.snapshots.fx = (d: number) => {
-                return this.props.padding + (
-                    100 - this.props.padding * 2
-                ) * (d - this.snapshots.x[0]) / (this.snapshots.x[1] - this.snapshots.x[0]);
+                if (!this.state.strech || this.state.list.length < 10) {
+                    return this.props.padding + (
+                        100 - this.props.padding * 2
+                    ) * (d - this.snapshots.x[0]) / (this.snapshots.x[1] - this.snapshots.x[0]);
+                } else {
+                    let i: number = 0;
+                    while (d > this.snapshots.kX[i].ceil && i + 1 < nSpan) {
+                        i++;
+                    }
+                    return this.props.padding + (
+                        100 - this.props.padding * 2
+                    ) * this.snapshots.kX[i].f(d);
+                }
             };
             
             this.snapshots.fy = (d: number) => {
-                return this.props.padding + (
-                    100 - this.props.padding * 2
-                ) * (this.snapshots.y[1] - d) / (this.snapshots.y[1] - this.snapshots.y[0]);
+                if (!this.state.strech || this.state.list.length < 10) {
+                    return this.props.padding + (
+                        100 - this.props.padding * 2
+                    ) * (this.snapshots.y[1] - d) / (this.snapshots.y[1] - this.snapshots.y[0]);
+                } else {
+                    let i: number = 0;
+                    while (d > this.snapshots.kY[i].ceil && i + 1 < nSpan) {
+                        i++;
+                    }
+                    return this.props.padding + (
+                        100 - this.props.padding * 2
+                    ) * (1 - this.snapshots.kY[i].f(d));
+                }
             };
         }
         
@@ -233,6 +319,17 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                         </g>
                     }
                 </svg>
+                <div key="buttonBox"
+                style={{
+                    position: "relative",
+                    top: "-1484px",
+                    left: "-162px"
+                }} >
+                    <SyncButton theme="NakiriAyame" text={
+                        this.state.strech ? "on " : "off"
+                    }
+                        executer={ this.shift.bind(this) } />
+                </div>
             </Container>
         );
     }
@@ -258,6 +355,13 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.width = $(this.canvas1).width()!;
         this.canvas2 = document.getElementById(this.props.id + "_canvas2") as HTMLCanvasElement;
         this.ctx2 = this.canvas2!.getContext("2d");
+    }
+
+    private shift(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
+        this.setState({
+            strech: !this.state.strech
+        });
+        resolve();
     }
 
     private tick(
@@ -486,10 +590,14 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     }} />
                     {
                         ticks.map((t: number, i: number) => {
+                            const x: number = fx(t);
+                            if (x < this.props.padding || x > 100 - this.props.padding) {
+                                return null;
+                            }
                             return (
                                 <g key={ type + "_tick_" + i } >
                                     <text key={ type + "_" + i + "_text" }
-                                    x={ fx(t) + "%" } y={ fy(0) + "%" }
+                                    x={ x + "%" } y={ fy(0) + "%" }
                                     textAnchor="middle"
                                     style={{
                                         fontSize: 13,
@@ -499,7 +607,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                         { t }
                                     </text>
                                     <line key={ type + "_" + i + "_line" }
-                                    x1={ fx(t) + "%" } x2={ fx(t) + "%" }
+                                    x1={ x + "%" } x2={ x + "%" }
                                     y1={ fy(0) + "%" } y2={ (fy(0) - 5.4 / this.props.height * 100) + "%" }
                                     style={{
                                         stroke: ColorThemes.NakiriAyame.InnerBackground
@@ -522,10 +630,14 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     }} />
                     {
                         ticks.map((t: number, i: number) => {
+                            const y: number = fy(t);
+                            if (y < this.props.padding || y > 100 - this.props.padding) {
+                                return null;
+                            }
                             return (
                                 <g key={ type + "_tick_" + i } >
                                     <text key={ type + "_" + i + "_text" }
-                                    x={ fx(0) + "%" } y={ fy(t) + "%" }
+                                    x={ fx(0) + "%" } y={ y + "%" }
                                     textAnchor="end"
                                     style={{
                                         fontSize: 13,
@@ -536,7 +648,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                     </text>
                                     <line key={ type + "_" + i + "_line" }
                                     x1={ (fx(0) + 5.4 / this.props.height * 100) + "%" } x2={ fx(0) + "%" }
-                                    y1={ fy(t) + "%" } y2={ fy(t) + "%" }
+                                    y1={ y + "%" } y2={ y + "%" }
                                     style={{
                                         stroke: ColorThemes.NakiriAyame.InnerBackground
                                     }} />
