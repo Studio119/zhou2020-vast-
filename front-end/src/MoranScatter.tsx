@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-07 22:46:41
+ * @Last Modified time: 2020-04-08 21:00:34
  */
 
 import React, { Component } from "react";
@@ -128,6 +128,11 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             );
             let yMin: number = yAll.length ? Math.min(...yAll) : -1;
             let yMax: number = yAll.length ? Math.max(...yAll) : 1;
+
+            if (!this.state.strech) {
+                [xMin, xMax] = [Math.min(xMin, - xMax), Math.max(xMax, - xMin)];
+                [yMin, yMax] = [Math.min(yMin, - yMax), Math.max(yMax, - yMin)];
+            }
     
             this.snapshots.x = [xMin - (xMax - xMin) / 10, xMax + (xMax - xMin) / 10];
             this.snapshots.y = [yMin - (yMax - yMin) / 10, yMax + (yMax - yMin) / 10];
@@ -135,7 +140,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             let spansX: Array<number> = [];
             let spansY: Array<number> = [];
 
-            const nSpan: number = 24;
+            const nSpan: number = 36;
 
             if (this.state.strech && this.state.list.length >= nSpan) {
                 this.snapshots.kX = [];
@@ -164,7 +169,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     spansY[Math.floor((d.my - yMin) / (yMax - yMin) * nSpan * 0.99999)] ++;
                 });
                 for (let i: number = 0; i < nSpan; i++) {
-                    let dx: number = 0.6 * spansX[i] / this.state.list.length + 0.4 / nSpan;
+                    let dx: number = 0.8 * spansX[i] / this.state.list.length + 0.2 / nSpan;
                     const tx: number = xOffset;
                     this.snapshots.kX[i].f = (d: number) => {
                         return tx
@@ -172,7 +177,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                 / (this.snapshots.kX[i].ceil - this.snapshots.kX[i].floor);
                     };
                     xOffset += dx;
-                    let dy: number = 0.6 * spansY[i] / this.state.list.length + 0.4 / nSpan;
+                    let dy: number = 0.8 * spansY[i] / this.state.list.length + 0.2 / nSpan;
                     const ty: number = yOffset;
                     this.snapshots.kY[i].f = (d: number) => {
                         return ty
@@ -378,7 +383,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             this.ctx1!.fillStyle = item.color[0];
 
             this.ctx1!.beginPath();
-            this.ctx1!.arc(item.x, item.y, 3, 0, 2 * Math.PI);
+            this.ctx1!.arc(item.x, item.y, this.state.strech ? 1.2 : 3, 0, 2 * Math.PI);
             this.ctx1!.stroke();
             this.ctx1!.fill();
         });
@@ -400,14 +405,38 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             this.ctx2!.fillStyle = item.color[0];
             
             this.ctx2!.beginPath();
-            this.ctx2!.arc(item.prevX, item.prevY, 2, 0, 2 * Math.PI);
-            this.ctx2!.stroke();
-            this.ctx2!.strokeStyle = 'rgb(182,26,23)';
-            this.ctx2!.moveTo(item.prevX, item.prevY);
-            this.ctx2!.lineTo(item.x, item.y);
-            this.ctx2!.lineWidth = 0.8;
+            this.ctx2!.arc(item.prevX, item.prevY, this.state.strech ? 0.8 : 2, 0, 2 * Math.PI);
             this.ctx2!.stroke();
 
+            this.ctx2!.globalAlpha = 0.1;
+            this.ctx2!.strokeStyle = 'rgb(0,162,60)';
+            let x: number = item.prevX;
+            let y: number = item.prevY;
+            const len: number = Math.sqrt(
+                Math.pow(item.x - item.prevX, 2)
+                + Math.pow(item.y - item.prevY, 2)
+            );
+            const step: number = 2;
+            const xStep: number = (item.x - item.prevX) / len * step;
+            const yStep: number = (item.y - item.prevY) / len * step;
+            this.ctx2!.lineWidth = 0.8;
+            
+            while (
+                (xStep > 0 && x < item.x)
+                || (yStep > 0 && y < item.y)
+                || (xStep <= 0 && x > item.x)
+                || (yStep <=0 && y > item.y)
+            ) {
+                this.ctx2!.moveTo(x, y);
+                x += xStep;
+                y += yStep;
+                this.ctx2!.lineTo(x, y);
+                this.ctx2!.stroke();
+                x += xStep;
+                y += yStep;
+            }
+
+            this.ctx2!.globalAlpha = 1;
             this.ctx2!.strokeStyle = item.color[1];
 
             this.ctx2!.beginPath();
