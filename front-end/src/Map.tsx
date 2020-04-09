@@ -11,6 +11,7 @@ import Color, { ColorThemes } from './preference/Color';
 import { DataItem, LISAtype } from './TypeLib';
 import { System } from './Globe';
 import { SyncButton } from './prototypes/SyncButton';
+import ValueBar from './tools/ValueBar';
 
 
 export interface MapViewProps {
@@ -75,6 +76,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private behavior: "line" | "circle";
     private sketchers: Array<Sketch>;
     private drawing: boolean;
+    private tickDone: number;
+    private adjust: (value: number) => void;
+    private step: number;
 
     public constructor(props: MapViewProps) {
         super(props);
@@ -106,6 +110,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.behavior = "line";
         this.sketchers = [];
         this.drawing = false;
+        this.tickDone = 0;
+        this.adjust = () => {};
+        this.step = 16;
     }
 
     public render(): JSX.Element {
@@ -331,26 +338,59 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 left: 0,
                 pointerEvents: "none"
             }} >
+                <defs>
+                    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style={{
+                            stopColor: Color.setLightness(
+                                ColorThemes.NakiriAyame.Green, 0.5
+                            ),
+                            stopOpacity: 1
+                        }} />
+                        <stop offset="90%" style={{
+                            stopColor: Color.setLightness(
+                                ColorThemes.NakiriAyame.Green, 0.7
+                            ),
+                            stopOpacity: 1
+                        }} />
+                        <stop offset="100%" style={{
+                            stopColor: Color.setLightness(
+                                ColorThemes.NakiriAyame.Green, 0.8
+                            ),
+                            stopOpacity: 1
+                        }} />
+                    </linearGradient>
+                </defs>
                 <rect ref="process"
                 x={ 0 } y={ 0 } width={ 0 } height={ 4 }
                 style={{
-                    fill: Color.setLightness(
-                            ColorThemes.NakiriAyame.Green, 0.6
-                        )
+                    fill: 'url(#grad)'
                 }} />
             </svg>
             <div key="buttonBox"
             style={{
                 position: "relative",
                 top: "-850px",
-                left: "10px",
-                width: "30px",
-                marginBottom: "-47px"
+                left: "12px",
+                width: this.state.heat ? "152px" : "35px",
+                padding: "4px 6px",
+                marginBottom: "-56px",
+                background: ColorThemes.NakiriAyame.OuterBackground,
+                border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                borderRadius: this.state.heat ? "0 12px 10px 0" : 0
             }} >
                 <SyncButton theme="NakiriAyame" text={
                     this.state.heat ? "on " : "off"
                 }
                     executer={ this.shift.bind(this) } />
+                <ValueBar width={ 100 } height={ 16 }
+                min={ 4 } max={ 16 } defaultValue={ this.step }
+                onValueChange={
+                    this.adjust.bind(this)
+                }
+                style={{
+                    transform: "translateY(26%)",
+                    display: this.state.heat ? "inline-block" : "none"
+                }} />
             </div>
         </>)
     }
@@ -374,14 +414,21 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.ctx_d = this.canvas_d!.getContext("2d");
         this.forceUpdate();
         this.setSketchType("line");
+        this.adjust = (value: number) => {
+            const v: number = Math.floor(value);
+            if (v !== this.step) {
+                this.step = v;
+                this.process();
+                this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+                setTimeout(() => {
+                    this.heat();
+                }, 10);
+            }
+        };
     }
 
     public componentDidUpdate(): void {
-        $(this.refs["process"]).attr("width", 0);
-        this.timers.forEach((timer: NodeJS.Timeout) => {
-            clearTimeout(timer);
-        });
-        this.timers = [];
+        this.process();
         this.ready = [];
         this.ready2 = [];
         this.sketchers = [];
@@ -390,7 +437,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         System.highlight = (value: LISAtype | "none", value2?: LISAtype) => {
             if (value === "none") {
                 this.highlighted = [];
-                this.redraw();
+                if (!this.state.heat) {
+                    this.redraw();
+                }
             } else {
                 this.highlight(value, value2);
             }
@@ -398,10 +447,28 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     public componentWillUnmount(): void {
+        this.process();
+    }
+
+    private process(): void {
         $(this.refs["process"]).attr("width", 0);
+        this.tickDone = 0;
         this.timers.forEach((timer: NodeJS.Timeout) => {
             clearTimeout(timer);
         });
+        this.timers = [];
+    }
+
+    private makeStep(): void {
+        this.tickDone += 1;
+        if (this.tickDone >= this.timers.length) {
+            this.process();
+        } else {
+            $(this.refs["process"]).attr(
+                "width",
+                100 * this.tickDone / this.timers.length + "%"
+            );
+        }
     }
 
     public closeSketcher(): void {
@@ -800,31 +867,31 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     private heat(): void {
-        const step: number = 4;
-
         const index: (x: number, y: number) => [number, number] = (x: number, y: number) => {
             return [
-                Math.round(x / step),
-                Math.round(y / step)
+                Math.round(x / this.step),
+                Math.round(y / this.step)
             ];
         };
 
         let box: Array<Array<boolean>> = [];
 
+        this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+
+        // this.ctx_base!.strokeStyle = 'rgb(55,55,61)';
         // 网格
-        for (let y: number = 0; y <= this.props.width; y += step) {
+        for (let y: number = 0; y <= this.props.width; y += this.step) {
             box.push([]);
-            this.ctx_base!.strokeStyle = 'rgb(55,55,61)';
-            this.ctx_base!.moveTo(0, y);
-            this.ctx_base!.lineTo(this.props.width, y);
-            this.ctx_base!.stroke();
-            for (let x: number = 0; x <= this.props.width; x += step) {
-                box[y / step].push(false);
-                if (y === 0) {
-                    this.ctx_base!.moveTo(x, 0);
-                    this.ctx_base!.lineTo(x, this.props.height);
-                    this.ctx_base!.stroke();
-                }
+            // this.ctx_base!.moveTo(0, y);
+            // this.ctx_base!.lineTo(this.props.width, y);
+            // this.ctx_base!.stroke();
+            for (let x: number = 0; x <= this.props.width; x += this.step) {
+                box[y / this.step].push(false);
+                // if (y === 0) {
+                //     this.ctx_base!.moveTo(x, 0);
+                //     this.ctx_base!.lineTo(x, this.props.height);
+                //     this.ctx_base!.stroke();
+                // }
             }
         }
 
@@ -836,14 +903,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }, i: number) => {
             this.timers.push(
                 setTimeout(() => {
-                    $(this.refs["process"]).attr(
-                        "width",
-                        100 * (i + 1) / this.state.data.length + "%"
-                    );
-                    if (i === this.state.data.length - 1) {
-                        setTimeout(() => {
-                            $(this.refs["process"]).attr("width", 0);
-                        }, 80);
+                    this.makeStep();
+                    if (this.props.filter && !System.active[i]) {
+                        return;
                     }
                     const pos: [number, number] = index(this.fx(d.lng), this.fy(d.lat));
                     if (pos[0] < 0 || pos[0] >= box.length
@@ -853,8 +915,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     }
                     box[pos[0]][pos[1]] = true;
                     
-                    const x: number = step * (pos[0] + 0.5);
-                    const y: number = step * (pos[1] + 0.5);
+                    const x: number = this.step * (pos[0] + 0.5);
+                    const y: number = this.step * (pos[1] + 0.5);
 
                     let neighbors: Array<{
                         index: number;
@@ -868,6 +930,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         projection: number;
                     }, j: number) => {
                         if (i === j) {
+                            return;
+                        }
+                        if (this.props.filter && !System.active[j]) {
                             return;
                         }
                         const dist: number = Math.sqrt(
@@ -944,26 +1009,25 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     this.ctx_base!.globalAlpha = contribution;
                     this.ctx_base!.fillStyle = System.colorF(TYPE)[0];
                     this.ctx_base!.fillRect(
-                        step * pos[0], step * pos[1], step, step
+                        this.step * pos[0],
+                        this.step * pos[1],
+                        this.step,
+                        this.step
                     );
                     this.ctx_base!.globalAlpha = 1;
-                }, i / 8)
+                }, i / 1000)
             );
         });
     }
 
     private redraw(source: "2" | "all" = "all"): void {
-        $(this.refs["process"]).attr("width", 0);
-        this.timers.forEach((timer: NodeJS.Timeout) => {
-            clearTimeout(timer);
-        });
+        this.process();
         this.ready_r = [];
-        this.timers = [];
         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
         if (this.state.heat) {
-            this.heat();
             this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+            this.heat();
             return;
         }
         if (source === "all") {
@@ -1003,6 +1067,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         ) => {
                             this.addPoint(d[0], d[1], d[2], "1");
                         });
+                        this.makeStep();
                     }, index * 10)
                 );
             });
@@ -1047,6 +1112,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         ) => {
                             this.addPoint(d[0], d[1], d[2], "2");
                         });
+                        this.makeStep();
                     }, index * 10)
                 );
             });
@@ -1101,6 +1167,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             this.timers.push(
                 setTimeout(() => {
                     this.outstand(d[0], d[1], d[2]);
+                    this.makeStep();
                 }, index)
             );
         });

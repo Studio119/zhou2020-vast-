@@ -9,7 +9,7 @@ import React, { Component } from "react";
 import $ from "jquery";
 import { LISAtype, DataItem } from "./TypeLib";
 import { System } from "./Globe";
-import { ColorThemes } from "./preference/Color";
+import Color, { ColorThemes } from "./preference/Color";
 import { Container } from "./prototypes/Container";
 import axios, { AxiosResponse } from "axios";
 import { CommandResult, CommandError } from "./Command";
@@ -60,6 +60,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             f: (d: number) => number;
         }>;
     };
+    private tickDone: number;
 
     public constructor(props: MoranScatterProps) {
         super(props);
@@ -81,12 +82,11 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             kX: [],
             kY: []
         };
+        this.tickDone = 0;
     }
 
     public componentWillUnmount(): void {
-        this.timers.forEach((timer: NodeJS.Timeout) => {
-            clearTimeout(timer);
-        });
+        this.process();
     }
 
     public render(): JSX.Element {
@@ -288,7 +288,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     marginBottom: '-4px',
                     opacity: System.type === "dataset" ? 0 : 1
                 }} />
-                <svg style={{
+                <svg key="axes" style={{
                     position: "relative",
                     top: -3 * this.props.height,
                     width: this.props.width ? this.props.width : "100%",
@@ -324,10 +324,46 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                         </g>
                     }
                 </svg>
+                <svg key="process"
+                width={ this.props.width } height="4px"
+                style={{
+                    position: "relative",
+                    top: "-1510.6px",
+                    left: 0,
+                    pointerEvents: "none"
+                }} >
+                    <defs>
+                        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style={{
+                                stopColor: Color.setLightness(
+                                    ColorThemes.NakiriAyame.Green, 0.5
+                                ),
+                                stopOpacity: 1
+                            }} />
+                            <stop offset="90%" style={{
+                                stopColor: Color.setLightness(
+                                    ColorThemes.NakiriAyame.Green, 0.7
+                                ),
+                                stopOpacity: 1
+                            }} />
+                            <stop offset="100%" style={{
+                                stopColor: Color.setLightness(
+                                    ColorThemes.NakiriAyame.Green, 0.8
+                                ),
+                                stopOpacity: 1
+                            }} />
+                        </linearGradient>
+                    </defs>
+                    <rect ref="process"
+                    x={ 0 } y={ 0 } width={ 0 } height={ 4 }
+                    style={{
+                        fill: 'url(#grad)'
+                    }} />
+                </svg>
                 <div key="buttonBox"
                 style={{
                     position: "relative",
-                    top: "-1484px",
+                    top: "-1505px",
                     left: "-162px"
                 }} >
                     <SyncButton theme="NakiriAyame" text={
@@ -342,9 +378,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
     public getSnapshotBeforeUpdate(): null {
         this.ctx1!.clearRect(0, 0, this.width, this.props.height);
         this.ctx2!.clearRect(0, 0, this.width, this.props.height);
-        this.timers.forEach((timer: NodeJS.Timeout) => {
-            clearTimeout(timer);
-        });
+        this.process();
         return null;
     }
 
@@ -360,6 +394,30 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.width = $(this.canvas1).width()!;
         this.canvas2 = document.getElementById(this.props.id + "_canvas2") as HTMLCanvasElement;
         this.ctx2 = this.canvas2!.getContext("2d");
+
+        this.ctx1!.lineWidth = 0.6;
+        this.ctx2!.lineWidth = 0.4;
+    }
+
+    private process(): void {
+        $(this.refs["process"]).attr("width", 0);
+        this.tickDone = 0;
+        this.timers.forEach((timer: NodeJS.Timeout) => {
+            clearTimeout(timer);
+        });
+        this.timers = [];
+    }
+
+    private makeStep(): void {
+        this.tickDone += 1;
+        if (this.tickDone >= this.timers.length) {
+            this.process();
+        } else {
+            $(this.refs["process"]).attr(
+                "width",
+                100 * this.tickDone / this.timers.length + "%"
+            );
+        }
     }
 
     private shift(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
@@ -419,7 +477,6 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             const step: number = 2;
             const xStep: number = (item.x - item.prevX) / len * step;
             const yStep: number = (item.y - item.prevY) / len * step;
-            this.ctx2!.lineWidth = 0.8;
             
             while (
                 (xStep > 0 && x < item.x)
@@ -507,6 +564,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         }>, index: number) => {
             this.timers.push(setTimeout(() => {
                 this.tick(li);
+                this.makeStep();
             }, (index + 1) * 5));
         });
 
@@ -515,6 +573,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         }>, index: number) => {
             this.timers.push(setTimeout(() => {
                 this.link(li);
+                this.makeStep();
             }, (index + 1) * 5));
         });
     }
