@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-08 21:27:33
+ * @Last Modified time: 2020-04-10 20:35:37
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -380,10 +380,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             }} >
                 <SyncButton theme="NakiriAyame" text={
                     this.state.heat ? "on " : "off"
-                }
-                    executer={ this.shift.bind(this) } />
+                } executer={ this.shift.bind(this) } />
                 <ValueBar width={ 100 } height={ 16 }
-                min={ 4 } max={ 16 } defaultValue={ this.step }
+                min={ 4 } max={ 16 } defaultValue={ this.step } step={ 1 }
                 onValueChange={
                     this.adjust.bind(this)
                 }

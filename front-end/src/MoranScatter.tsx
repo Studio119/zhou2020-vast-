@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-08 21:00:34
+ * @Last Modified time: 2020-04-10 21:18:58
  */
 
 import React, { Component } from "react";
@@ -14,6 +14,7 @@ import { Container } from "./prototypes/Container";
 import axios, { AxiosResponse } from "axios";
 import { CommandResult, CommandError } from "./Command";
 import { SyncButton } from "./prototypes/SyncButton";
+import ValueBar from "./tools/ValueBar";
 
 
 export interface MoranScatterProps {
@@ -35,6 +36,7 @@ export interface MoranScatterState {
         };
     }>;
     strech: boolean;
+    nSpan: number;
 };
 
 export class MoranScatter extends Component<MoranScatterProps, MoranScatterState, null> {
@@ -66,7 +68,8 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         super(props);
         this.state = {
             list: [],
-            strech: false
+            strech: true,
+            nSpan: 32
         };
         this.canvas1 = null;
         this.canvas2 = null;
@@ -129,7 +132,10 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             let yMin: number = yAll.length ? Math.min(...yAll) : -1;
             let yMax: number = yAll.length ? Math.max(...yAll) : 1;
 
-            if (!this.state.strech) {
+            if (this.state.strech) {
+                [xMin, xMax] = [xMin - 1, xMax + 1];
+                [yMin, yMax] = [yMin - 1, yMax + 1];
+            } else {
                 [xMin, xMax] = [Math.min(xMin, - xMax), Math.max(xMax, - xMin)];
                 [yMin, yMax] = [Math.min(yMin, - yMax), Math.max(yMax, - yMin)];
             }
@@ -140,22 +146,20 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             let spansX: Array<number> = [];
             let spansY: Array<number> = [];
 
-            const nSpan: number = 36;
-
-            if (this.state.strech && this.state.list.length >= nSpan) {
+            if (this.state.strech && this.state.list.length >= this.state.nSpan) {
                 this.snapshots.kX = [];
                 this.snapshots.kY = [];
-                for (let i: number = 0; i < nSpan; i++) {
+                for (let i: number = 0; i < this.state.nSpan; i++) {
                     spansX.push(0);
                     this.snapshots.kX.push({
-                        floor: xMin + (xMax - xMin) * 0.99999 / nSpan * i,
-                        ceil: xMin + (xMax - xMin) * 0.99999 / nSpan * (i + 1),
+                        floor: xMin + (xMax - xMin) * 0.99999 / this.state.nSpan * i,
+                        ceil: xMin + (xMax - xMin) * 0.99999 / this.state.nSpan * (i + 1),
                         f: () => NaN
                     });
                     spansY.push(0);
                     this.snapshots.kY.push({
-                        floor: yMin + (yMax - yMin) * 0.99999 / nSpan * i,
-                        ceil: yMin + (yMax - yMin) * 0.99999 / nSpan * (i + 1),
+                        floor: yMin + (yMax - yMin) * 0.99999 / this.state.nSpan * i,
+                        ceil: yMin + (yMax - yMin) * 0.99999 / this.state.nSpan * (i + 1),
                         f: () => NaN
                     });
                 }
@@ -165,11 +169,19 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     mx: number;
                     my: number;
                 }) => {
-                    spansX[Math.floor((d.mx - xMin) / (xMax - xMin) * nSpan * 0.99999)] ++;
-                    spansY[Math.floor((d.my - yMin) / (yMax - yMin) * nSpan * 0.99999)] ++;
+                    spansX[Math.floor((d.mx - xMin) / (xMax - xMin) * this.state.nSpan * 0.99999)] ++;
+                    spansY[Math.floor((d.my - yMin) / (yMax - yMin) * this.state.nSpan * 0.99999)] ++;
                 });
-                for (let i: number = 0; i < nSpan; i++) {
-                    let dx: number = 0.8 * spansX[i] / this.state.list.length + 0.2 / nSpan;
+                let xS: number = 0;
+                let yS: number = 0;
+                for (let i: number = 0; i < this.state.nSpan; i++) {
+                    spansX[i] = Math.sqrt(spansX[i]);
+                    xS += spansX[i];
+                    spansY[i] = Math.sqrt(spansY[i]);
+                    yS += spansY[i];
+                }
+                for (let i: number = 0; i < this.state.nSpan; i++) {
+                    let dx: number = 0.7 * spansX[i] / xS + 0.3 / this.state.nSpan;
                     const tx: number = xOffset;
                     this.snapshots.kX[i].f = (d: number) => {
                         return tx
@@ -177,7 +189,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                 / (this.snapshots.kX[i].ceil - this.snapshots.kX[i].floor);
                     };
                     xOffset += dx;
-                    let dy: number = 0.8 * spansY[i] / this.state.list.length + 0.2 / nSpan;
+                    let dy: number = 0.7 * spansY[i] / yS + 0.3 / this.state.nSpan;
                     const ty: number = yOffset;
                     this.snapshots.kY[i].f = (d: number) => {
                         return ty
@@ -195,7 +207,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     ) * (d - this.snapshots.x[0]) / (this.snapshots.x[1] - this.snapshots.x[0]);
                 } else {
                     let i: number = 0;
-                    while (d > this.snapshots.kX[i].ceil && i + 1 < nSpan) {
+                    while (d > this.snapshots.kX[i].ceil && i + 1 < this.state.nSpan) {
                         i++;
                     }
                     return this.props.padding + (
@@ -211,7 +223,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     ) * (this.snapshots.y[1] - d) / (this.snapshots.y[1] - this.snapshots.y[0]);
                 } else {
                     let i: number = 0;
-                    while (d > this.snapshots.kY[i].ceil && i + 1 < nSpan) {
+                    while (d > this.snapshots.kY[i].ceil && i + 1 < this.state.nSpan) {
                         i++;
                     }
                     return this.props.padding + (
@@ -364,12 +376,24 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                 style={{
                     position: "relative",
                     top: "-1505px",
-                    left: "-162px"
+                    left: "8px",
+                    background: ColorThemes.NakiriAyame.OuterBackground,
+                    border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                    borderRadius: this.state.strech ? "0 12px 10px 0" : "0",
+                    width: this.state.strech ? "138px" : "35px",
                 }} >
                     <SyncButton theme="NakiriAyame" text={
                         this.state.strech ? "on " : "off"
+                    } executer={ this.shift.bind(this) } />
+                    <ValueBar width={ 80 } height={ 16 }
+                    min={ 1 } max={ 64 } defaultValue={ this.state.nSpan } step={ 1 }
+                    onValueChange={
+                        this.adjust.bind(this)
                     }
-                        executer={ this.shift.bind(this) } />
+                    style={{
+                        transform: "translateY(26%)",
+                        display: this.state.strech ? "inline-block" : "none"
+                    }} />
                 </div>
             </Container>
         );
@@ -425,6 +449,15 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             strech: !this.state.strech
         });
         resolve();
+    }
+
+    private adjust(value: number): void {
+        const v: number = Math.floor(value);
+        if (v !== this.state.nSpan) {
+            this.setState({
+                nSpan: v
+            });
+        }
     }
 
     private tick(

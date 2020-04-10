@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-07 15:08:14
+ * @Last Modified time: 2020-04-11 00:05:58
  */
 
 const express = require('express');
@@ -129,6 +129,43 @@ app.get("/get/:filepath", (req, res) => {
                     "get sampled",
                     true,
                     JSON.parse(data)
+                )
+            );
+        }
+    });
+});
+
+
+app.get("/random/:filepath/:rate", (req, res) => {
+    const path = pathInput + req.params["filepath"].split("_dot").join(".");
+    const output_path = path.replace(".csv", "_r.json").replace(pathInput, pathOutput);
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+    const cmd = "CHCP 65001 & .\\public\\cpp\\randomSample "
+                    + req.params["rate"] + " < " + path + " > " + output_path;
+
+    process.exec(cmd, (error, _, stderr) => {
+        if (stderr) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    stderr
+                )
+            );
+        } else if (error) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    error
+                )
+            );
+        } else {
+            res.json(
+                formatResult(
+                    cmd,
+                    true,
+                    JSON.parse(fs.readFileSync(output_path))
                 )
             );
         }

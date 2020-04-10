@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-06 23:50:26
+ * @Last Modified time: 2020-04-10 20:33:55
  */
 
 import React, { Component } from "react";
@@ -197,15 +197,15 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="1"
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "33.3%",
+                                width: "16%",
                                 padding: "2px 0"
                             }} >
-                                Load Population
+                                Load
                             </th>
                             <th key="2" colSpan={ 2 } rowSpan={ 2 }
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "33.3%",
+                                width: "36%",
                                 padding: 0,
                                 textAlign: 'left'
                             }} >
@@ -245,10 +245,18 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="3"
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "33.3%",
+                                width: "28%",
                                 padding: "2px 0"
                             }} >
                                 Apply
+                            </th>
+                            <th key="4"
+                            style={{
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                                width: "20%",
+                                padding: "2px 0"
+                            }} >
+                                Better
                             </th>
                         </tr>
                         <tr key="buttons" >
@@ -267,6 +275,18 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             }} >
                                 <SyncButton theme="NakiriAyame" text={ "o" }
                                     executer={ this.executer.bind(this) } />
+                            </td>
+                            <td key="4"
+                            style={{
+                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                                padding: "6px 0"
+                            }} >
+                                <SyncButton theme="NakiriAyame" text={ "o" }
+                                    executer={
+                                        (resolve: () => void) => {
+                                            resolve();
+                                        }
+                                    } />
                             </td>
                         </tr>
                     </tbody>

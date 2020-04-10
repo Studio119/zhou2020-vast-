@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-26 18:44:41 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2019-11-28 15:25:40
+ * @Last Modified time: 2020-04-10 21:04:19
  */
 
 import React, { Component } from 'react';
@@ -148,9 +148,13 @@ class ValueBar extends Component<ValueBarProps, ValueBarState, {}> {
     protected valueAfterDragging: number;
     protected timeoutHandler: NodeJS.Timeout | null;
     protected callbackHandler: ValueChangeCallback<ValueBarState>;
+    protected static count: number = 0;
+    protected id: number;
 
     public constructor(props: ValueBarProps) {
         super(props);
+        this.id = ValueBar.count;
+        ValueBar.count ++;
         this.dragging = false;
         this.xBeforeDragging = 0;
         this.cxBeforeDragging = 0;
@@ -214,7 +218,7 @@ class ValueBar extends Component<ValueBarProps, ValueBarState, {}> {
                 <svg className="ValueBarSVG" key="svg" xmlns="http://www.w3.org/2000/svg"
                         width={ this.props.width } height={ this.props.height }
                         style={{ display: 'inline-block' }} >
-                    <linearGradient id="B_grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <linearGradient id={ `B_grad${ this.id }` } x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" style={{
                             stopColor: Color.setLightness(
                                 ColorThemes.NakiriAyame.Grey, 0.5
@@ -237,12 +241,12 @@ class ValueBar extends Component<ValueBarProps, ValueBarState, {}> {
                     <rect key="background" ref="background"
                         x={ 10 } y={ this.props.height / 2 - 4 } rx={ 4 } ry={ 4 }
                         width={ this.props.width - 20 } height={ 6 }
-                        style={{ fill: 'url(#B_grad)' }} />
+                        style={{ fill: `url(#B_grad${ this.id })` }} />
                     <circle key="flag" ref="flag"
                         cx={ 10 + (this.props.width - 20)
                             * (this.state.value - this.props.min) / (this.props.max - this.props.min) }
                         cy={ 7 } r={ 6 }
-                        style={{ fill: 'url(#B_grad)', stroke: 'rgb(135, 137, 142)', strokeWidth: '2px' }} />
+                        style={{ fill: `url(#B_grad${ this.id })`, stroke: 'rgb(135, 137, 142)', strokeWidth: '2px' }} />
                 </svg>
                 {
                     this.showValue

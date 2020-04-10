@@ -13,6 +13,7 @@ using std::string;
 using std::to_string;
 using std::unique_ptr;
 using std::vector;
+using std::sort;
 
 
 // 常量定义
@@ -23,13 +24,15 @@ const double PI = 3.1415926535;
 
 // 数据点信息
 struct Point {
-    Point(double lat, double lng, double value);
+    Point(int id, double lat, double lng, double value);
+    int id;
     double lat;
     double lng;
     double value;
 };
 
-Point::Point(double lat, double lng, double value) {
+Point::Point(int id, double lat, double lng, double value) {
+    this->id = id;
     this->lat = lat;
     this->lng = lng;
     this->value = value;
@@ -68,6 +71,7 @@ bool Neighbor::operator<(const Neighbor& b) const {
 double toDouble(string str);
 string toString(const unsigned int* list, unsigned int len);
 unique_ptr< vector<Point> > loadFromCSV();
+void sample(vector<Point>& vect, vector<int>& indexList);
 
 
 // 算法类
@@ -174,7 +178,7 @@ const Z_Score* Z_Score::fit(const vector<Point>& vect) {
     // 遍历，时间复杂度 O(n^2)
     for (int i = 0; i < this->length; i++) {
         const Point a = Point({
-            vect[i].lat, vect[i].lng, val[i]
+            vect[i].id, vect[i].lat, vect[i].lng, val[i]
         });
         /* 按距离升序排列的其他点 */
         vector<Neighbor>* order = new vector<Neighbor>();
@@ -184,7 +188,7 @@ const Z_Score* Z_Score::fit(const vector<Point>& vect) {
                 continue;
             }
             const Point b = Point({
-                vect[j].lat, vect[j].lng, val[j]
+                vect[j].id, vect[j].lat, vect[j].lng, val[j]
             });
             /* 两点距离 */
             double dist = diff(a, b);
@@ -233,6 +237,7 @@ const Z_Score* Z_Score::fit(const vector<Point>& vect) {
         }
 
         cout << "{"
+            << "\"id\": " << vect[i].id << ", "
             << "\"type\": \"" << this->typeIdx(i) << "\", ";
         printf("\"lng\": %lf, ", vect[i].lng);
         printf("\"lat\": %lf, ", vect[i].lat);
@@ -306,7 +311,7 @@ unique_ptr< vector<Point> > loadFromCSV() {
             }
         } else if (c == CHAR_NEWLINE) {
             ptr_vect->push_back(Point({
-                lat, lng, toDouble(str)
+                int(ptr_vect->size()), lat, lng, toDouble(str)
             }));
             str = "";
             flag = ATTR::LAT;
@@ -352,6 +357,22 @@ string toString(const unsigned int* list, unsigned int len) {
     }
     str += to_string(list[len - 1]);
     return str + "]";
+}
+
+void sample(vector<Point>& vect, vector<int>& indexList) {
+    unique_ptr< vector<Point> > samples(new vector<Point>(vect));
+
+    vect.clear();
+
+    sort(indexList.begin(), indexList.end());
+
+    for (int i = 0; i < indexList.size(); i++) {
+        vect.push_back((*samples)[indexList[i]]);
+    }
+
+    samples->clear();
+
+    samples = nullptr;
 }
 
 #endif

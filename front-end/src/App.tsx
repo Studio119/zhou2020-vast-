@@ -2,9 +2,10 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-04 21:42:35
+ * @Last Modified time: 2020-04-11 01:44:41
  */
 import React, { Component } from 'react';
+import $ from "jquery";
 import './App.css';
 import { Map } from './Map';
 import { Container } from './prototypes/Container';
@@ -112,63 +113,60 @@ class App extends Component<{}, {}, null> {
   }
 
   private randomSample(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-    try {
-      (this.refs["map"] as Map).closeSketcher();
-      let target: number = 0;
-      (this.refs["loading"] as Loading).setState({
-        show: true
-      });
-      if ((window as any)['rate']) {
-        target = (window as any)['rate'] as number;
+    System.type = "sample";
+
+    this.map!.load([]);
+    this.sct!.load([]);
+    System.active = [];
+    (this.refs["loading"] as Loading).setState({
+      show: true
+    });
+
+    System.data.forEach((d: DataItem) => {
+      d.target = void 0;
+    });
+
+    const rate: number = parseFloat($("input[name=rate]").val()! as string);
+
+    const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
+      `/random/${ System.filepath!.split(".").join("_dot") }/${ rate }`, {
+          headers: 'Content-type:text/html;charset=utf-8'
+      }
+    );
+    p.then((value: AxiosResponse<CommandResult<FileData.Mode|CommandError>>) => {
+      if (value.data.state === "successed") {
+        (value.data.value as FileData.Mode).forEach((item: {
+            id: number;
+            type: LISAtype;
+            mx: number;
+            my: number;
+        }) => {
+          const index: number = item.id;
+          System.active[index] = true;
+          System.data[index].target = {
+            type: item.type,
+            mx: item.mx,
+            my: item.my
+          };
+        });
+
+        this.map!.load(System.data);
+
+        setTimeout(() => {
+          this.sct!.load(System.data);
+          resolve();
+          (this.refs["loading"] as Loading).setState({
+            show: false
+          });
+          System.update();
+        }, 0);
       } else {
-        System.active.forEach((value: boolean) => {
-          if (value) {
-            target++;
-          }
+        reject();
+        (this.refs["loading"] as Loading).setState({
+          show: false
         });
       }
-      System.active.fill(false, 0, System.active.length);
-      let count: number = 0;
-      while (count < target) {
-        const r: number = Math.floor(Math.random() * System.active.length);
-        if (System.active[r]) {
-          continue;
-        } else {
-          System.active[r] = true;
-          count++;
-        }
-      }
-      System.type = "sample";
-      this.map!.load([]);
-      this.sct!.load([]);
-      setTimeout(() => {
-        this.sct!.run((s: boolean) => {
-          if (s) {
-            this.fetch(() => {
-              resolve();
-              (this.refs["loading"] as Loading).setState({
-                show: false
-              });
-            }, () => {
-              reject();
-              (this.refs["loading"] as Loading).setState({
-                show: false
-              });
-            }, "sample");
-          } else {
-            reject();
-            (this.refs["loading"] as Loading).setState({
-              show: false
-            });
-          }
-        });
-      }, 2000);
-    } catch(err) {
-      reject(err);
-      (this.refs["loading"] as Loading).setState({
-        show: false
-      });
-    }
+    });
   }
 
   private async fetch(
