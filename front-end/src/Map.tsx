@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-10 20:35:37
+ * @Last Modified time: 2020-04-11 21:40:31
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -188,7 +188,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: this.state.heat ? 1 : 0
+                        opacity: this.state.heat ? 1 : 0,
+                        background: "#eeeeee"
                     }} />
                     <canvas key="1" id={ this.props.id + "_canvas" } ref="canvas"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{

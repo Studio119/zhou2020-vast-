@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-11 15:41:16
+ * @Last Modified time: 2020-04-11 22:39:16
  */
 
 const express = require('express');
@@ -178,6 +178,123 @@ app.get("/zorder/:filepath/:rate", (req, res) => {
     const cmd = "CHCP 65001 & .\\public\\cpp\\nativeZOrder "
                     + req.params["rate"]
                     + " " + path + " < " + json_path + " > " + output_path;
+
+    process.exec(cmd, (error, _, stderr) => {
+        if (stderr) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    stderr
+                )
+            );
+        } else if (error) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    error
+                )
+            );
+        } else {
+            res.json(
+                formatResult(
+                    cmd,
+                    true,
+                    JSON.parse(fs.readFileSync(output_path))
+                )
+            );
+        }
+    });
+});
+
+
+app.get("/bns/:filepath/:radius", (req, res) => {
+    const path = pathInput + req.params["filepath"].split("_dot").join(".");
+    const json_path = path.replace(".csv", ".json").replace(pathInput, pathOutput);
+    const output_path = path.replace(".csv", "_b.json").replace(pathInput, pathOutput);
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+    const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\bns.py"
+                    + " " + json_path
+                    + " " + req.params["radius"];
+
+    process.exec(cmd, (error, _, stderr) => {
+        if (stderr) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    stderr
+                )
+            );
+        } else if (error) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    error
+                )
+            );
+        } else {
+            res.json(
+                formatResult(
+                    cmd,
+                    true,
+                    JSON.parse(fs.readFileSync(output_path))
+                )
+            );
+        }
+    });
+});
+
+
+app.get("/ours/:filepath/:alpha/:rate", (req, res) => {
+    const path = pathInput + req.params["filepath"].split("_dot").join(".");
+    const json_path = path.replace(".csv", ".json").replace(pathInput, pathOutput);
+    const output_path = path.replace(".csv", "_o.json").replace(pathInput, pathOutput);
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+    const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\ours.py"
+                    + " " + json_path
+                    + " " + req.params["alpha"]
+                    + " " + req.params["rate"];
+
+    process.exec(cmd, (error, _, stderr) => {
+        if (stderr) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    stderr
+                )
+            );
+        } else if (error) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    error
+                )
+            );
+        } else {
+            res.json(
+                formatResult(
+                    cmd,
+                    true,
+                    JSON.parse(fs.readFileSync(output_path))
+                )
+            );
+        }
+    });
+});
+
+
+app.get("/better/:filepath", (req, res) => {
+    const path = pathInput + req.params["filepath"].split("_dot").join(".");
+    const json_path = path.replace(".csv", "_o.json").replace(pathInput, pathOutput);
+    const output_path = json_path.replace("_o.json", "_ob.json");
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+    const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\better.py"
+                    + " " + json_path;
 
     process.exec(cmd, (error, _, stderr) => {
         if (stderr) {

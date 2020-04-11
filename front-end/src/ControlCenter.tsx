@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-11 15:15:51
+ * @Last Modified time: 2020-04-11 22:36:55
  */
 
 import React, { Component } from "react";
@@ -17,9 +17,11 @@ export interface ControlCenterProps {
     height: number;
     padding: [number, number];
     reset: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
-    apply: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
+    ourSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     randomSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     zorderSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
+    blueNoiseSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
+    better: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
 };
 
 export interface ControlCenterState {
@@ -283,11 +285,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 padding: "6px 0"
                             }} >
                                 <SyncButton theme="NakiriAyame" text={ "o" }
-                                    executer={
-                                        (resolve: () => void) => {
-                                            resolve();
-                                        }
-                                    } />
+                                    executer={ this.props.better } />
                             </td>
                         </tr>
                     </tbody>
@@ -307,19 +305,17 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
         });
     }
 
-
     private executer(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
         const val: string = $("input[name=algo]:checked").val()! as string;
         
         if (val === "this_paper") {
-            this.props.apply(resolve, reject);
+            this.props.ourSample(resolve, reject);
         } else if (val === "random_sampling") {
             this.props.randomSample(resolve, reject);
         } else if (val === "pure_z-order") {
             this.props.zorderSample(resolve, reject);
-        } else {
-            alert("未实装的采样");
-            reject("未实装的采样");
+        } else if (val === "blue_noise_sampling") {
+            this.props.blueNoiseSample(resolve, reject);
         }
     }
 }
