@@ -7,6 +7,7 @@
 #include <string>
 #include <math.h>
 #include <algorithm>
+#include <fstream>
 
 using std::cout;
 using std::string;
@@ -14,6 +15,7 @@ using std::to_string;
 using std::unique_ptr;
 using std::vector;
 using std::sort;
+using std::ifstream;
 
 
 // 常量定义
@@ -71,7 +73,9 @@ bool Neighbor::operator<(const Neighbor& b) const {
 double toDouble(string str);
 string toString(const unsigned int* list, unsigned int len);
 unique_ptr< vector<Point> > loadFromCSV();
+unique_ptr< vector<Point> > loadFromCSV(string path);
 void sample(vector<Point>& vect, vector<int>& indexList);
+void sample(vector<Point>& vect, vector<uint16_t>& indexList);
 
 
 // 算法类
@@ -325,6 +329,60 @@ unique_ptr< vector<Point> > loadFromCSV() {
     return ptr_vect;
 }
 
+unique_ptr< vector<Point> > loadFromCSV(string path) {
+    ifstream fin;
+
+    fin.open(path);
+
+    if (!fin.is_open()) {
+        return nullptr;
+    }
+
+    unique_ptr< vector<Point> > ptr_vect(new vector<Point>());
+
+    char c = fin.get();
+
+    string str = "";
+
+    double lat;
+    double lng;
+
+    enum class ATTR {
+        LAT, LNG, VALUE
+    };
+    ATTR flag = ATTR::LAT;
+
+    while (c != EOF) {
+        if (c == CHAR_COMMA) {
+            switch (flag) {
+            case ATTR::LAT:
+                lat = toDouble(str);
+                str = "";
+                flag = ATTR::LNG;
+                break;
+            case ATTR::LNG:
+                lng = toDouble(str);
+                str = "";
+                flag = ATTR::VALUE;
+                break;
+            }
+        } else if (c == CHAR_NEWLINE) {
+            ptr_vect->push_back(Point({
+                int(ptr_vect->size()), lat, lng, toDouble(str)
+            }));
+            str = "";
+            flag = ATTR::LAT;
+        } else {
+            str += c;
+        }
+        c = fin.get();
+    }
+
+    fin.close();
+
+    return ptr_vect;
+}
+
 double toDouble(string str) {
     double num = 0;
     short digit = -1;
@@ -360,6 +418,22 @@ string toString(const unsigned int* list, unsigned int len) {
 }
 
 void sample(vector<Point>& vect, vector<int>& indexList) {
+    unique_ptr< vector<Point> > samples(new vector<Point>(vect));
+
+    vect.clear();
+
+    sort(indexList.begin(), indexList.end());
+
+    for (int i = 0; i < indexList.size(); i++) {
+        vect.push_back((*samples)[indexList[i]]);
+    }
+
+    samples->clear();
+
+    samples = nullptr;
+}
+
+void sample(vector<Point>& vect, vector<uint16_t>& indexList) {
     unique_ptr< vector<Point> > samples(new vector<Point>(vect));
 
     vect.clear();

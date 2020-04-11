@@ -6,7 +6,9 @@ import random
 import pymorton as pm
 import math
 from Z_score1 import Z_score
-from newBlue import update1, update2
+from BNS import update1, update2
+import sys
+
 
 def Zorder_auto(filename, m, N):
 
@@ -101,7 +103,7 @@ def Zorder_auto(filename, m, N):
     return A, correct, RecomputingPoints, mean/(len(oriData))
 
 
-def Zorder_auto_voting(filename, m, N):
+def Zorder_auto_voting(filename, m, sample_rate):
     ori = []
     sample = []
     with open(filename, 'r', encoding='utf8') as f:
@@ -127,9 +129,10 @@ def Zorder_auto_voting(filename, m, N):
 
     a1 = sorted(geo_hash_dict.items(), key=lambda x: x[1], reverse=True)
 
-    aa = 27637
+    aa = len(ori)
 
-    num = N
+    num = int(aa * sample_rate + 0.5)
+
     num1 = math.floor(aa / num)
     if (aa - num * num1) % num1 == 0:
         num += math.floor((aa - num * num1) / num1)
@@ -145,7 +148,6 @@ def Zorder_auto_voting(filename, m, N):
         else:
             b = a1[i * num1: (i + 1) * num1]
         z_lsit.append(b)
-        # print(b, i)
         c = random.sample(b, 1)
         sample_list.append(c[0][0])
 
@@ -187,11 +189,11 @@ def Zorder_auto_voting(filename, m, N):
         c_list.append([H_list, L_list])
         M_list.append([HH, HL, LL, LH])
         A_list.append([NH, NL])
-    # print(c_list)
+        
     # 找到邻接分组
     nearbyM = {}
     for i in range(grouping_number):
-        temp ={}
+        temp = {}
         for j in range(grouping_number):
             if i == j:
                 continue
@@ -217,19 +219,13 @@ def Zorder_auto_voting(filename, m, N):
 
     with open('./z-order/nearbyM.json', 'w', encoding='utf8') as f:
         f.write(json.dumps(nearbyM))
+
     with open('./z-order/bynearM.json', 'w', encoding='utf8') as f:
         f.write(json.dumps(bynearM))
-    # nearbyM = []
-    # bynearM = []
-    # with open('./z-order/nearbyM.json', 'r', encoding='utf8') as f:
-    #     for i in f:
-    #         nearbyM = json.loads(i)
-    # with open('./z-order/bynearM.json', 'r', encoding='utf8') as f:
-    #     for i in f:
-    #         bynearM = json.loads(i)
+        
     with open('./z-order/nearbyM1.json', 'w', encoding='utf8') as f:
         f.write(json.dumps(M_list))
-    # print(M_list)
+        
     a = update2(ori, c_list, nearbyM, bynearM, M_list, A_list)
 
     A = [{
@@ -272,12 +268,14 @@ def Zorder_auto_voting(filename, m, N):
             correct += 1
     return A, correct, RecomputingPoints, ori, mean/len(oriData)
 
-# def updating(grouping_list, )
 
 if __name__ == '__main__':
-    filename = './blue noise/healthy_output_81.json'
+    filename = sys.argv[1]      # 文件名
+    sample_rate = sys.argv[2]   # 采样率
+
     m = Z_score(k=8, mode="euclidean", equal=False)
-    A , correct, RecomputingPoints, Original, sampleM = Zorder_auto_voting(filename, m, 2000)
+    
+    A, correct, RecomputingPoints, Original, sampleM = Zorder_auto_voting(filename, m, sample_rate)
     oriData = A
     original_mean = 0
     for i in Original:

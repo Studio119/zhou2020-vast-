@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-11 01:44:41
+ * @Last Modified time: 2020-04-11 15:17:38
  */
 import React, { Component } from 'react';
 import $ from "jquery";
@@ -37,8 +37,10 @@ class App extends Component<{}, {}, null> {
         }}>
           <Container theme="NakiriAyame" title="Data View">
             <ControlCenter width={ 386 } height={ 267 } padding={ [20, 20] }
-            apply={ this.apply.bind(this) } randomSample={ this.randomSample.bind(this) }
-            reset={ this.load.bind(this) } />
+            reset={ this.load.bind(this) }
+            apply={ this.apply.bind(this) }
+            randomSample={ this.randomSample.bind(this) }
+            zorderSample={ this.zorderSample.bind(this) } />
           </Container>
           <HighlightItems ref="hl" height={ 104 } />
           <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 12 } />
@@ -130,6 +132,63 @@ class App extends Component<{}, {}, null> {
 
     const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
       `/random/${ System.filepath!.split(".").join("_dot") }/${ rate }`, {
+          headers: 'Content-type:text/html;charset=utf-8'
+      }
+    );
+    p.then((value: AxiosResponse<CommandResult<FileData.Mode|CommandError>>) => {
+      if (value.data.state === "successed") {
+        (value.data.value as FileData.Mode).forEach((item: {
+            id: number;
+            type: LISAtype;
+            mx: number;
+            my: number;
+        }) => {
+          const index: number = item.id;
+          System.active[index] = true;
+          System.data[index].target = {
+            type: item.type,
+            mx: item.mx,
+            my: item.my
+          };
+        });
+
+        this.map!.load(System.data);
+
+        setTimeout(() => {
+          this.sct!.load(System.data);
+          resolve();
+          (this.refs["loading"] as Loading).setState({
+            show: false
+          });
+          System.update();
+        }, 0);
+      } else {
+        reject();
+        (this.refs["loading"] as Loading).setState({
+          show: false
+        });
+      }
+    });
+  }
+
+  private zorderSample(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
+    System.type = "sample";
+
+    this.map!.load([]);
+    this.sct!.load([]);
+    System.active = [];
+    (this.refs["loading"] as Loading).setState({
+      show: true
+    });
+
+    System.data.forEach((d: DataItem) => {
+      d.target = void 0;
+    });
+
+    const rate: number = parseFloat($("input[name=rate]").val()! as string);
+
+    const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
+      `/zorder/${ System.filepath!.split(".").join("_dot") }/${ rate }`, {
           headers: 'Content-type:text/html;charset=utf-8'
       }
     );

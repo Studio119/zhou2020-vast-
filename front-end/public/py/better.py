@@ -30,7 +30,6 @@ def far_radius(p1, p2_list):
 
 def z_replacement(filename, m):
     # 优化选点
-    # filename1 = './outputdata/new_quadtree_sample_21.json'
     possionCenter = []
     oriData = []
 
@@ -56,8 +55,6 @@ def z_replacement(filename, m):
     for i in possionCenter:
         point_index_list.append(i['id'])
     for index, i in enumerate(possionCenter):
-        # if index ==1763 or index ==1767:
-        #     print(i)
         # 找出邻近的泊松盘，起始都是中心点
         mean_after += i['value']
         near = i['neighbors']
@@ -73,24 +70,18 @@ def z_replacement(filename, m):
 
     mean_after = mean_after/samplingR
 
-    # print(dict)
     P = 0.6
     unm = 0
     dict1 = []
     for i in dict:
         if i['near'][0]/8 >= P and (i['type'] == 'HL' or i['type'] == 'LL'):
             dict1.append(i)
-            # print(i)
             unm += 1
         if i['near'][1]/8 >= P and (i['type'] == 'HH' or i['type'] == 'LH'):
-            # print(i)
             dict1.append(i)
             unm += 1
     unm1 = unm
-    # print(unm)
-
-    # Termi = 0
-    # while len(dict1) != 0 and Termi != 10:
+    
     for i in dict1:
         Boo = False
         if i['near'].index(max(i['near'])) == 0:
@@ -151,34 +142,7 @@ def z_replacement(filename, m):
                                      "lng": oriData[randomPoint]['lng'],
                                      "value": oriData[randomPoint]['value'],
                                      "type": oriData[randomPoint]['type']}
-        # # 重新计算本身点和邻接情况
-        # dict = []
-        # for index, i in enumerate(possionCenter):
-        #     # 找出邻近的泊松盘，起始都是中心点
-        #     near = diskNearby[index][str(index)]
-        #     H_number = 0
-        #     L_number = 0
-        #     for j in near:
-        #         if possionCenter[int(j)]['type'] == 'HH' or possionCenter[int(j)]['type'] == 'HL':
-        #             H_number += 1
-        #         else:
-        #             L_number += 1
-        #     dict.append({'type': i['type'], 'near': [H_number, L_number], 'index': index})
-        # dict1 = []
-        # unm = 0
-        # for i in dict:
-        #     if i['near'][0] / 10 >= P and (i['type'] == 'HL' or i['type'] == 'LL'):
-        #         dict1.append(i)
-        #         unm += 1
-        #     if i['near'][1] / 10 >= P and (i['type'] == 'HH' or i['type'] == 'LH'):
-        #         dict1.append(i)
-        #         unm += 1
-        # print(unm)
-        # if unm1 == unm:
-        #     Termi += 1
-        # else:
-        #     Termi = 0
-        # unm1 = unm
+
     A = [{
         "lng": d["lng"],
         "lat": d["lat"],
@@ -205,10 +169,11 @@ def z_replacement(filename, m):
                 "neighbors": neighbors
             })
         json.dump(res, f)
+
     with open('./z-order/update_order_healthy_output_{}.json'.format(m.k), 'r', encoding='utf-8') as f:
         for i in f:
             RecomputingPoints = json.loads(i)
-    # oriData = possionCenter
+
     correct = 0
     mean = 0
     for i in range(len(possionCenter)):
@@ -221,7 +186,6 @@ def z_replacement(filename, m):
 
 def z_replacement1(filename, m):
     # 优化选点
-    # filename1 = './outputdata/new_quadtree_sample_21.json'
     possionCenter = []
     oriData = []
     diskCoverPoints = []
@@ -254,10 +218,6 @@ def z_replacement1(filename, m):
     for i in possionCenter:
         point_index_list.append(i['id'])
     for index, i in enumerate(possionCenter):
-        # print(i)
-        # print(diskCoverPoints[index])
-        # if index ==1763 or index ==1767:
-        #     print(i)
         # 找出邻近的泊松盘，起始都是中心点
         mean_after += i['value']
         if i['type'] == oriData[i['id']]['type']:
@@ -274,7 +234,6 @@ def z_replacement1(filename, m):
 
     mean_after = mean_after/samplingR
 
-    # print(dict)
     P = 0.6
     unm = 0
     unm1 = 0
@@ -286,35 +245,15 @@ def z_replacement1(filename, m):
             continue
         if i['near'][0]/8 >= P and (i['type'] == 'HL' or i['type'] == 'LL'):
             dict1.append(i)
-            # print(i)
-        # if i['near'][0]/8 == 0.5 and i['sampled'] != oriData[i['index']]['type']:
-        #     print(i)
-        #     # print(i)
-        #     unm += 1
-        # if (i['near'][0]/8 == 6/8 or i['near'][1]/8 == 6/8) and i['sampled'] != oriData[i['index']]['type']:
-        #     print(i)
-        #     # print(i)
-        #     unm1 += 1
-        # if (i['near'][0]/8 == 7/8 or i['near'][1]/8 == 7/8) and i['sampled'] != oriData[i['index']]['type']:
-        #     print(i)
-        #     # print(i)
-        #     unm2 += 1
         if i['near'][1]/8 >= P and (i['type'] == 'HH' or i['type'] == 'LH'):
-            # print(i)
             dict1.append(i)
-    # unm1 = unm
-    # print(unm, unm1, unm2, 2126-correct)
 
     Termi = 0
-    # while len(dict1) != 0 and Termi != 10:
-    # print(len(diskCoverPoints))
-    # print(dict1)
-    # while len(dict1) != 0 and Termi != 10:
+    
     for i in dict1:
         Boo = False
         if i['near'].index(max(i['near'])) == 0:
             temp = diskCoverPoints[i['counterpart']][0] + diskCoverPoints[i['counterpart']][3]
-            # print(temp)
             if not temp:
                 continue
             else:
@@ -322,31 +261,6 @@ def z_replacement1(filename, m):
                 if randomPoint in point_index_list:
                     print('wrong', randomPoint, i)
                     print(diskCoverPoints[i['counterpart']])
-            # 计算最远点半径
-            # nearlist = []
-            # for j in i['neighbor']:
-            #     nearlist.append(oriData[j])
-            # maxR = far_radius(oriData[i['index']], nearlist)
-            # # 找出以最远点为半径，且符合条件的候选点
-            # temp = []
-            # for index, j in enumerate(oriData):
-            #     if index == i['index']:
-            #         continue
-            #     else:
-            #         if getGeoDistance(oriData[i['index']], j) <= maxR and (j['type'] =='HH' or j['type'] == 'LH'):
-            #             temp.append(index)
-            # if not temp:
-            #     continue
-            # randomPoint = random.sample(temp, 1)[0]
-            # while randomPoint in point_index_list:
-            #     if len(temp) == 1:
-            #         Boo = True
-            #         break
-            #     elif len(temp) != 1:
-            #         temp.remove(randomPoint)
-            #         randomPoint = random.sample(temp, 1)[0]
-            # if Boo:
-            #     continue
         else:
             temp = diskCoverPoints[i['counterpart']][1] + diskCoverPoints[i['counterpart']][2]
             if not temp:
@@ -356,31 +270,7 @@ def z_replacement1(filename, m):
                 if randomPoint in point_index_list:
                     print('wrong', randomPoint, i)
                     print(diskCoverPoints[i['counterpart']])
-            # 计算最远点半径
-            # nearlist = []
-            # for j in i['neighbor']:
-            #     nearlist.append(oriData[j])
-            # maxR = far_radius(oriData[i['index']], nearlist)
-            # # 找出以最远点为半径，且符合条件的候选点
-            # temp = []
-            # for index, j in enumerate(oriData):
-            #     if index == i['index']:
-            #         continue
-            #     else:
-            #         if getGeoDistance(oriData[i['index']], j) <= maxR and (j['type'] =='LL' or j['type'] == 'HL'):
-            #             temp.append(index)
-            # if not temp:
-            #     continue
-            # randomPoint = random.sample(temp, 1)[0]
-            # while randomPoint in point_index_list:
-            #     if len(temp) == 1:
-            #         Boo = True
-            #         break
-            #     elif len(temp) != 1:
-            #         temp.remove(randomPoint)
-            #         randomPoint = random.sample(temp, 1)[0]
-            # if Boo:
-            #     continue
+                    
         point_index_list.remove(possionCenter[i['counterpart']]['id'])
         point_index_list.append(randomPoint)
         possionCenter[i['counterpart']] = {"id": randomPoint, "lat": oriData[randomPoint]['lat'],
@@ -465,6 +355,3 @@ if __name__ == '__main__':
     a, b, c, d, e = z_replacement1(filename, m)
     print(b)
     pass
-#
-# mean_afterafter = mean_afterafter/samplingR
-# print(mean_before, mean_after, mean_afterafter)

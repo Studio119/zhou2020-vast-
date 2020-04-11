@@ -16,6 +16,9 @@ int main(int argc, char const *argv[]) {
     // 读取 csv 文件
     unique_ptr< vector<Point> > ptr_origin = loadFromCSV();
 
+    // 重置种子
+    srand(time(NULL));
+
     unique_ptr<Z_Score> z_score(new Z_Score(8));
 
     // 所有的索引

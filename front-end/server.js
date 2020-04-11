@@ -2,13 +2,13 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-11 00:05:58
+ * @Last Modified time: 2020-04-11 15:41:16
  */
 
 const express = require('express');
 const app = express();
+const fs = require("fs");
 const process = require('child_process');
-const fs = require("fs")
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -26,9 +26,6 @@ function formatResult(cmd, state, value) {
     };
 }
 
-function parseCSV(b) {
-    return decodeURI(b).split("\n").filter(d => d.includes(","));
-}
 
 app.get("/zs/:filepath", (req, res) => {
     if (req.params["filepath"] === "temp") {
@@ -173,45 +170,41 @@ app.get("/random/:filepath/:rate", (req, res) => {
 });
 
 
-app.post("/take", (req, res) => {
-    const body = JSON.parse(Object.keys(req.body)[0]);
-    const file = body["dataset"];
-    const sample = body["list"];
-    const data = parseCSV(fs.readFileSync(pathInput + file));
+app.get("/zorder/:filepath/:rate", (req, res) => {
+    const path = pathInput + req.params["filepath"].split("_dot").join(".");
+    const json_path = path.replace(".csv", ".json").replace(pathInput, pathOutput);
+    const output_path = path.replace(".csv", "_z.json").replace(pathInput, pathOutput);
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+    const cmd = "CHCP 65001 & .\\public\\cpp\\nativeZOrder "
+                    + req.params["rate"]
+                    + " " + path + " < " + json_path + " > " + output_path;
 
-    let items = [];
-    
-    for (let i = 0; i < sample.length; i++) {
-        items.push(data[sample[i]]);
-    }
-    
-    fs.open(pathOutput + "temp_input.csv", 'w', (err, fd) => {
-        if (err) {
-            throw err;
+    process.exec(cmd, (error, _, stderr) => {
+        if (stderr) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    stderr
+                )
+            );
+        } else if (error) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    error
+                )
+            );
+        } else {
+            res.json(
+                formatResult(
+                    cmd,
+                    true,
+                    JSON.parse(fs.readFileSync(output_path))
+                )
+            );
         }
-
-        fs.writeSync(fd, items.join("\n") + "\n", 0, 'utf-8');
-
-        fs.close(fd, err => {
-            if (err) {
-                res.json(
-                    formatResult(
-                        "take sample",
-                        err,
-                        false
-                    )
-                );
-                throw err;
-            } else {
-                res.json(
-                    formatResult(
-                        "take sample",
-                        true,
-                        true
-                    )
-                );
-            }
-        });
     });
 });
 

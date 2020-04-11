@@ -9,7 +9,9 @@
 			"iostream": "cpp",
 			"ostream": "cpp",
 			"new": "cpp",
-			"vector": "cpp"
+			"vector": "cpp",
+			"xstring": "cpp",
+			"memory": "cpp"
 		}
 	}
 }

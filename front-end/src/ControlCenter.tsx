@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-10 20:33:55
+ * @Last Modified time: 2020-04-11 15:15:51
  */
 
 import React, { Component } from "react";
@@ -19,6 +19,7 @@ export interface ControlCenterProps {
     reset: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     apply: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     randomSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
+    zorderSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
 };
 
 export interface ControlCenterState {
@@ -215,7 +216,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     fontWeight: 'normal'
                                 }} >
                                     <input name="algo" type="radio" value="this_paper" />
-                                    This paper
+                                    Our method
                                 </label>
                                 <label key="random_sampling"
                                 style={{
@@ -314,6 +315,8 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
             this.props.apply(resolve, reject);
         } else if (val === "random_sampling") {
             this.props.randomSample(resolve, reject);
+        } else if (val === "pure_z-order") {
+            this.props.zorderSample(resolve, reject);
         } else {
             alert("未实装的采样");
             reject("未实装的采样");
