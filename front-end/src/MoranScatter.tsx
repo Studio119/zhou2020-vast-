@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-10 21:18:58
+ * @Last Modified time: 2020-04-12 16:54:17
  */
 
 import React, { Component } from "react";
@@ -68,7 +68,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         super(props);
         this.state = {
             list: [],
-            strech: true,
+            strech: false,
             nSpan: 32
         };
         this.canvas1 = null;

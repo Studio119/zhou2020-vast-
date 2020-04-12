@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 15:19:04
+ * @Last Modified time: 2020-04-12 17:10:37
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -41,7 +41,7 @@ export interface MapViewState<T> {
         value: T;
         projection: number;
     }>;
-    heat: boolean;
+    behavior: "scatter" | "purity" | "KDE";
 }
 
 export interface Sketch {
@@ -89,7 +89,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.mounted = false;
         this.state = {
             data: [],
-            heat: true
+            behavior: "scatter"
         };
         this.canvas = null;
         this.ctx = null;
@@ -192,7 +192,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: this.state.heat ? 1 : 0,
+                        opacity: this.state.behavior === "scatter" ? 0 : 1,
                         background: "#eeeeee"
                     }} />
                     <canvas key="1" id={ this.props.id + "_canvas" } ref="canvas"
@@ -201,7 +201,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: System.type === "dataset" ? 1 : 0.25
+                        opacity: this.state.behavior === "scatter" ? (
+                            System.type === "dataset" ? 1 : 0.25
+                        ) : 0
                     }} />
                     <canvas key="2" id={ this.props.id + "_canvas2" } ref="canvas2"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
@@ -209,7 +211,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: System.type === "dataset" ? 1 : 0.25
+                        opacity: this.state.behavior === "scatter" ? (
+                            System.type === "dataset" ? 1 : 0.25
+                        ) : 0
                     }} />
                     <canvas key="r" id={ this.props.id + "_canvas_r" } ref="canvas_r"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
@@ -376,16 +380,28 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 position: "relative",
                 top: "-850px",
                 left: "12px",
-                width: this.state.heat ? "152px" : "35px",
+                width: this.state.behavior === "scatter" ? "109px" : "230px",
                 padding: "4px 6px",
                 marginBottom: "-56px",
                 background: ColorThemes.NakiriAyame.OuterBackground,
                 border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                borderRadius: this.state.heat ? "0 12px 10px 0" : 0
+                borderRadius: this.state.behavior === "scatter" ? 0 : "0 12px 10px 0"
             }} >
-                <SyncButton theme="NakiriAyame" text={
-                    this.state.heat ? "on " : "off"
-                } executer={ this.shift.bind(this) } />
+                <SyncButton theme="NakiriAyame" text="switch"
+                executer={ this.shift.bind(this) } />
+                <label
+                style={{
+                    display: 'inline-block',
+                    width: '45px',
+                    color: ColorThemes.NakiriAyame.InnerBackground,
+                    border: "1px solid " + ColorThemes.NakiriAyame.Green,
+                    padding: "1px 2px 3px 2px",
+                    margin: "0 0 0 6px",
+                    fontSize: "14px",
+                    fontWeight: 501
+                }} >
+                    { this.state.behavior }
+                </label>
                 <ValueBar width={ 100 } height={ 16 }
                 min={ 4 } max={ 16 } defaultValue={ this.step } step={ 1 }
                 onValueChange={
@@ -393,7 +409,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }
                 style={{
                     transform: "translateY(26%)",
-                    display: this.state.heat ? "inline-block" : "none"
+                    display: this.state.behavior === "scatter" ? "none" : "inline-block"
                 }} />
             </div>
         </>)
@@ -441,7 +457,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         System.highlight = (value: LISAtype | "none", value2?: LISAtype) => {
             if (value === "none") {
                 this.highlighted = [];
-                if (!this.state.heat) {
+                if (this.state.behavior === "scatter") {
                     this.redraw();
                 }
             } else {
@@ -871,204 +887,353 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     private heat(): void {
-        this.props.load(true);
+        if (this.state.behavior === "KDE") {
+            this.props.load(true);
 
-        const index: (x: number, y: number) => [number, number] = (x: number, y: number) => {
-            return [
-                Math.round(x / this.step),
-                Math.round(y / this.step)
-            ];
-        };
-
-        let box: Array<Array<boolean>> = [];
-
-        this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
-
-        // 网格
-        for (let y: number = 0; y <= this.props.width; y += this.step) {
-            box.push([]);
-            for (let x: number = 0; x <= this.props.width; x += this.step) {
-                box[y / this.step].push(false);
-            }
-        }
-
-        // 所有点
-        let points: Array<{
-            x: number;
-            y: number;
-        }> = [];
-
-        // 点中心
-        let centers: Array<{
-            cx: number;
-            cy: number;
-            x: number;
-            y: number;
-            type: LISAtype;
-            value: number;
-        }> = [];
-
-        let max: number = NaN;
-
-        this.state.data.forEach((d: {
-            lng: number;
-            lat: number;
-            value: LISAtype;
-            projection: number;
-        }, i: number) => {
-            if (this.props.filter && !System.active[i]) {
-                return;
-            }
-            
-            const pos: [number, number] = index(this.fx(d.lng), this.fy(d.lat));
-            const x: number = this.step * (pos[0] + 0.5);
-            const y: number = this.step * (pos[1] + 0.5);
-
-            points.push({
-                x: x,
-                y: y
-            });
-            
-            if (pos[0] < 0 || pos[0] >= box.length
-                || pos[1] < 0 || pos[1] >= box[0].length
-                || box[pos[0]][pos[1]]) {
-                return;
-            }
-            box[pos[0]][pos[1]] = true;
-            
-            let neighbors: Array<{
-                index: number;
-                dist: number;
-            }> = [];
-
-            this.state.data.forEach((e: {
-                lng: number;
-                lat: number;
-                value: LISAtype;
-                projection: number;
-            }, j: number) => {
-                if (i === j) {
-                    return;
-                }
-                if (this.props.filter && !System.active[j]) {
-                    return;
-                }
-                const dist: number = Math.sqrt(
-                    Math.pow(this.fx(e.lng) - x, 2)
-                    + Math.pow(this.fy(e.lat) - y, 2)
-                );
-                if (dist < 1e-6) {
-                    return;
-                }
-                if (neighbors.length < 13 || neighbors[12].dist > dist) {
-                    neighbors.push({
-                        index: j,
-                        dist: dist
-                    });
-                    neighbors.sort((a, b) => {
-                        return a.dist - b.dist;
-                    });
-                    if (neighbors.length > 13) {
-                        neighbors.length = 13;
-                    }
-                }
-            });
-
-            let max: number = 0;
-            let TYPE: LISAtype = d.value;
-
-            let count = {
-                HH: 0,
-                LH: 0,
-                LL: 0,
-                HL: 0
-            };
-
-            for (let k: number = 0; k < neighbors.length; k++) {
-                const n: {index: number; dist: number} = neighbors[k];
-                if (k <= 7) {
-                    count[this.state.data[n.index].value] ++;
-                    if (count[this.state.data[n.index].value] > max) {
-                        max = count[this.state.data[n.index].value];
-                        TYPE = this.state.data[n.index].value;
-                    }
-                } else {
-                    let t: number = 0;
-                    if (count.HH === max) {
-                        t ++;
-                    }
-                    if (count.LH === max) {
-                        t ++;
-                    }
-                    if (count.LL === max) {
-                        t ++;
-                    }
-                    if (count.HL === max) {
-                        t ++;
-                    }
-                    if (t === 1) {
-                        break;
-                    }
-                }
-            }
-
-            centers.push({
-                cx: x,
-                cy: y,
-                x: this.step * pos[0],
-                y: this.step * pos[1],
-                type: TYPE,
-                value: NaN
-            });
-        });
-
-        const p: Promise<AxiosResponse<CommandResult<FileData.Kde|CommandError>>> = axios.post(
-            `/kde`, {
-                points: points,
-                centers: centers
-            }
-        );
-
-        p.then((value: AxiosResponse<CommandResult<FileData.Kde|CommandError>>) => {
-            if (value.data.state === "successed") {
-                (value.data.value as FileData.Kde).forEach((val: number, i: number) => {
-                    centers[i].value = val;
-                    if (isNaN(max) || val > max) {
-                        max = val;
-                    }
-                });
+            setTimeout(() => {
+                const index: (x: number, y: number) => [number, number] = (x: number, y: number) => {
+                    return [
+                        Math.round(x / this.step),
+                        Math.round(y / this.step)
+                    ];
+                };
         
-                centers.forEach((p: {
+                let box: Array<Array<boolean>> = [];
+        
+                this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+        
+                // 网格
+                for (let y: number = 0; y <= this.props.width; y += this.step) {
+                    box.push([]);
+                    for (let x: number = 0; x <= this.props.width; x += this.step) {
+                        box[y / this.step].push(false);
+                    }
+                }
+        
+                // 所有点
+                let points: Array<{
+                    x: number;
+                    y: number;
+                }> = [];
+        
+                // 点中心
+                let centers: Array<{
+                    cx: number;
+                    cy: number;
                     x: number;
                     y: number;
                     type: LISAtype;
                     value: number;
-                }) => {
-                    this.ctx_base!.globalAlpha = p.value / max;
-                    this.ctx_base!.fillStyle = System.colorF(p.type)[0];
-                    this.ctx_base!.fillRect(p.x, p.y, this.step, this.step);
-                    this.ctx_base!.globalAlpha = 1;
+                }> = [];
+        
+                let max: number = NaN;
+        
+                this.state.data.forEach((d: {
+                    lng: number;
+                    lat: number;
+                    value: LISAtype;
+                    projection: number;
+                }, i: number) => {
+                    if (this.props.filter && !System.active[i]) {
+                        return;
+                    }
+                    
+                    const pos: [number, number] = index(this.fx(d.lng), this.fy(d.lat));
+                    const x: number = this.step * (pos[0] + 0.5);
+                    const y: number = this.step * (pos[1] + 0.5);
+        
+                    points.push({
+                        x: x,
+                        y: y
+                    });
+                    
+                    if (pos[0] < 0 || pos[0] >= box.length
+                        || pos[1] < 0 || pos[1] >= box[0].length
+                        || box[pos[0]][pos[1]]) {
+                        return;
+                    }
+                    box[pos[0]][pos[1]] = true;
+                    
+                    let neighbors: Array<{
+                        index: number;
+                        dist: number;
+                    }> = [];
+        
+                    this.state.data.forEach((e: {
+                        lng: number;
+                        lat: number;
+                        value: LISAtype;
+                        projection: number;
+                    }, j: number) => {
+                        if (i === j) {
+                            return;
+                        }
+                        if (this.props.filter && !System.active[j]) {
+                            return;
+                        }
+                        const dist: number = Math.sqrt(
+                            Math.pow(this.fx(e.lng) - x, 2)
+                            + Math.pow(this.fy(e.lat) - y, 2)
+                        );
+                        if (dist < 1e-6) {
+                            return;
+                        }
+                        if (neighbors.length < 13 || neighbors[12].dist > dist) {
+                            neighbors.push({
+                                index: j,
+                                dist: dist
+                            });
+                            neighbors.sort((a, b) => {
+                                return a.dist - b.dist;
+                            });
+                            if (neighbors.length > 13) {
+                                neighbors.length = 13;
+                            }
+                        }
+                    });
+        
+                    let max: number = 0;
+                    let TYPE: LISAtype = d.value;
+        
+                    let count = {
+                        HH: 0,
+                        LH: 0,
+                        LL: 0,
+                        HL: 0
+                    };
+        
+                    for (let k: number = 0; k < neighbors.length; k++) {
+                        const n: {index: number; dist: number} = neighbors[k];
+                        if (k <= 7) {
+                            count[this.state.data[n.index].value] ++;
+                            if (count[this.state.data[n.index].value] > max) {
+                                max = count[this.state.data[n.index].value];
+                                TYPE = this.state.data[n.index].value;
+                            }
+                        } else {
+                            let t: number = 0;
+                            if (count.HH === max) {
+                                t ++;
+                            }
+                            if (count.LH === max) {
+                                t ++;
+                            }
+                            if (count.LL === max) {
+                                t ++;
+                            }
+                            if (count.HL === max) {
+                                t ++;
+                            }
+                            if (t === 1) {
+                                break;
+                            }
+                        }
+                    }
+        
+                    centers.push({
+                        cx: x,
+                        cy: y,
+                        x: this.step * pos[0],
+                        y: this.step * pos[1],
+                        type: TYPE,
+                        value: NaN
+                    });
                 });
+        
+                const p: Promise<AxiosResponse<CommandResult<FileData.Kde|CommandError>>> = axios.post(
+                    `/kde`, {
+                        points: points,
+                        centers: centers
+                    }
+                );
+        
+                p.then((value: AxiosResponse<CommandResult<FileData.Kde|CommandError>>) => {
+                    if (value.data.state === "successed") {
+                        (value.data.value as FileData.Kde).forEach((val: number, i: number) => {
+                            centers[i].value = val;
+                            if (isNaN(max) || val > max) {
+                                max = val;
+                            }
+                        });
+                
+                        centers.forEach((p: {
+                            x: number;
+                            y: number;
+                            type: LISAtype;
+                            value: number;
+                        }) => {
+                            this.ctx_base!.globalAlpha = p.value / max;
+                            this.ctx_base!.fillStyle = System.colorF(p.type)[0];
+                            this.ctx_base!.fillRect(p.x, p.y, this.step, this.step);
+                            this.ctx_base!.globalAlpha = 1;
+                        });
+                    }
+                }).catch((reason: any) => {
+                    console.error(reason);
+                }).finally(() => {
+                    this.props.load(false);
+                });
+            }, 10);
+        } else if (this.state.behavior === "purity") {
+            const index: (x: number, y: number) => [number, number] = (x: number, y: number) => {
+                return [
+                    Math.round(x / this.step),
+                    Math.round(y / this.step)
+                ];
+            };
+        
+            let box: Array<Array<boolean>> = [];
+        
+            this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+        
+            // 网格
+            for (let y: number = 0; y <= this.props.width; y += this.step) {
+                box.push([]);
+                for (let x: number = 0; x <= this.props.width; x += this.step) {
+                    box[y / this.step].push(false);
+                }
             }
-        }).catch((reason: any) => {
-            console.error(reason);
-        }).finally(() => {
-            this.props.load(false);
-        });
+        
+            this.state.data.forEach((d: {
+                lng: number;
+                lat: number;
+                value: LISAtype;
+                projection: number;
+            }, i: number) => {
+                this.timers.push(
+                    setTimeout(() => {
+                        this.makeStep();
+                        if (this.props.filter && !System.active[i]) {
+                            return;
+                        }
+                        const pos: [number, number] = index(this.fx(d.lng), this.fy(d.lat));
+                        if (pos[0] < 0 || pos[0] >= box.length
+                            || pos[1] < 0 || pos[1] >= box[0].length
+                            || box[pos[0]][pos[1]]) {
+                            return;
+                        }
+                        box[pos[0]][pos[1]] = true;
+                        
+                        const x: number = this.step * (pos[0] + 0.5);
+                        const y: number = this.step * (pos[1] + 0.5);
+        
+                        let neighbors: Array<{
+                            index: number;
+                            dist: number;
+                        }> = [];
+        
+                        this.state.data.forEach((e: {
+                            lng: number;
+                            lat: number;
+                            value: LISAtype;
+                            projection: number;
+                        }, j: number) => {
+                            if (i === j) {
+                                return;
+                            }
+                            if (this.props.filter && !System.active[j]) {
+                                return;
+                            }
+                            const dist: number = Math.sqrt(
+                                Math.pow(this.fx(e.lng) - x, 2)
+                                + Math.pow(this.fy(e.lat) - y, 2)
+                            );
+                            if (dist < 1e-6) {
+                                return;
+                            }
+                            if (neighbors.length < 13 || neighbors[12].dist > dist) {
+                                neighbors.push({
+                                    index: j,
+                                    dist: dist
+                                });
+                                neighbors.sort((a, b) => {
+                                    return a.dist - b.dist;
+                                });
+                                if (neighbors.length > 13) {
+                                    neighbors.length = 13;
+                                }
+                            }
+                        });
+        
+                        let max: number = 0;
+                        let sum: number = 0;
+                        let TYPE: LISAtype = d.value;
+                        let contribution: number = 0;
+        
+                        let count = {
+                            HH: 0,
+                            LH: 0,
+                            LL: 0,
+                            HL: 0
+                        };
+        
+                        for (let k: number = 0; k < neighbors.length; k++) {
+                            const n: {index: number; dist: number} = neighbors[k];
+                            if (k <= 7) {
+                                count[this.state.data[n.index].value] ++;
+                                sum ++;
+                                if (count[this.state.data[n.index].value] > max) {
+                                    max = count[this.state.data[n.index].value];
+                                    TYPE = this.state.data[n.index].value;
+                                }
+                            } else {
+                                let t: number = 0;
+                                if (count.HH === max) {
+                                    t ++;
+                                }
+                                if (count.LH === max) {
+                                    t ++;
+                                }
+                                if (count.LL === max) {
+                                    t ++;
+                                }
+                                if (count.HL === max) {
+                                    t ++;
+                                }
+                                if (t === 1) {
+                                    break;
+                                }
+                            }
+                        }
+        
+                        for (let k: number = 0; k < sum; k++) {
+                            const n: {index: number; dist: number} = neighbors[k];
+                            if (this.state.data[n.index].value === TYPE) {
+                                contribution ++;
+                            }
+                        }
+        
+                        contribution /= sum;
+        
+                        this.ctx_base!.globalAlpha = contribution;
+                        this.ctx_base!.fillStyle = System.colorF(TYPE)[0];
+                        this.ctx_base!.fillRect(
+                            this.step * pos[0],
+                            this.step * pos[1],
+                            this.step,
+                            this.step
+                        );
+                        this.ctx_base!.globalAlpha = 1;
+                    }, i / 1000)
+                );
+            });
+        }
     }
 
     private redraw(source: "2" | "all" = "all"): void {
         this.ready_r = [];
         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
-        if (this.state.heat && System.filepath) {
+        if (this.state.behavior !== "scatter" && System.filepath) {
             this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+            this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             this.heat();
             return;
         }
         this.process();
         if (source === "all") {
             this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+            this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             if (this.ready.length === 0) {
                 let nParts = Math.floor(Math.pow((this.state.data.length - 400) / 100, 0.8));
                 if (!nParts || nParts < 1) {
@@ -1229,14 +1394,18 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
 
     private shift(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
         this.setState({
-            heat: !this.state.heat
+            behavior:
+                this.state.behavior === "scatter"
+                    ? "purity"
+                        : this.state.behavior === "purity"
+                            ? "KDE" : "scatter"
         });
         resolve();
     }
 
     public highlight(type: LISAtype, type2?: LISAtype): void {
         this.highlighted = [];
-        if (this.state.heat) {
+        if (this.state.behavior !== "scatter") {
             return;
         }
         this.state.data.forEach((item: {value: LISAtype;}, index: number) => {

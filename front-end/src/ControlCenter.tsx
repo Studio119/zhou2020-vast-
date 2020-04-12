@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-11 22:36:55
+ * @Last Modified time: 2020-04-12 17:04:09
  */
 
 import React, { Component } from "react";
@@ -136,9 +136,9 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         style={{
                             height: "40%"
                         }} >
-                            Density
+                            Radius
                         </label>
-                        <input name="density" type="number" min="10" max="100" defaultValue="50"
+                        <input name="radius" type="number" min="10" max="100" defaultValue="50"
                         style={{
                             height: "40%",
                             width: "100%",
@@ -156,9 +156,9 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         style={{
                             height: "40%"
                         }} >
-                            N_Iter
+                            Alpha
                         </label>
-                        <input name="n_iter" type="number" min="1" max="10" defaultValue="10"
+                        <input name="alpha" type="number" min="1" max="10" defaultValue="10"
                         style={{
                             height: "40%",
                             width: "100%",
