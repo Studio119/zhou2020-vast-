@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-24 14:04:05 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-03-24 14:35:48
+ * @Last Modified time: 2020-04-12 15:29:14
  */
 
 import React, { Component } from "react";
@@ -30,7 +30,8 @@ export class Loading extends Component<{}, LoadingState, {}> {
                 height: "inherit",
                 background: "rgba(30,30,34,0.3)",
                 display: this.state.show ? "unset" : "none",
-                position: "absolute"
+                position: "absolute",
+                zIndex: 10
             }} >
                 <p ref="text"
                 style={{

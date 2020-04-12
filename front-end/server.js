@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-11 22:39:16
+ * @Last Modified time: 2020-04-12 15:24:08
  */
 
 const express = require('express');
@@ -10,7 +10,9 @@ const app = express();
 const fs = require("fs");
 const process = require('child_process');
 const bodyParser = require('body-parser');
-app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.use(bodyParser.json());
 
 
@@ -295,6 +297,49 @@ app.get("/better/:filepath", (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
     const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\better.py"
                     + " " + json_path;
+
+    process.exec(cmd, (error, _, stderr) => {
+        if (stderr) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    stderr
+                )
+            );
+        } else if (error) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    error
+                )
+            );
+        } else {
+            res.json(
+                formatResult(
+                    cmd,
+                    true,
+                    JSON.parse(fs.readFileSync(output_path))
+                )
+            );
+        }
+    });
+});
+
+
+app.post("/kde", (req, res) => {
+    const points = req.body.points;
+    const centers = req.body.centers;
+    const input_path1 = "..\\storage\\pointsOnMap.json";
+    const input_path2 = "..\\storage\\rectsOnMap.json";
+    const output_path = "..\\storage\\kdeOnMap.json";
+
+    fs.writeFileSync(input_path1, JSON.stringify(points));
+    fs.writeFileSync(input_path2, JSON.stringify(centers));
+
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+    const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\kde.py";
 
     process.exec(cmd, (error, _, stderr) => {
         if (stderr) {

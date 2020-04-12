@@ -36,8 +36,6 @@ export namespace FileData {
         my: number;
         neighbors: Array<number>;
     }>;
-
-    export type Sampled = {
-        [id: number]: Array<number>;
-    };
+    
+    export type Kde = Array<number>;
 };
