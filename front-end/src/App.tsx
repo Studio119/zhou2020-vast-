@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-11 22:41:51
+ * @Last Modified time: 2020-04-12 15:28:47
  */
 import React, { Component } from 'react';
 import $ from "jquery";
@@ -50,7 +50,14 @@ class App extends Component<{}, {}, null> {
         <Container theme="NakiriAyame" title="Map View" >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 11 } center={[-0.21, 51.46]}
           width={ 1149 } height={ 837 } scaleType={ this.scale } filter={ true }
-          mode="circle" />
+          mode="circle"
+          load={
+            (state: boolean) => {
+              (this.refs["loading"] as Loading).setState({
+                show: state
+              });
+            }
+          } />
         </Container>
       </div>
     );
