@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 15:28:47
+ * @Last Modified time: 2020-04-12 23:10:13
  */
 import React, { Component } from 'react';
 import $ from "jquery";
@@ -118,10 +118,16 @@ class App extends Component<{}, {}, null> {
         }, 0);
       } else {
         reject();
-        (this.refs["loading"] as Loading).setState({
-          show: false
-        });
       }
+    }).catch((reason: any) => {
+      reject();
+      if (reason) {
+        console.error(reason);
+      }
+    }).finally(() => {
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
     });
   }
 
@@ -175,10 +181,16 @@ class App extends Component<{}, {}, null> {
         }, 0);
       } else {
         reject();
-        (this.refs["loading"] as Loading).setState({
-          show: false
-        });
       }
+    }).catch((reason: any) => {
+      reject();
+      if (reason) {
+        console.error(reason);
+      }
+    }).finally(() => {
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
     });
   }
 
@@ -232,10 +244,16 @@ class App extends Component<{}, {}, null> {
         }, 0);
       } else {
         reject();
-        (this.refs["loading"] as Loading).setState({
-          show: false
-        });
       }
+    }).catch((reason: any) => {
+      reject();
+      if (reason) {
+        console.error(reason);
+      }
+    }).finally(() => {
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
     });
   }
 
@@ -290,10 +308,16 @@ class App extends Component<{}, {}, null> {
         }, 0);
       } else {
         reject();
-        (this.refs["loading"] as Loading).setState({
-          show: false
-        });
       }
+    }).catch((reason: any) => {
+      reject();
+      if (reason) {
+        console.error(reason);
+      }
+    }).finally(() => {
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
     });
   }
 
@@ -345,10 +369,16 @@ class App extends Component<{}, {}, null> {
         }, 0);
       } else {
         reject();
-        (this.refs["loading"] as Loading).setState({
-          show: false
-        });
       }
+    }).catch((reason: any) => {
+      reject();
+      if (reason) {
+        console.error(reason);
+      }
+    }).finally(() => {
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
     });
   }
 
@@ -410,10 +440,16 @@ class App extends Component<{}, {}, null> {
         }, 0);
       } else {
         reject();
-        (this.refs["loading"] as Loading).setState({
-          show: false
-        });
       }
+    }).catch((reason: any) => {
+      reject();
+      if (reason) {
+        console.error(reason);
+      }
+    }).finally(() => {
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
     });
     return p;
   }

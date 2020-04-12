@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 16:54:17
+ * @Last Modified time: 2020-04-12 18:30:33
  */
 
 import React, { Component } from "react";
@@ -69,7 +69,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.state = {
             list: [],
             strech: false,
-            nSpan: 32
+            nSpan: 4
         };
         this.canvas1 = null;
         this.canvas2 = null;
@@ -386,7 +386,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                         this.state.strech ? "on " : "off"
                     } executer={ this.shift.bind(this) } />
                     <ValueBar width={ 80 } height={ 16 }
-                    min={ 1 } max={ 64 } defaultValue={ this.state.nSpan } step={ 1 }
+                    min={ 1 } max={ 32 } defaultValue={ this.state.nSpan } step={ 1 }
                     onValueChange={
                         this.adjust.bind(this)
                     }

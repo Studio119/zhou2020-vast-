@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 17:10:37
+ * @Last Modified time: 2020-04-12 18:29:58
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -1062,7 +1062,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                             type: LISAtype;
                             value: number;
                         }) => {
-                            this.ctx_base!.globalAlpha = p.value / max;
+                            this.ctx_base!.globalAlpha = p.value / max * 0.9 + 0.1;
                             this.ctx_base!.fillStyle = System.colorF(p.type)[0];
                             this.ctx_base!.fillRect(p.x, p.y, this.step, this.step);
                             this.ctx_base!.globalAlpha = 1;

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 17:04:09
+ * @Last Modified time: 2020-04-12 22:39:40
  */
 
 import React, { Component } from "react";
@@ -138,7 +138,8 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         }} >
                             Radius
                         </label>
-                        <input name="radius" type="number" min="10" max="100" defaultValue="50"
+                        <input name="radius" type="number" min="0.02" max="0.2"
+                        step="0.02" defaultValue="0.02"
                         style={{
                             height: "40%",
                             width: "100%",
@@ -248,7 +249,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="3"
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "28%",
+                                width: "24%",
                                 padding: "2px 0"
                             }} >
                                 Apply
@@ -256,10 +257,10 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="4"
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "20%",
+                                width: "24%",
                                 padding: "2px 0"
                             }} >
-                                Better
+                                Optimize
                             </th>
                         </tr>
                         <tr key="buttons" >
