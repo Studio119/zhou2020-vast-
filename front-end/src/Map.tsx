@@ -914,6 +914,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 let points: Array<{
                     x: number;
                     y: number;
+                    type: LISAtype;
                 }> = [];
         
                 // 点中心
@@ -944,7 +945,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         
                     points.push({
                         x: x,
-                        y: y
+                        y: y,
+                        type: d.value
                     });
                     
                     if (pos[0] < 0 || pos[0] >= box.length

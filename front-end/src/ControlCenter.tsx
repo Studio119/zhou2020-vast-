@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 22:39:40
+ * @Last Modified time: 2020-04-15 15:21:50
  */
 
 import React, { Component } from "react";
@@ -125,12 +125,13 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                     border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground,
                     padding: "0 0 6px"
                 }} >
-                    <div key="1"
+                    <div key="1" ref="radiusDiv"
                     style={{
                         width: "20%",
                         height: "80%",
                         padding: "4px 5%",
-                        display: "inline-block"
+                        display: "inline-block",
+                        visibility: "hidden"
                     }} >
                         <label
                         style={{
@@ -146,7 +147,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             marginTop: "8px"
                         }} />
                     </div>
-                    <div key="2"
+                    <div key="2" ref="alphaDiv"
                     style={{
                         width: "20%",
                         height: "80%",
@@ -166,7 +167,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             marginTop: "8px"
                         }} />
                     </div>
-                    <div key="3"
+                    <div key="3" ref="rateDiv"
                     style={{
                         width: "30%",
                         height: "80%",
@@ -218,7 +219,14 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     display: 'block',
                                     fontWeight: 'normal'
                                 }} >
-                                    <input name="algo" type="radio" value="this_paper" />
+                                    <input name="algo" type="radio" value="this_paper"
+                                    onChange={
+                                        () => {
+                                            $(this.refs["radiusDiv"]).css("visibility", "hidden");
+                                            $(this.refs["alphaDiv"]).css("visibility", "visible");
+                                            $(this.refs["rateDiv"]).css("visibility", "visible");
+                                        }
+                                    } />
                                     Our method
                                 </label>
                                 <label key="random_sampling"
@@ -226,7 +234,14 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     display: 'block',
                                     fontWeight: 'normal'
                                 }} >
-                                    <input name="algo" type="radio" value="random_sampling" />
+                                    <input name="algo" type="radio" value="random_sampling"
+                                    onChange={
+                                        () => {
+                                            $(this.refs["radiusDiv"]).css("visibility", "hidden");
+                                            $(this.refs["alphaDiv"]).css("visibility", "hidden");
+                                            $(this.refs["rateDiv"]).css("visibility", "visible");
+                                        }
+                                    } />
                                     Random sp
                                 </label>
                                 <label key="blue_noise_sampling"
@@ -234,7 +249,14 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     display: 'block',
                                     fontWeight: 'normal'
                                 }} >
-                                    <input name="algo" type="radio" value="blue_noise_sampling" />
+                                    <input name="algo" type="radio" value="blue_noise_sampling"
+                                    onChange={
+                                        () => {
+                                            $(this.refs["radiusDiv"]).css("visibility", "visible");
+                                            $(this.refs["alphaDiv"]).css("visibility", "hidden");
+                                            $(this.refs["rateDiv"]).css("visibility", "hidden");
+                                        }
+                                    } />
                                     BNS
                                 </label>
                                 <label key="pure_z-order"
@@ -242,7 +264,14 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     display: 'block',
                                     fontWeight: 'normal'
                                 }} >
-                                    <input name="algo" type="radio" value="pure_z-order" />
+                                    <input name="algo" type="radio" value="pure_z-order"
+                                    onChange={
+                                        () => {
+                                            $(this.refs["radiusDiv"]).css("visibility", "hidden");
+                                            $(this.refs["alphaDiv"]).css("visibility", "hidden");
+                                            $(this.refs["rateDiv"]).css("visibility", "visible");
+                                        }
+                                    } />
                                     Z-order
                                 </label>
                             </th>
