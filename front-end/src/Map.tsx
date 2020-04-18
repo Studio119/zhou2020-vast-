@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 18:29:58
+ * @Last Modified time: 2020-04-18 21:48:31
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -32,6 +32,10 @@ export interface MapViewProps {
     filter: boolean;
     mode: "circle" | "rect";
     load: (state: boolean) => void;
+    getZorderSubset: (
+        resolve: (value: Array<Array<number>>) => void,
+        reject: (reason: any) => void
+    ) => Promise<AxiosResponse<CommandResult<Array<number[]>|CommandError>>>;
 }
 
 export interface MapViewState<T> {
@@ -72,7 +76,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private canvas_d: null | HTMLCanvasElement;
     private ctx_d: null | CanvasRenderingContext2D;
     private ready2: Array<Array<[number, number, [string, string]]>>;
-    private ready_r: Array<[number, number, [string, string, string]]>;
+    private ready_r: Array<[number, number, [string, string, string], number]>;
     private timers: Array<NodeJS.Timeout>;
     private cloneObserver: Array<Map>;
     private recursiveLock: boolean;
@@ -158,12 +162,29 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     $(this.refs["container"]).focus();
                 }
             } >
-                <div
+                <div ref="mapLayer"
                 id={ this.props.id + ">>" }
                 style={{
                     height: `${ this.props.height }px`,
                     width: `${ this.props.width }px`
-                }} >
+                }}
+                onClick={
+                    (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+                        const offset: {
+                            left: number;
+                            top: number;
+                        } = $(this.refs["mapLayer"]).offset()!;
+                        const x: number = event.clientX - offset.left;
+                        const y: number = event.clientY - offset.top;
+                        if (this.clickHandle(x, y)) {
+                            // 拦截接下来的双击和拖拽
+                            $(this.refs["mapLayer"]).css("pointer-events", "none");
+                            setTimeout(() => {
+                                $(this.refs["mapLayer"]).css("pointer-events", "unset");
+                            }, 1000);
+                        }
+                    }
+                } >
                     {
                         this.mounted
                             ? <MapBox
@@ -489,6 +510,146 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 100 * this.tickDone / this.timers.length + "%"
             );
         }
+    }
+
+    private showZorderSubset(pIndex: number): void {
+        this.ctx_r!.clearRect(0, 0, this.props.width, this.props.height);
+        this.ready_r.forEach((
+            d: [number, number, [string, string, string], number]
+        ) => {
+            this.outstand(d[0], d[1], d[2]);
+        });
+        this.props.getZorderSubset((value: Array<Array<number>>) => {
+            for (let a: number = 0; a < value.length; a++) {
+                for (let b: number = 0; b < value[a].length; b++) {
+                    if (value[a][b] === pIndex) {
+                        const p: Promise<AxiosResponse<CommandResult<Array<Boolean>|CommandError>>> = axios.get(
+                            `/test/${ System.filepath!.split(".")[0] }/${ pIndex }/${
+                                JSON.stringify(value[a]).split(" ").join("")
+                            }`, {
+                                headers: 'Content-type:text/html;charset=utf-8'
+                            }
+                        );
+                        p.then((value: AxiosResponse<CommandResult<Boolean[] | CommandError>>) => {
+                            if (value.data.state === "successed") {
+                                console.log(value.data.value);
+                            } else {
+                                console.warn("error", value.data.value);
+                            }
+                        }).catch((reason: any) => {
+                            console.log("error", reason);
+                        });
+                        this.ctx_r!.fillStyle = "rgb(78,201,143)";
+                        this.ctx_r!.strokeStyle = "rgb(78,201,143)";
+                        this.ctx_r!.lineWidth = 20;
+                        value[a].forEach((i: number, _i: number) => {
+                            const x: number = this.fx(System.data[i].lng);
+                            const y: number = this.fy(System.data[i].lat);
+                            const neighbors: [
+                                {x: number; y: number;},
+                                {x: number; y: number;}
+                            ] = value[a].map((id: number) => {
+                                return {
+                                    x: this.fx(System.data[id].lng),
+                                    y: this.fy(System.data[id].lat)
+                                };
+                            }).filter((_: {
+                                x: number;
+                                y: number;
+                            }, _j: number) => {
+                                return _i !== _j && _i + 1 !== _j;
+                            }).sort((a, b) => {
+                                return (
+                                    Math.pow(a.x - x, 2) + Math.pow(a.y - y, 2)
+                                ) - (
+                                    Math.pow(b.x - x, 2) + Math.pow(b.y - y, 2)
+                                );
+                            }).slice(0, 2) as [
+                                {x: number; y: number;},
+                                {x: number; y: number;}
+                            ];
+                            this.ctx_r!.beginPath();
+                            this.ctx_r!.moveTo(x, y);
+                            if (_i < value[a].length - 1) {
+                                this.ctx_r!.lineTo(
+                                    this.fx(System.data[value[a][_i + 1]].lng),
+                                    this.fy(System.data[value[a][_i + 1]].lat)
+                                );
+                                this.ctx_r!.stroke();
+                                this.ctx_r!.moveTo(x, y);
+                            }
+                            this.ctx_r!.lineTo(neighbors[0].x, neighbors[0].y);
+                            this.ctx_r!.lineTo(neighbors[1].x, neighbors[1].y);
+                            this.ctx_r!.fill();
+                            this.ctx_r!.stroke();
+                        });
+                        this.ctx_r!.lineWidth = 1;
+                        this.ctx_r!.fillStyle = "#ccffccc0";
+                        this.ctx_r!.strokeStyle = "#000000";
+                        value[a].forEach((i: number) => {
+                            if (this.props.mode === "rect") {
+                                this.ctx_r!.fillRect(
+                                    this.fx(System.data[i].lng) - 3,
+                                    this.fy(System.data[i].lat) - 3,
+                                    6,
+                                    6
+                                );
+                            } else {
+                                this.ctx_r!.beginPath();
+                                this.ctx_r!.arc(
+                                    this.fx(System.data[i].lng),
+                                    this.fy(System.data[i].lat),
+                                    3,
+                                    0,
+                                    2 * Math.PI
+                                );
+                                this.ctx_r!.stroke();
+                                this.ctx_r!.fill();
+                            }
+                        });
+                        return;
+                    }
+                }
+            }
+        }, (reason: any) => {
+            console.warn("error", reason);
+        });
+    }
+
+    private clickHandle(x: number, y: number): boolean {
+        // 从下到上遍历
+        for (let i: number = this.ready_r.length - 1; i >= 0; i--) {
+            const cx: number = this.fx(this.ready_r[i][0]);
+            const cy: number = this.fy(this.ready_r[i][1]);
+            // 是否点击到旗帜
+            if (x >= cx && x <= cx + 13) {
+                const line1 = (_x: number) => (7 / 13 * _x + cy - 24 - 7 / 13 * cx);
+                const line2 = (_x: number) => (-5 / 13 * _x + cy - 12 + 5 / 13 * cx);
+                if (y >= line1(x) && y <= line2(x)) {
+                    this.showZorderSubset(this.ready_r[i][3]);
+                    return true;
+                }
+            }
+        }
+
+        // 从下到上遍历
+        for (let i: number = this.ready_r.length - 1; i >= 0; i--) {
+            const cx: number = this.fx(this.ready_r[i][0]);
+            const cy: number = this.fy(this.ready_r[i][1]);
+            // 是否点击到圆或方框
+            if (this.props.mode === "rect") {
+                if (Math.abs(x - cx) <= 3 && Math.abs(y - cy) <= 3) {
+                    return true;
+                }
+            } else {
+                if (Math.pow(x - cx, 2) + Math.pow(y - cy, 2) <= 16) {
+                    this.showZorderSubset(this.ready_r[i][3]);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public closeSketcher(): void {
@@ -1336,7 +1497,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                             System.colorF(type)[0],
                             System.colorF(type)[1],
                             System.colorF(d.value)[0]
-                        ]
+                        ],
+                        id
                     ]);
                 }
             });
@@ -1356,16 +1518,17 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                             System.colorF(type)[0],
                             System.colorF(type)[1],
                             System.colorF(d.value)[0]
-                        ]
+                        ],
+                        index
                     ]);
                 }
             });
         }
-        this.ready_r.sort((a: [number, number, [string, string, string]], b: [number, number, [string, string, string]]) => {
+        this.ready_r.sort((a: [number, number, [string, string, string], number], b: [number, number, [string, string, string], number]) => {
             return b[1] - a[1];
         });
         this.ready_r.forEach((
-            d: [number, number, [string, string, string]],
+            d: [number, number, [string, string, string], number],
             index: number
         ) => {
             this.timers.push(
@@ -1493,11 +1656,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
 
     private outstand(x: number, y: number, style: [string, string, string]): void {
         if (this.props.mode === "rect") {
-            x = this.fx(x) - 3;
-            y = this.fy(y) - 3;
             this.ctx_r!.fillStyle = style[0];
             this.ctx_r!.strokeStyle = style[1];
-            this.ctx_r!.fillRect(x, y, 6, 6);
+            this.ctx_r!.fillRect(x - 3, y - 3, 6, 6);
         } else {
             x = this.fx(x);
             y = this.fy(y);

@@ -24,6 +24,8 @@ int main(int argc, char const *argv[]) {
 
     hs->reshape(nSample);
 
+    hs->write("../storage/zorder_temp.json");
+
     unique_ptr< vector<uint16_t> > res = hs->sample();
 
     sample(*ptr_origin, *res);

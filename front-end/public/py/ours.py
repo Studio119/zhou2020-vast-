@@ -291,7 +291,7 @@ if __name__ == '__main__':
             recentBlueNoiseFilePath += temp
             recentBlueNoiseFilePath1 += temp
         else:
-            recentBlueNoiseFilePath1 += (temp1[0]+'_b.json')
+            recentBlueNoiseFilePath1 += (temp1[0]+'_o.json')
     alpha = sys.argv[2]
     rate = sys.argv[3]
     m = Z_score(k=8, mode="euclidean", equal=False)

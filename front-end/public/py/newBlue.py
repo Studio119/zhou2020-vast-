@@ -42,21 +42,21 @@ def update(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk):
         if len(diskCoverPoints[index][str(index)][0]) == 0:
             t = random.sample(diskCoverPoints[index][str(index)][1], 1)[0]
             while t in sampledPoints:
-                print('出现重复点了')
+                pass
                 overlapPoints += 1
                 diskCoverPoints[index][str(index)][1].remove(t)
                 t = random.sample(diskCoverPoints[index][str(index)][1], 1)[0]
                 if len(diskCoverPoints[index][str(index)][1]) ==0:
-                    print('有问题')
+                    pass
         elif len(diskCoverPoints[index][str(index)][1]) == 0:
             t = random.sample(diskCoverPoints[index][str(index)][0], 1)[0]
             while t in sampledPoints:
-                print('出现重复点了')
+                pass
                 overlapPoints += 1
                 diskCoverPoints[index][str(index)][0].remove(t)
                 t = random.sample(diskCoverPoints[index][str(index)][0], 1)[0]
                 if len(diskCoverPoints[index][str(index)][0]) == 0:
-                    print('有问题')
+                    pass
         if t:
             sampledPoints.append(t)
             sampledDisk.append(index)
@@ -69,7 +69,6 @@ def update(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk):
     for i in diskStatus:
         if diskStatus[i] != 0:
             num += 1
-    print(num, diskNumber)
 
     current_nearbyDisk = []
     for i in sampledDisk:
@@ -79,7 +78,6 @@ def update(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk):
                 continue
             else:
                 current_nearbyDisk.append(int(j))
-    print(current_nearbyDisk)
     # 接下来的采样策略就是直接算出当前已采样盘的所有邻接盘，然后从中进行随机选出邻接盘，根据已经采样点的投票信息进行选点操作
 
     while len(current_nearbyDisk) != 0:
@@ -99,14 +97,12 @@ def update(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk):
         if tempR <= alpha:
             t = random.sample(diskCoverPoints[nearby_index][str(nearby_index)][0], 1)[0]
             while t in sampledPoints:
-                print('出现重复点了')
                 overlapPoints += 1
                 diskCoverPoints[nearby_index][str(nearby_index)][0].remove(t)
                 # t = random.sample(diskCoverPoints[nearby_index][str(nearby_index)][0], 1)[0]
                 if len(diskCoverPoints[nearby_index][str(nearby_index)][0]) == 0:
                     t = random.sample(diskCoverPoints[nearby_index][str(nearby_index)][1], 1)[0]
                     while t in sampledPoints:
-                        print('出现重复点了')
                         overlapPoints += 1
                         diskCoverPoints[nearby_index][str(nearby_index)][1].remove(t)
                         t = random.sample(diskCoverPoints[nearby_index][str(nearby_index)][1], 1)[0]
@@ -115,14 +111,12 @@ def update(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk):
         else:
             t = random.sample(diskCoverPoints[nearby_index][str(nearby_index)][1], 1)[0]
             while t in sampledPoints:
-                print('出现重复点了')
                 overlapPoints += 1
                 diskCoverPoints[nearby_index][str(nearby_index)][1].remove(t)
                 # t = random.sample(diskCoverPoints[nearby_index][str(nearby_index)][1], 1)[0]
                 if len(diskCoverPoints[nearby_index][str(nearby_index)][1]) == 0:
                     t = random.sample(diskCoverPoints[nearby_index][str(nearby_index)][0], 1)[0]
                     while t in sampledPoints:
-                        print('出现重复点了')
                         overlapPoints += 1
                         diskCoverPoints[nearby_index][str(nearby_index)][0].remove(t)
                         t = random.sample(diskCoverPoints[nearby_index][str(nearby_index)][0], 1)[0]
@@ -150,7 +144,6 @@ def update1(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4)
     overlapPoints = 0
     # Status 为0，表示该盘还未选点，为1表示已选点 diskVote为每个已经采样的盘记录去广播信息
     diskNumber = len(diskCoverPoints)
-    print(diskNumber)
     diskStatus = {}
     diskVote = {}
     diskPoints = {}
@@ -206,7 +199,6 @@ def update1(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4)
     for i in diskStatus:
         if diskStatus[i] != 0:
             num += 1
-    print('初始采样状态', num, diskNumber)
 
     current_nearbyDisk = []
     for i in sampledDisk:
@@ -216,12 +208,10 @@ def update1(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4)
                 continue
             else:
                 current_nearbyDisk.append(int(j))
-    print(current_nearbyDisk)
     # 接下来的采样策略就是直接算出当前已采样盘的所有邻接盘，然后从中进行随机选出邻接盘，根据已经采样点的投票信息进行选点操作
 
     while len(current_nearbyDisk) != 0 or len(sampledPoints) != diskNumber:
         if len(current_nearbyDisk) == 0:
-            print('OKOKOKOKO', len(sampledPoints))
             for i in diskStatus:
                 if diskStatus[i] != 1:
                     current_nearbyDisk.append(int(i))
@@ -250,7 +240,6 @@ def update1(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4)
                         temp += 1
                     else:
                         temp1 += 1
-            # print(temp, temp1)
             if temp >= 4 and temp1 >= 4:
                 t = random.sample(diskCoverPoints[nearby_index][0], 1)[0]
             elif temp >= 4:
@@ -333,7 +322,6 @@ def update2(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4,
     overlapPoints = 0
     # Status 为0，表示该盘还未选点，为1表示已选点 diskVote为每个已经采样的盘记录去广播信息
     diskNumber = len(diskCoverPoints)
-    print(diskNumber)
     diskStatus = {}
     diskVote = {}
     diskPoints = {}
@@ -408,13 +396,11 @@ def update2(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4,
             diskVote[str(index)] = [oriData[t]['n_H'], oriData[t]['n_L']]
         else:
             continue
-    print(tem)
 
     num = 0
     for i in diskStatus:
         if diskStatus[i] != 0:
             num += 1
-    print('初始采样状态', num, diskNumber)
 
     current_nearbyDisk = []
     for i in sampledDisk:
@@ -424,13 +410,10 @@ def update2(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4,
                 continue
             else:
                 current_nearbyDisk.append(int(j))
-    print(len(current_nearbyDisk))
-    print(len(set(current_nearbyDisk)))
     # 接下来的采样策略就是直接算出当前已采样盘的所有邻接盘，然后从中进行随机选出邻接盘，根据已经采样点的投票信息进行选点操作
 
     while len(current_nearbyDisk) != 0 or len(sampledPoints) != diskNumber:
         if len(current_nearbyDisk) == 0:
-            print('OKOKOKOKO', len(sampledPoints))
             for i in diskStatus:
                 if diskStatus[i] != 1:
                     current_nearbyDisk.append(int(i))
@@ -463,7 +446,6 @@ def update2(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4,
                     else:
                         temp1 += 1
             if len(diskCoverPoints[nearby_index][0]) != 0:
-                # print(temp, temp1)
                 if (temp + temp1) > 2:
                     if temp/(temp + temp1) > alpha:
                         if len(cover4[nearby_index][0]) == 0:
@@ -615,10 +597,10 @@ def update2(oriData, diskCoverPoints, diskNearby, associated_NearbyDisk, cover4,
             # else:
             #     t = random.sample(diskCoverPoints[nearby_index][1], 1)[0]
             # t = random.sample(diskCoverPoints[nearby_index][1], 1)[0]
-        if t in sampledPoints:
-            print('wrong', nearby_index, sampledPoints)
-            if nearby_index in sampledDisk:
-                print('盘多采了')
+        # if t in sampledPoints:
+        #     print('wrong', nearby_index, sampledPoints)
+        #     if nearby_index in sampledDisk:
+        #         print('盘多采了')
         sampledPoints.append(t)
         sampledDisk.append(nearby_index)
         diskStatus[str(nearby_index)] = 1

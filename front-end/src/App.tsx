@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 23:10:13
+ * @Last Modified time: 2020-04-18 16:05:32
  */
 import React, { Component } from 'react';
 import $ from "jquery";
@@ -48,9 +48,10 @@ class App extends Component<{}, {}, null> {
           <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 12 } />
         </div>
         <Container theme="NakiriAyame" title="Map View" >
-          <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 11 } center={[-0.21, 51.46]}
+          <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 13 } center={[-0.21, 51.46]}
           width={ 1149 } height={ 837 } scaleType={ this.scale } filter={ true }
           mode="circle"
+          getZorderSubset={ this.getZorderSubset.bind(this) }
           load={
             (state: boolean) => {
               (this.refs["loading"] as Loading).setState({
@@ -380,6 +381,31 @@ class App extends Component<{}, {}, null> {
         show: false
       });
     });
+  }
+
+  private async getZorderSubset(
+    resolve: (value: Array<Array<number>>) => void,
+    reject: (reason: any) => void
+  ): Promise<AxiosResponse<CommandResult<Array<number[]>|CommandError>>> {
+    const p: Promise<AxiosResponse<CommandResult<Array<number[]>|CommandError>>> = axios.get(
+      `/zorder_temp`, {
+          headers: 'Content-type:text/html;charset=utf-8'
+      }
+    );
+    p.then((value: AxiosResponse<CommandResult<Array<number[]>|CommandError>>) => {
+      if (value.data.state === "successed") {
+        resolve(value.data.value as number[][]);
+      } else {
+        reject(value.data);
+      }
+    }).catch((reason: any) => {
+      reject(reason);
+      if (reason) {
+        console.error(reason);
+      }
+    });
+
+    return await p;
   }
 
   private async fetch(

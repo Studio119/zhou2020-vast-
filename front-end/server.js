@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 23:02:22
+ * @Last Modified time: 2020-04-18 21:47:15
  */
 
 const express = require('express');
@@ -110,14 +110,14 @@ app.get("/zs/:filepath", (req, res) => {
 });
 
 
-app.get("/get/:filepath", (req, res) => {
-    const output_path = pathOutput + req.params["filepath"].replace("_dotcsv", "_m.json");
+app.get("/zorder_temp", (_, res) => {
+    const path = pathOutput + "zorder_temp.json";
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
-    fs.readFile(output_path, {encoding: "utf-8"}, (err, data) => {
+    fs.readFile(path, {encoding: "utf-8"}, (err, data) => {
         if (err) {
             res.json(
                 formatResult(
-                    "get sampled",
+                    "zorder_temp",
                     false,
                     err
                 )
@@ -125,7 +125,7 @@ app.get("/get/:filepath", (req, res) => {
         } else {
             res.json(
                 formatResult(
-                    "get sampled",
+                    "zorder_temp",
                     true,
                     JSON.parse(data)
                 )
@@ -364,6 +364,45 @@ app.post("/kde", (req, res) => {
                     cmd,
                     true,
                     JSON.parse(fs.readFileSync(output_path))
+                )
+            );
+        }
+    });
+});
+
+
+app.get("/test/:datasetName/:pIndex/:pList", (req, res) => {
+    const datasetName = req.params["datasetName"];
+    const pIndex = req.params["pIndex"];
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+    const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\updateOnline.py"
+                    + " " + datasetName + " " + pIndex
+                    + " " + req.params["pList"];
+
+    process.exec(cmd, (error, stdout, stderr) => {
+        if (stderr) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    stderr
+                )
+            );
+        } else if (error) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    error
+                )
+            );
+        } else {
+            const arr = stdout.split("\n")[1].toLowerCase().split("'").join('"');
+            res.json(
+                formatResult(
+                    cmd,
+                    true,
+                    JSON.parse(arr)
                 )
             );
         }

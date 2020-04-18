@@ -16,6 +16,7 @@ using std::endl;
 using std::to_string;
 using std::unique_ptr;
 using std::vector;
+using std::ofstream;
 
 
 enum class LISAtype {
@@ -31,20 +32,20 @@ public:
     struct Z_Point {
         Z_Point(
             const LISAtype& type,
-            const uint16_t& hashCode,
+            const string& hashCode,
             const double& mx,
             const uint16_t& count
         ): type(type), hashCode(hashCode), mx(mx), index(count) {}
         Z_Point(const Z_Point& copy): type(copy.type), hashCode(copy.hashCode), mx(copy.mx), index(copy.index) {}
         uint16_t index;
         LISAtype type;
-        uint16_t hashCode;
+        string hashCode;
         double mx;
     };
 private:
     unsigned short hashPrecision;
     unique_ptr< vector< vector<HashSampler::Z_Point> > > data;
-    uint16_t geoHash(float lat, float lng);
+    string geoHash(float lat, float lng);
 public:
     HashSampler(unsigned short hashPrecision);
     ~HashSampler();
@@ -54,6 +55,7 @@ public:
     void reshape(int n);
     unique_ptr< vector<uint16_t> > sample();
     int size();
+    void write(const string& filepath);
 };
 
 
@@ -72,6 +74,37 @@ HashSampler::~HashSampler() {
         (*(this->data))[i].clear();
     }
     this->data = nullptr;
+}
+
+void HashSampler::write(const string& filepath) {
+    ofstream of;
+    of.open(filepath);
+
+    if (!of.is_open()) {
+        return;
+    }
+
+    of << "[";
+
+    for (int i = 0; i < this->data->size(); i++) {
+        of << "[";
+        for (int j = 0; j < this->data->at(i).size(); j++) {
+            // of << "{\"hashCode\": \"" << this->data->at(i)[j].hashCode << "\", "
+                // << "\"index\": " << this->data->at(i)[j].index << "}";
+            of << this->data->at(i)[j].index;
+            if (j < this->data->at(i).size() - 1) {
+                of << ", ";
+            }
+        }
+        of << "]";
+        if (i < this->data->size() - 1) {
+            of << ", ";
+        }
+    }
+
+    of << "]";
+
+    of.close();
 }
 
 void HashSampler::loadFromJSON() {
@@ -188,15 +221,15 @@ uint16_t toInt16(string str) {
     return num;
 }
 
-uint16_t HashSampler::geoHash(float lat, float lng) {
-    uint16_t code = 0;
+string HashSampler::geoHash(float lat, float lng) {
+    string code = "";
 
     double y = lat + double(90);
     double x = lng + double(180);
 
     for (int p = 0; p < this->hashPrecision; p++) {
         double dx = double(180) / pow(2, p);
-        uint8_t digit = 0;
+        int digit = 0;
         if (y >= dx) {
             digit |= 2;
             y -= dx;
@@ -205,7 +238,7 @@ uint16_t HashSampler::geoHash(float lat, float lng) {
             digit |= 1;
             x -= dx;
         }
-        code = code * 4 + digit;
+        code += char(digit + '0');
     }
 
     return code;
@@ -227,7 +260,7 @@ void HashSampler::print() {
                 bsp += " ";
             }
             cout << "type: " << type << bsp;
-            string hashCode = to_string(int((*(this->data))[e][i].hashCode));
+            string hashCode = (*(this->data))[e][i].hashCode;
             bsp = "";
             for (int t = hashCode.length(); t < 8; t++) {
                 bsp += " ";
@@ -307,7 +340,7 @@ unique_ptr< vector<uint16_t> > HashSampler::sample() {
 }
 
 bool comp(const HashSampler::Z_Point& a, const HashSampler::Z_Point& b) {
-    return a.hashCode < b.hashCode;
+    return a.hashCode.compare(b.hashCode) >= 0;
 }
 
 bool sortById(const HashSampler::Z_Point& a, const HashSampler::Z_Point& b) {
