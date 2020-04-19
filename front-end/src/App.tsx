@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-18 16:05:32
+ * @Last Modified time: 2020-04-19 17:08:19
  */
 import React, { Component } from 'react';
 import $ from "jquery";
@@ -52,6 +52,7 @@ class App extends Component<{}, {}, null> {
           width={ 1149 } height={ 837 } scaleType={ this.scale } filter={ true }
           mode="circle"
           getZorderSubset={ this.getZorderSubset.bind(this) }
+          runReplace={ this.replace.bind(this) }
           load={
             (state: boolean) => {
               (this.refs["loading"] as Loading).setState({
@@ -312,6 +313,63 @@ class App extends Component<{}, {}, null> {
       }
     }).catch((reason: any) => {
       reject();
+      if (reason) {
+        console.error(reason);
+      }
+    }).finally(() => {
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
+    });
+  }
+
+  private replace(from: number, to: number): void {
+    System.type = "sample";
+
+    this.map!.load([]);
+    this.sct!.load([]);
+    System.active = [];
+    (this.refs["loading"] as Loading).setState({
+      show: true
+    });
+
+    System.data.forEach((d: DataItem) => {
+      d.target = void 0;
+    });
+
+    const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
+      `/replace/${ System.filepath!.split(".")[0] }/${ from }/${ to }`, {
+        headers: 'Content-type:text/html;charset=utf-8'
+      }
+    );
+    p.then((value: AxiosResponse<CommandResult<FileData.Mode|CommandError>>) => {
+      if (value.data.state === "successed") {
+        (value.data.value as FileData.Mode).forEach((item: {
+            id: number;
+            type: LISAtype;
+            mx: number;
+            my: number;
+        }) => {
+          const index: number = item.id;
+          System.active[index] = true;
+          System.data[index].target = {
+            type: item.type,
+            mx: item.mx,
+            my: item.my
+          };
+        });
+
+        this.map!.load(System.data);
+
+        setTimeout(() => {
+          this.sct!.load(System.data);
+          (this.refs["loading"] as Loading).setState({
+            show: false
+          });
+          System.update();
+        }, 0);
+      }
+    }).catch((reason: any) => {
       if (reason) {
         console.error(reason);
       }

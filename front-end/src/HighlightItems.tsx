@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-13 21:26:18 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-10 14:29:07
+ * @Last Modified time: 2020-04-19 17:37:43
  */
 
 import React, { Component } from "react";
@@ -77,13 +77,15 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
         return (
             <Container theme="NakiriAyame" title="Label View"
             width={ this.props.width ? this.props.width : "100%" }
-            height="auto" >
+            height="auto"
+            style={{
+                background: "rgb(252, 251, 252) none repeat scroll 0% 0%"
+            }} >
                 <div
                 style={{
-                    width: "98%",
+                    width: "90%",
                     padding: "2.7% 1.8%",
-                    height: this.props.height,
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.Green,
+                    height: this.props.height + 3.2,
                     background: ColorThemes.NakiriAyame.OuterBackground,
                     color: ColorThemes.NakiriAyame.InnerBackground
                 }} >
@@ -772,6 +774,27 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                             </tr>
                         </tbody>
                     </table>
+                    <label
+                    style={{
+                        position: "relative",
+                        left: 183,
+                        top: -120,
+                        textAlign: "end",
+                        color: ColorThemes.NakiriAyame.Red,
+                        fontSize: "90%"
+                    }} >
+                        {
+                            this.state.after ? (() => {
+                                let count: number = 0;
+                                count += this.state.after.HH.all - this.state.after.HH.HH;
+                                count += this.state.after.LH.all - this.state.after.LH.LH;
+                                count += this.state.after.LL.all - this.state.after.LL.LL;
+                                count += this.state.after.HL.all - this.state.after.HL.HL;
+                                
+                                return count;
+                            })() : ""
+                        }
+                    </label>
                 </div>
             </Container>
         );

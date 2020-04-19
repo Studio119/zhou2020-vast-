@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-18 21:48:31
+ * @Last Modified time: 2020-04-19 17:28:29
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -36,6 +36,7 @@ export interface MapViewProps {
         resolve: (value: Array<Array<number>>) => void,
         reject: (reason: any) => void
     ) => Promise<AxiosResponse<CommandResult<Array<number[]>|CommandError>>>;
+    runReplace: (from: number, to: number) => void;
 }
 
 export interface MapViewState<T> {
@@ -87,6 +88,12 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private tickDone: number;
     private adjust: (value: number) => void;
     private step: number;
+    private replaceFrom: number;
+    private toReplace: Array<{
+        x: number;
+        y: number;
+        to: number;
+    }>;
 
     public constructor(props: MapViewProps) {
         super(props);
@@ -121,6 +128,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.tickDone = 0;
         this.adjust = () => {};
         this.step = 16;
+        this.replaceFrom = NaN;
+        this.toReplace = [];
     }
 
     public render(): JSX.Element {
@@ -513,6 +522,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     private showZorderSubset(pIndex: number): void {
+        this.replaceFrom = pIndex;
         this.ctx_r!.clearRect(0, 0, this.props.width, this.props.height);
         this.ready_r.forEach((
             d: [number, number, [string, string, string], number]
@@ -523,16 +533,22 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             for (let a: number = 0; a < value.length; a++) {
                 for (let b: number = 0; b < value[a].length; b++) {
                     if (value[a][b] === pIndex) {
-                        const p: Promise<AxiosResponse<CommandResult<Array<Boolean>|CommandError>>> = axios.get(
+                        const p: Promise<AxiosResponse<CommandResult<{
+                            [id: number]: boolean;
+                        }|CommandError>>> = axios.get(
                             `/test/${ System.filepath!.split(".")[0] }/${ pIndex }/${
                                 JSON.stringify(value[a]).split(" ").join("")
                             }`, {
                                 headers: 'Content-type:text/html;charset=utf-8'
                             }
                         );
-                        p.then((value: AxiosResponse<CommandResult<Boolean[] | CommandError>>) => {
+                        p.then((value: AxiosResponse<CommandResult<{
+                            [id: number]: boolean;
+                        } | CommandError>>) => {
                             if (value.data.state === "successed") {
-                                console.log(value.data.value);
+                                this.testCandidate(value.data.value as {
+                                    [id: number]: boolean;
+                                });
                             } else {
                                 console.warn("error", value.data.value);
                             }
@@ -616,7 +632,108 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         });
     }
 
+    private testCandidate(points: {
+        [id: number]: boolean;
+    }): void {
+        this.toReplace = [];
+        let yAver: number = 0;
+        const positions: Array<{
+            x: number;
+            y: number;
+            id: number;
+            available: boolean;
+        }> = Object.entries(points).map((entry: [string, boolean]) => {
+            const _x: number = this.fx(System.data[parseInt(entry[0])].lng);
+            const _y: number = this.fy(System.data[parseInt(entry[0])].lat);
+            yAver += _y;
+            return {
+                x: _x,
+                y: _y,
+                id: parseInt(entry[0]),
+                available: entry[1]
+            };
+        }).sort((a, b) => a.x - b.x);
+        const len: number = positions.length;
+        yAver /= len;
+        const left: number = Math.round(len / 2);
+
+        this.ctx_r!.lineWidth = 3;
+
+        positions.slice(0, left).sort(
+            (a, b) => a.y - b.y
+        ).forEach((p: {
+            x: number;
+            y: number;
+            id: number;
+            available: boolean;
+        }, index: number) => {
+            const x: number = p.x - 48;
+            const y: number = (yAver - left / 2 * 20) + index * 20;
+            this.ctx_r!.strokeStyle = 'rgb(88,124,12)';
+            this.ctx_r!.moveTo(p.x, p.y);
+            this.ctx_r!.lineTo(x, y);
+            this.ctx_r!.stroke();
+            this.ctx_r!.strokeStyle = 'rgb(30,30,30)';
+            this.ctx_r!.fillStyle = `rgb(${ p.available ? "42,169,176" : "214,121,103" })`;
+            this.ctx_r!.strokeRect(x - 6, y - 6, 12, 12);
+            this.ctx_r!.fillRect(x - 6, y - 6, 12, 12);
+            if (p.available) {
+                this.toReplace.push({
+                    x: x,
+                    y: y,
+                    to: p.id
+                });
+            }
+        });
+
+        positions.slice(left, len).sort(
+            (a, b) => a.y - b.y
+        ).forEach((p: {
+            x: number;
+            y: number;
+            id: number;
+            available: boolean;
+        }, index: number) => {
+            const x: number = p.x + 48;
+            const y: number = (yAver - left / 2 * 20) + index * 20;
+            this.ctx_r!.strokeStyle = 'rgb(88,124,12)';
+            this.ctx_r!.moveTo(p.x, p.y);
+            this.ctx_r!.lineTo(x, y);
+            this.ctx_r!.stroke();
+            this.ctx_r!.strokeStyle = 'rgb(30,30,30)';
+            this.ctx_r!.fillStyle = `rgb(${ p.available ? "42,169,176" : "214,121,103" })`;
+            this.ctx_r!.strokeRect(x - 6, y - 6, 12, 12);
+            this.ctx_r!.fillRect(x - 6, y - 6, 12, 12);
+            if (p.available) {
+                this.toReplace.push({
+                    x: x,
+                    y: y,
+                    to: p.id
+                });
+            }
+        });
+
+        this.ctx_r!.lineWidth = 1;
+    }
+
     private clickHandle(x: number, y: number): boolean {
+        // 是否点击到可替换点
+        if (!isNaN(this.replaceFrom)) {
+            for (let i: number = 0; i < this.toReplace.length; i++) {
+                if (
+                    x >= this.toReplace[i].x - 6
+                    && x <= this.toReplace[i].x + 6
+                    && y >= this.toReplace[i].y - 6
+                    && y <= this.toReplace[i].y + 6
+                ) {
+                    this.props.runReplace(this.replaceFrom, this.toReplace[i].to);
+                    this.replaceFrom = NaN;
+                    this.toReplace = [];
+                    return true;
+                }
+            }
+        }
+
         // 从下到上遍历
         for (let i: number = this.ready_r.length - 1; i >= 0; i--) {
             const cx: number = this.fx(this.ready_r[i][0]);

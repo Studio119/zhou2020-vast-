@@ -8,6 +8,7 @@
 #include <math.h>
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 
 using std::cout;
 using std::string;
@@ -16,6 +17,8 @@ using std::unique_ptr;
 using std::vector;
 using std::sort;
 using std::ifstream;
+using std::ofstream;
+using std::setprecision;
 
 
 // 常量定义
@@ -99,6 +102,7 @@ public:
     void reset();
     /* 生成邻近点矩阵 */
     const Z_Score* fit(const vector<Point>& vect);
+    const Z_Score* fit(const vector<Point>& vect, const string& output);
     /* 判断给定索引对应的数据点的类别 */
     const string typeIdx(unsigned int index);
     /* 返回指定点的邻接点索引 */
@@ -255,6 +259,131 @@ const Z_Score* Z_Score::fit(const vector<Point>& vect) {
     delete[] val;
 
     cout << "]\n";
+
+    return this;
+}
+
+const Z_Score* Z_Score::fit(const vector<Point>& vect, const string& output) {
+    ofstream fout;
+    fout.open(output);
+    if (!fout.is_open()) {
+        exit(-1);
+    }
+
+    // 重置 Z 得分和邻近点矩阵
+    this->reset();
+    // 更新数据点的数量
+    this->length = vect.size();
+
+    if (this->length == 0) {
+        return this;
+    }
+
+    /* 标准化属性值列表 */
+    double* val = new double[this->length];
+    /* 全局属性值均值 */
+    double mean = 0;
+    /* 全局属性值标准差 */
+    double std = 0;
+
+    for (int i = 0; i < this->length; i++) {
+        val[i] = vect[i].value;
+        mean += vect[i].value;
+    }
+    mean /= this->length;
+
+    for (int i = 0; i < this->length; i++) {
+        std += pow(val[i] - mean, 2);
+    }
+    std = sqrt(std / (this->length - 1));
+
+    for (int i = 0; i < this->length; i++) {
+        val[i] = (val[i] - mean) / std;
+    }
+
+    this->neighbors = new unsigned int*[this->length];
+    this->score = new double*[this->length];
+
+    fout << "[";
+
+    // 遍历，时间复杂度 O(n^2)
+    for (int i = 0; i < this->length; i++) {
+        const Point a = Point({
+            vect[i].id, vect[i].lat, vect[i].lng, val[i]
+        });
+        /* 按距离升序排列的其他点 */
+        vector<Neighbor>* order = new vector<Neighbor>();
+        // 遍历其他点，时间复杂度 O(n)
+        for (unsigned int j = 0; j < this->length; j++) { 
+            if (j == i) {
+                continue;
+            }
+            const Point b = Point({
+                vect[j].id, vect[j].lat, vect[j].lng, val[j]
+            });
+            /* 两点距离 */
+            double dist = diff(a, b);
+            order->push_back(Neighbor({
+                j, b.value, double(1.0 / dist)
+            }));
+            sort(order->begin(), order->end());
+            if (order->size() > this->k) {
+                order->resize(this->k);
+            }
+        }
+        this->neighbors[i] = new unsigned int[this->k];
+        /* 邻近点空间权重列向量 */
+        double* weights = new double[this->k];
+        /* 邻近点值列向量 */
+        double* values = new double[this->k];
+        /* 权重和 */
+        double sum = 0;
+        for (int p = 0; p < this->k; p++) {
+            const Neighbor neighbor = (*order)[p];
+            this->neighbors[i][p] = neighbor.index;
+            weights[p] = neighbor.weight;
+            sum += neighbor.weight;
+            values[p] = neighbor.value;
+        }
+        delete order;
+        order = nullptr;
+        /* 标准化观测值 */
+        const double x = a.value;
+        /* 空间滞后值 */
+        double lag = 0;
+        // 权重归一化，计算空间滞后值
+        for (int p = 0; p < this->k; p++) {
+            weights[p] /= sum;
+            lag += values[p] * weights[p];
+        }
+        // 存储结果
+        this->score[i] = new double[2];
+        this->score[i][0] = x;
+        this->score[i][1] = lag;
+        delete[] weights;
+        delete[] values;
+
+        if (i) {
+            fout << ",\n";
+        }
+
+        fout << "{"
+            << "\"id\": " << vect[i].id << ", "
+            << "\"type\": \"" << this->typeIdx(i) << "\", ";
+        fout << "\"lng\": " << setprecision(8) << vect[i].lng << ", ";
+        fout << "\"lat\": " << setprecision(8) << vect[i].lat << ", ";
+        fout << "\"value\": " << setprecision(8) << vect[i].value << ", ";
+        fout << "\"mx\": " << setprecision(12) << this->stdIdx(i) << ", ";
+        fout << "\"my\": " << setprecision(12) << this->lagIdx(i) << ", ";
+        fout
+            << "\"neighbors\": " << toString(this->neighborIdx(i), this->k)
+        << "}";
+    }
+    delete[] val;
+
+    fout << "]\n";
+
+    fout.close();
 
     return this;
 }
