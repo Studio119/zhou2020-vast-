@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-20 14:07:39
+ * @Last Modified time: 2020-04-20 19:01:08
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -697,7 +697,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             available: boolean;
         }, index: number) => {
             const x: number = p.x + 48;
-            const y: number = (yAver - left / 2 * 20) + index * 20;
+            const y: number = (yAver - (len - left) / 2 * 20) + index * 20;
             this.ctx_r!.strokeStyle = 'rgb(88,124,12)';
             this.ctx_r!.moveTo(p.x, p.y);
             this.ctx_r!.lineTo(x, y);

@@ -77,7 +77,7 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
                 else:
                     after_wrong_num += 1
             # T1任务保持住了
-            if after_wrong_num <= before_wrong_num:
+            if after_wrong_num <= before_wrong_num - 1:
                 T1 = True
 
             ## 判断自身的local 和neighbouring 特征都能保持住 ，即T3任务

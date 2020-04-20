@@ -114,13 +114,14 @@ public:
 };
 
 double Z_Score::diff(const Point& a, const Point& b) {
-    double lng1 = a.lng / 180.0 * PI;
-    double lng2 = b.lng / 180.0 * PI;
-    double lat1 = a.lat / 180.0 * PI;
-    double lat2 = b.lat / 180.0 * PI;
-    double e = pow(sin((lat2 - lat1) / 2), 2)
-                + cos(lat1) * cos(lat2) * pow(sin((lng2 - lng1) / 2), 2);
-    return 2 * asin(sqrt(e)) * 6.371;
+    return sqrt(pow(a.lng - b.lng, 2) + pow(a.lat - b.lat, 2));
+    // double lng1 = a.lng / 180.0 * PI;
+    // double lng2 = b.lng / 180.0 * PI;
+    // double lat1 = a.lat / 180.0 * PI;
+    // double lat2 = b.lat / 180.0 * PI;
+    // double e = pow(sin((lat2 - lat1) / 2), 2)
+    //             + cos(lat1) * cos(lat2) * pow(sin((lng2 - lng1) / 2), 2);
+    // return 2 * asin(sqrt(e)) * 6.371;
 }
 
 Z_Score::Z_Score(unsigned short int k) {
