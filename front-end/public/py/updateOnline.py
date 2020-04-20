@@ -141,7 +141,8 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
 
 if __name__ == '__main__':
     dataset_name = sys.argv[1]
-    filename = "..\\storage\\" + dataset_name + "_o.json" #　第一次进来以ｏ结尾的ｊｓｏｎ文件,输出以r结尾的文件
+    tail = sys.argv[4]
+    filename = "..\\storage\\" + dataset_name + tail + ".json" #　第一次进来以ｏ结尾的ｊｓｏｎ文件,输出以r结尾的文件
     ori_filename = "..\\storage\\" + dataset_name + ".json" # 原始的json文件
     selected_point_index = sys.argv[2] # 被选中的错误点
     p_list = json.loads(sys.argv[3])

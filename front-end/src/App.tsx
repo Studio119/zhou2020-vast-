@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-19 17:08:19
+ * @Last Modified time: 2020-04-20 14:55:54
  */
 import React, { Component } from 'react';
 import $ from "jquery";
@@ -72,6 +72,7 @@ class App extends Component<{}, {}, null> {
 
   private randomSample(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     System.type = "sample";
+    System.tail = "_r";
 
     this.map!.load([]);
     this.sct!.load([]);
@@ -135,6 +136,7 @@ class App extends Component<{}, {}, null> {
 
   private zorderSample(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     System.type = "sample";
+    System.tail = "_z";
 
     this.map!.load([]);
     this.sct!.load([]);
@@ -198,6 +200,7 @@ class App extends Component<{}, {}, null> {
 
   private BNS(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     System.type = "sample";
+    System.tail = "_b";
 
     this.map!.load([]);
     this.sct!.load([]);
@@ -261,6 +264,7 @@ class App extends Component<{}, {}, null> {
 
   private ourSample(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     System.type = "sample";
+    System.tail = "_o";
 
     this.map!.load([]);
     this.sct!.load([]);
@@ -382,6 +386,7 @@ class App extends Component<{}, {}, null> {
 
   private better(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     System.type = "sample";
+    System.tail = "_ob";
 
     this.map!.load([]);
     this.sct!.load([]);
@@ -394,8 +399,10 @@ class App extends Component<{}, {}, null> {
       d.target = void 0;
     });
 
+    const n_iter: number = parseFloat($("input[name=iter]").val()! as string);
+
     const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
-      `/better/${ System.filepath!.split(".").join("_dot") }`, {
+      `/better/${ System.filepath!.split(".").join("_dot") }/${ n_iter }`, {
           headers: 'Content-type:text/html;charset=utf-8'
       }
     );
@@ -427,7 +434,7 @@ class App extends Component<{}, {}, null> {
           System.update();
         }, 0);
       } else {
-        reject();
+        reject(value.data);
       }
     }).catch((reason: any) => {
       reject();
@@ -523,7 +530,7 @@ class App extends Component<{}, {}, null> {
           });
         }, 0);
       } else {
-        reject();
+        reject(value.data);
       }
     }).catch((reason: any) => {
       reject();
@@ -546,6 +553,7 @@ class App extends Component<{}, {}, null> {
     }
 
     System.type = "dataset";
+    System.tail = "";
 
     this.map!.load([]);
     this.sct!.load([]);

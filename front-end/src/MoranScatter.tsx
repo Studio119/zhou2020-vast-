@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 18:30:33
+ * @Last Modified time: 2020-04-20 13:52:15
  */
 
 import React, { Component } from "react";
@@ -133,8 +133,8 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             let yMax: number = yAll.length ? Math.max(...yAll) : 1;
 
             if (this.state.strech) {
-                [xMin, xMax] = [xMin - 1, xMax + 1];
-                [yMin, yMax] = [yMin - 1, yMax + 1];
+                [xMin, xMax] = [Math.min(xMin, - xMax) - 1, Math.max(xMax, - xMin) + 1];
+                [yMin, yMax] = [Math.min(yMin, - yMax) - 1, Math.max(yMax, - yMin) + 1];
             } else {
                 [xMin, xMax] = [Math.min(xMin, - xMax), Math.max(xMax, - xMin)];
                 [yMin, yMax] = [Math.min(yMin, - yMax), Math.max(yMax, - yMin)];

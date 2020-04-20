@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-19 17:28:29
+ * @Last Modified time: 2020-04-20 14:07:39
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -538,6 +538,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         }|CommandError>>> = axios.get(
                             `/test/${ System.filepath!.split(".")[0] }/${ pIndex }/${
                                 JSON.stringify(value[a]).split(" ").join("")
+                            }/${
+                                System.tail
                             }`, {
                                 headers: 'Content-type:text/html;charset=utf-8'
                             }

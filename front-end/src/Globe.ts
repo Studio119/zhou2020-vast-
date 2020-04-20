@@ -9,6 +9,7 @@ import { DataItem, LISAtype } from "./TypeLib";
 
 interface SystemType {
     filepath: string | null;
+    tail: "_o" | "_ob" | "_r" | "_b" | "_z" | "";
     maxValue: number;
     data: Array<DataItem>;
     active: Array<boolean>;
@@ -32,6 +33,7 @@ const colorD: {[type: string]: [string, string]} = {
 export const System: SystemType = {
     filepath: null,
     maxValue: 1,
+    tail: "",
     data: [],
     type: "dataset",
     active: [],

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-15 15:21:50
+ * @Last Modified time: 2020-04-20 14:50:06
  */
 
 import React, { Component } from "react";
@@ -123,15 +123,16 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                 style={{
                     width: this.props.width - this.props.padding[1] * 2 - 3,
                     border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                    padding: "0 0 6px"
+                    padding: "0",
+                    textAlign: "start",
+                    overflowX: "scroll"
                 }} >
                     <div key="1" ref="radiusDiv"
                     style={{
                         width: "20%",
                         height: "80%",
                         padding: "4px 5%",
-                        display: "inline-block",
-                        visibility: "hidden"
+                        display: "none"
                     }} >
                         <label
                         style={{
@@ -144,7 +145,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         style={{
                             height: "40%",
                             width: "100%",
-                            marginTop: "8px"
+                            marginTop: "2%"
                         }} />
                     </div>
                     <div key="2" ref="alphaDiv"
@@ -164,7 +165,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         style={{
                             height: "40%",
                             width: "100%",
-                            marginTop: "8px"
+                            marginTop: "2%"
                         }} />
                     </div>
                     <div key="3" ref="rateDiv"
@@ -185,7 +186,27 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         style={{
                             height: "40%",
                             width: "100%",
-                            marginTop: "8px"
+                            marginTop: "2%"
+                        }} />
+                    </div>
+                    <div key="4" ref="iterDiv"
+                    style={{
+                        width: "20%",
+                        height: "80%",
+                        padding: "4px 5%",
+                        display: "none"
+                    }} >
+                        <label
+                        style={{
+                            height: "40%"
+                        }} >
+                            N_iter
+                        </label>
+                        <input name="iter" type="number" min="1" max="10" defaultValue="1"
+                        style={{
+                            height: "40%",
+                            width: "100%",
+                            marginTop: "2%"
                         }} />
                     </div>
                 </div>
@@ -222,9 +243,42 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     <input name="algo" type="radio" value="this_paper"
                                     onChange={
                                         () => {
-                                            $(this.refs["radiusDiv"]).css("visibility", "hidden");
-                                            $(this.refs["alphaDiv"]).css("visibility", "visible");
-                                            $(this.refs["rateDiv"]).css("visibility", "visible");
+                                            $(this.refs["radiusDiv"]).css("display", "none");
+                                            $(this.refs["alphaDiv"]).css("display", "inline-block");
+                                            $(this.refs["rateDiv"]).css("display", "inline-block");
+                                            if (System.tail === "_o" || System.tail === "_ob") {
+                                                $(this.refs["radiusDiv"]).css(
+                                                    "display", "none"
+                                                );
+                                                $(this.refs["alphaDiv"]).css(
+                                                    "display", "none"
+                                                );
+                                                $(this.refs["rateDiv"]).css(
+                                                    "display", "none"
+                                                );
+                                                $(this.refs["iterDiv"]).css(
+                                                    "display", "inline-block"
+                                                );
+                                                (this.refs["btnBetter"] as SyncButton).setState({
+                                                    active: true
+                                                });
+                                            } else {
+                                                $(this.refs["radiusDiv"]).css(
+                                                    "display", "none"
+                                                );
+                                                $(this.refs["alphaDiv"]).css(
+                                                    "display", "inline-block"
+                                                );
+                                                $(this.refs["rateDiv"]).css(
+                                                    "display", "inline-block"
+                                                );
+                                                $(this.refs["iterDiv"]).css(
+                                                    "display", "none"
+                                                );
+                                                (this.refs["btnBetter"] as SyncButton).setState({
+                                                    active: false
+                                                });
+                                            }
                                         }
                                     } />
                                     Our method
@@ -237,9 +291,13 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     <input name="algo" type="radio" value="random_sampling"
                                     onChange={
                                         () => {
-                                            $(this.refs["radiusDiv"]).css("visibility", "hidden");
-                                            $(this.refs["alphaDiv"]).css("visibility", "hidden");
-                                            $(this.refs["rateDiv"]).css("visibility", "visible");
+                                            $(this.refs["radiusDiv"]).css("display", "none");
+                                            $(this.refs["alphaDiv"]).css("display", "none");
+                                            $(this.refs["rateDiv"]).css("display", "inline-block");
+                                            $(this.refs["iterDiv"]).css("display", "none");
+                                            (this.refs["btnBetter"] as SyncButton).setState({
+                                                active: false
+                                            });
                                         }
                                     } />
                                     Random sp
@@ -252,9 +310,13 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     <input name="algo" type="radio" value="blue_noise_sampling"
                                     onChange={
                                         () => {
-                                            $(this.refs["radiusDiv"]).css("visibility", "visible");
-                                            $(this.refs["alphaDiv"]).css("visibility", "hidden");
-                                            $(this.refs["rateDiv"]).css("visibility", "hidden");
+                                            $(this.refs["radiusDiv"]).css("display", "inline-block");
+                                            $(this.refs["alphaDiv"]).css("display", "none");
+                                            $(this.refs["rateDiv"]).css("display", "none");
+                                            $(this.refs["iterDiv"]).css("display", "none");
+                                            (this.refs["btnBetter"] as SyncButton).setState({
+                                                active: false
+                                            });
                                         }
                                     } />
                                     BNS
@@ -267,9 +329,13 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     <input name="algo" type="radio" value="pure_z-order"
                                     onChange={
                                         () => {
-                                            $(this.refs["radiusDiv"]).css("visibility", "hidden");
-                                            $(this.refs["alphaDiv"]).css("visibility", "hidden");
-                                            $(this.refs["rateDiv"]).css("visibility", "visible");
+                                            $(this.refs["radiusDiv"]).css("display", "none");
+                                            $(this.refs["alphaDiv"]).css("display", "none");
+                                            $(this.refs["rateDiv"]).css("display", "inline-block");
+                                            $(this.refs["iterDiv"]).css("display", "none");
+                                            (this.refs["btnBetter"] as SyncButton).setState({
+                                                active: false
+                                            });
                                         }
                                     } />
                                     Z-order
@@ -314,7 +380,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 padding: "6px 0"
                             }} >
-                                <SyncButton theme="NakiriAyame" text={ "o" }
+                                <SyncButton theme="NakiriAyame" text={ "o" } ref="btnBetter"
                                     executer={ this.props.better } />
                             </td>
                         </tr>
@@ -326,6 +392,10 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
 
     public componentDidMount(): void {
         $("input[name=algo]").eq(0).attr("checked", "checked");
+
+        (this.refs["btnBetter"] as SyncButton).setState({
+            active: false
+        });
     }
 
     private onSelected(path: string): void {
@@ -337,9 +407,24 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
 
     private executer(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
         const val: string = $("input[name=algo]:checked").val()! as string;
+
+        (this.refs["btnBetter"] as SyncButton).setState({
+            active: false
+        });
+
+        $(this.refs["iterDiv"]).css("display", "none");
         
         if (val === "this_paper") {
-            this.props.ourSample(resolve, reject);
+            this.props.ourSample((value?: void | PromiseLike<void> | undefined) => {
+                resolve(value);
+                $(this.refs["radiusDiv"]).css("display", "none");
+                $(this.refs["alphaDiv"]).css("display", "none");
+                $(this.refs["rateDiv"]).css("display", "none");
+                $(this.refs["iterDiv"]).css("display", "inline-block");
+                (this.refs["btnBetter"] as SyncButton).setState({
+                    active: true
+                });
+            }, reject);
         } else if (val === "random_sampling") {
             this.props.randomSample(resolve, reject);
         } else if (val === "pure_z-order") {

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-19 17:15:35
+ * @Last Modified time: 2020-04-20 14:53:01
  */
 
 const express = require('express');
@@ -290,13 +290,14 @@ app.get("/ours/:filepath/:alpha/:rate", (req, res) => {
 });
 
 
-app.get("/better/:filepath", (req, res) => {
+app.get("/better/:filepath/:n_iter", (req, res) => {
     const path = pathInput + req.params["filepath"].split("_dot").join(".");
+    const ori_path = path.replace(".csv", ".json").replace(pathInput, pathOutput);
     const json_path = path.replace(".csv", "_o.json").replace(pathInput, pathOutput);
     const output_path = json_path.replace("_o.json", "_ob.json");
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
     const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\better.py"
-                    + " " + json_path;
+                    + " " + json_path + " " + ori_path + " " + 0.6 + " " + req.params["n_iter"];
 
     process.exec(cmd, (error, _, stderr) => {
         if (stderr) {
@@ -371,13 +372,13 @@ app.post("/kde", (req, res) => {
 });
 
 
-app.get("/test/:datasetName/:pIndex/:pList", (req, res) => {
+app.get("/test/:datasetName/:pIndex/:pList/:tail", (req, res) => {
     const datasetName = req.params["datasetName"];
     const pIndex = req.params["pIndex"];
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
     const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\updateOnline.py"
                     + " " + datasetName + " " + pIndex
-                    + " " + req.params["pList"];
+                    + " " + req.params["pList"] + " " + req.params["tail"];
 
     process.exec(cmd, (error, stdout, stderr) => {
         if (stderr) {
