@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 15:08:14 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-12 14:31:14
+ * @Last Modified time: 2020-04-21 18:22:02
  */
 
 import { DataItem, LISAtype } from "./TypeLib";
@@ -19,6 +19,12 @@ interface SystemType {
     highlight: (value: LISAtype | "none", value2?: LISAtype) => void;
     initialize: () => void;
     update: () => void;
+    params: {
+        radius: number;
+        alpha: number;
+        rate: number;
+        iter: number;
+    };
 };
 
 const colorD: {[type: string]: [string, string]} = {
@@ -47,5 +53,11 @@ export const System: SystemType = {
     },
     highlight: () => {},
     initialize: () => {},
-    update: () => {}
+    update: () => {},
+    params: {
+        radius: 0.4,
+        alpha: 0.6,
+        rate: 0.1,
+        iter: 1
+    }
 };

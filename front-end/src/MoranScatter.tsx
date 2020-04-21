@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-20 13:52:15
+ * @Last Modified time: 2020-04-21 18:26:08
  */
 
 import React, { Component } from "react";
@@ -13,7 +13,6 @@ import Color, { ColorThemes } from "./preference/Color";
 import { Container } from "./prototypes/Container";
 import axios, { AxiosResponse } from "axios";
 import { CommandResult, CommandError } from "./Command";
-import { SyncButton } from "./prototypes/SyncButton";
 import ValueBar from "./tools/ValueBar";
 
 
@@ -69,7 +68,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.state = {
             list: [],
             strech: false,
-            nSpan: 4
+            nSpan: 0
         };
         this.canvas1 = null;
         this.canvas2 = null;
@@ -133,8 +132,8 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             let yMax: number = yAll.length ? Math.max(...yAll) : 1;
 
             if (this.state.strech) {
-                [xMin, xMax] = [Math.min(xMin, - xMax) - 1, Math.max(xMax, - xMin) + 1];
-                [yMin, yMax] = [Math.min(yMin, - yMax) - 1, Math.max(yMax, - yMin) + 1];
+                [xMin, xMax] = [xMin - (xMax - xMin) / 8, xMax + (xMax - xMin) / 8];
+                [yMin, yMax] = [yMin - (yMax - yMin) / 8, yMax + (yMax - yMin) / 8];
             } else {
                 [xMin, xMax] = [Math.min(xMin, - xMax), Math.max(xMax, - xMin)];
                 [yMin, yMax] = [Math.min(yMin, - yMax), Math.max(yMax, - yMin)];
@@ -181,7 +180,10 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     yS += spansY[i];
                 }
                 for (let i: number = 0; i < this.state.nSpan; i++) {
-                    let dx: number = 0.7 * spansX[i] / xS + 0.3 / this.state.nSpan;
+                    const w: number = 0.3 * Math.sqrt(1 -
+                        Math.abs(this.state.nSpan / 2 - i - 1) / this.state.nSpan
+                    );
+                    let dx: number = (1 - w) * spansX[i] / xS + w / this.state.nSpan;
                     const tx: number = xOffset;
                     this.snapshots.kX[i].f = (d: number) => {
                         return tx
@@ -189,7 +191,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                 / (this.snapshots.kX[i].ceil - this.snapshots.kX[i].floor);
                     };
                     xOffset += dx;
-                    let dy: number = 0.7 * spansY[i] / yS + 0.3 / this.state.nSpan;
+                    let dy: number = (1 - w) * spansY[i] / yS + w / this.state.nSpan;
                     const ty: number = yOffset;
                     this.snapshots.kY[i].f = (d: number) => {
                         return ty
@@ -275,8 +277,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                 style={{
                     width: this.props.width ? this.props.width : "100%",
                     height: this.props.height,
-                    backgroundColor: ColorThemes.NakiriAyame.OuterBackground,
-                    marginBottom: '-4px'
+                    backgroundColor: ColorThemes.NakiriAyame.OuterBackground
                 }} />
                 <canvas ref="canvas1" key="canvas1" id={ this.props.id + "_canvas1" }
                 width={ this.props.width ? this.props.width : "100%" }
@@ -375,24 +376,18 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                 <div key="buttonBox"
                 style={{
                     position: "relative",
-                    top: "-1505px",
-                    left: "8px",
-                    background: ColorThemes.NakiriAyame.OuterBackground,
-                    border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                    borderRadius: this.state.strech ? "0 12px 10px 0" : "0",
-                    width: this.state.strech ? "138px" : "35px",
+                    top: "-1545px",
+                    left: "248px",
+                    width: "138px"
                 }} >
-                    <SyncButton theme="NakiriAyame" text={
-                        this.state.strech ? "on " : "off"
-                    } executer={ this.shift.bind(this) } />
-                    <ValueBar width={ 80 } height={ 16 }
-                    min={ 1 } max={ 32 } defaultValue={ this.state.nSpan } step={ 1 }
+                    <ValueBar width={ 100 } height={ 16 }
+                    min={ 0 } max={ 32 } defaultValue={ this.state.nSpan } step={ 1 }
                     onValueChange={
                         this.adjust.bind(this)
                     }
                     style={{
                         transform: "translateY(26%)",
-                        display: this.state.strech ? "inline-block" : "none"
+                        display: "inline-block"
                     }} />
                 </div>
             </Container>
@@ -444,19 +439,20 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         }
     }
 
-    private shift(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-        this.setState({
-            strech: !this.state.strech
-        });
-        resolve();
-    }
-
     private adjust(value: number): void {
         const v: number = Math.floor(value);
         if (v !== this.state.nSpan) {
-            this.setState({
-                nSpan: v
-            });
+            if (v === 0) {
+                this.setState({
+                    nSpan: 0,
+                    strech: false
+                });
+            } else {
+                this.setState({
+                    nSpan: v,
+                    strech: true
+                });
+            }
         }
     }
 
@@ -485,49 +481,13 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             color: [string, string];
             x: number;
             y: number;
-            prevX: number;
-            prevY: number;
         }>
     ): void {
         list.forEach((item: {
-            color: [string, string]; x: number; y: number; prevX: number; prevY: number;
+            color: [string, string]; x: number; y: number;
         }) => {
             this.ctx2!.strokeStyle = item.color[1];
             this.ctx2!.fillStyle = item.color[0];
-            
-            this.ctx2!.beginPath();
-            this.ctx2!.arc(item.prevX, item.prevY, this.state.strech ? 0.8 : 2, 0, 2 * Math.PI);
-            this.ctx2!.stroke();
-
-            this.ctx2!.globalAlpha = 0.1;
-            this.ctx2!.strokeStyle = 'rgb(0,162,60)';
-            let x: number = item.prevX;
-            let y: number = item.prevY;
-            const len: number = Math.sqrt(
-                Math.pow(item.x - item.prevX, 2)
-                + Math.pow(item.y - item.prevY, 2)
-            );
-            const step: number = 2;
-            const xStep: number = (item.x - item.prevX) / len * step;
-            const yStep: number = (item.y - item.prevY) / len * step;
-            
-            while (
-                (xStep > 0 && x < item.x)
-                || (yStep > 0 && y < item.y)
-                || (xStep <= 0 && x > item.x)
-                || (yStep <=0 && y > item.y)
-            ) {
-                this.ctx2!.moveTo(x, y);
-                x += xStep;
-                y += yStep;
-                this.ctx2!.lineTo(x, y);
-                this.ctx2!.stroke();
-                x += xStep;
-                y += yStep;
-            }
-
-            this.ctx2!.globalAlpha = 1;
-            this.ctx2!.strokeStyle = item.color[1];
 
             this.ctx2!.beginPath();
             this.ctx2!.arc(item.x, item.y, 3, 0, 2 * Math.PI);
@@ -542,7 +502,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         }>> = [];
 
         let ready2: Array<Array<{
-            color: [string, string]; x: number; y: number; prevX: number; prevY: number;
+            color: [string, string]; x: number; y: number;
         }>> = [];
 
         let nParts = Math.floor(Math.pow((this.state.list.length - 400) / 100, 0.8));
@@ -584,9 +544,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     ready2[index % nParts].push({
                         color: System.colorF(item.target!.type),
                         x: fx(item.target.mx) / 100 * this.width,
-                        y: fy(item.target.my) / 100 * this.props.height,
-                        prevX: fx(item.mx) / 100 * this.width,
-                        prevY: fy(item.my) / 100 * this.props.height
+                        y: fy(item.target.my) / 100 * this.props.height
                     });
                 }
             }
@@ -602,7 +560,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         });
 
         ready2.forEach((li: Array<{
-            color: [string, string]; x: number; y: number; prevX: number; prevY: number;
+            color: [string, string]; x: number; y: number;
         }>, index: number) => {
             this.timers.push(setTimeout(() => {
                 this.link(li);
@@ -699,6 +657,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
 
     private axis(type: "x" | "y",
     fx: (d: number) => number, fy: (d: number) => number, ticks: Array<number>): JSX.Element {
+        ticks.push(0);
         if (type === "x") {
             return (
                 <g key={ type }>
@@ -717,22 +676,42 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                             }
                             return (
                                 <g key={ type + "_tick_" + i } >
-                                    <text key={ type + "_" + i + "_text" }
-                                    x={ x + "%" } y={ fy(0) + "%" }
-                                    textAnchor="middle"
-                                    style={{
-                                        fontSize: 13,
-                                        transform: `translateY(15px)`,
-                                        fontWeight: 'bold'
-                                    }} >
-                                        { t }
-                                    </text>
-                                    <line key={ type + "_" + i + "_line" }
-                                    x1={ x + "%" } x2={ x + "%" }
-                                    y1={ fy(0) + "%" } y2={ (fy(0) - 5.4 / this.props.height * 100) + "%" }
-                                    style={{
-                                        stroke: ColorThemes.NakiriAyame.InnerBackground
-                                    }} />
+                                    {
+                                        t === 0 ? null :
+                                        <text key={ type + "_" + i + "_text" }
+                                        x={ x + "%" } y={ fy(0) + "%" }
+                                        textAnchor="middle"
+                                        style={{
+                                            fontSize: 13,
+                                            transform: `translateY(15px)`,
+                                            fontWeight: 'bold'
+                                        }} >
+                                            { t }
+                                        </text>
+                                    }
+                                    {
+                                        t === 0 ? null :
+                                        <line key={ type + "_" + i + "_line" }
+                                        x1={ x + "%" } x2={ x + "%" }
+                                        y1={ 0 } y2="100%"
+                                        style={{
+                                            stroke: ColorThemes.NakiriAyame.InnerBackground
+                                        }} />
+                                    }
+                                    {
+                                        [0.2, 0.4, 0.6, 0.8].map((offset: number) => {
+                                            return (
+                                                <line key={ type + "_" + (i + offset) + "_line" }
+                                                x1={ fx(t + offset) + "%" }
+                                                x2={ fx(t + offset) + "%" }
+                                                y1={ 0 } y2="100%"
+                                                style={{
+                                                    stroke: ColorThemes.NakiriAyame.InnerBackground,
+                                                    strokeOpacity: 0.4
+                                                }} />
+                                            );
+                                        })
+                                    }
                                 </g>
                             );
                         })
@@ -757,22 +736,42 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                             }
                             return (
                                 <g key={ type + "_tick_" + i } >
-                                    <text key={ type + "_" + i + "_text" }
-                                    x={ fx(0) + "%" } y={ y + "%" }
-                                    textAnchor="end"
-                                    style={{
-                                        fontSize: 13,
-                                        transform: `translate(-8px, 5px)`,
-                                        fontWeight: 'bold'
-                                    }} >
-                                        { t }
-                                    </text>
-                                    <line key={ type + "_" + i + "_line" }
-                                    x1={ (fx(0) + 5.4 / this.props.height * 100) + "%" } x2={ fx(0) + "%" }
-                                    y1={ y + "%" } y2={ y + "%" }
-                                    style={{
-                                        stroke: ColorThemes.NakiriAyame.InnerBackground
-                                    }} />
+                                    {
+                                        t === 0 ? null :
+                                        <text key={ type + "_" + i + "_text" }
+                                        x={ fx(0) + "%" } y={ y + "%" }
+                                        textAnchor="end"
+                                        style={{
+                                            fontSize: 13,
+                                            transform: `translate(-8px, 5px)`,
+                                            fontWeight: 'bold'
+                                        }} >
+                                            { t }
+                                        </text>
+                                    }
+                                    {
+                                        t === 0 ? null :
+                                        <line key={ type + "_" + i + "_line" }
+                                        x1={ 0 } x2="100%"
+                                        y1={ y + "%" } y2={ y + "%" }
+                                        style={{
+                                            stroke: ColorThemes.NakiriAyame.InnerBackground
+                                        }} />
+                                    }
+                                    {
+                                        [0.2, 0.4, 0.6, 0.8].map((offset: number) => {
+                                            return (
+                                                <line key={ type + "_" + (i + offset) + "_line" }
+                                                y1={ fy(t + offset) + "%" }
+                                                y2={ fy(t + offset) + "%" }
+                                                x1={ 0 } x2="100%"
+                                                style={{
+                                                    stroke: ColorThemes.NakiriAyame.InnerBackground,
+                                                    strokeOpacity: 0.4
+                                                }} />
+                                            );
+                                        })
+                                    }
                                 </g>
                             );
                         })

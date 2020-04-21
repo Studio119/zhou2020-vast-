@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-20 14:50:06
+ * @Last Modified time: 2020-04-21 18:16:52
  */
 
 import React, { Component } from "react";
@@ -10,6 +10,7 @@ import $ from "jquery";
 import { ColorThemes } from "./preference/Color";
 import { SyncButton } from "./prototypes/SyncButton";
 import { System } from "./Globe";
+import ValueBar from "./tools/ValueBar";
 
 
 export interface ControlCenterProps {
@@ -51,12 +52,14 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                     height: '54px',
                     overflow: "hidden",
                     padding: '2px 10px',
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground
+                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                    display: "flex"
                 }} >
                     <form style={{
-                        width: "100%",
+                        width: "86%",
                         height: "100%",
-                        textAlign: "left"
+                        textAlign: "left",
+                        display: "inline-block"
                     }} >
                         <label>
                             Import dataset from
@@ -67,6 +70,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 this.onSelected(
                                     event.target.value.split("fakepath\\")[1]
                                 );
+                                this.props.reset(() => {}, () => {});
                             }
                         }
                         style={{
@@ -107,7 +111,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             style={{
                                 display: "inline-block",
                                 height: "100%",
-                                width: "16%"
+                                width: "22%"
                             }}
                             onClick={
                                 () => {
@@ -118,96 +122,14 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             </button>
                         </div>
                     </form>
-                </div>
-                <div key="params"
-                style={{
-                    width: this.props.width - this.props.padding[1] * 2 - 3,
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                    padding: "0",
-                    textAlign: "start",
-                    overflowX: "scroll"
-                }} >
-                    <div key="1" ref="radiusDiv"
-                    style={{
-                        width: "20%",
-                        height: "80%",
-                        padding: "4px 5%",
-                        display: "none"
+                    <div style={{
+                        textAlign: "left",
+                        display: "inline-block",
+                        margin: "3.8% auto"
                     }} >
-                        <label
-                        style={{
-                            height: "40%"
-                        }} >
-                            Radius
-                        </label>
-                        <input name="radius" type="number" min="0.02" max="0.2"
-                        step="0.02" defaultValue="0.02"
-                        style={{
-                            height: "40%",
-                            width: "100%",
-                            marginTop: "2%"
-                        }} />
-                    </div>
-                    <div key="2" ref="alphaDiv"
-                    style={{
-                        width: "20%",
-                        height: "80%",
-                        padding: "4px 5%",
-                        display: "inline-block"
-                    }} >
-                        <label
-                        style={{
-                            height: "40%"
-                        }} >
-                            Alpha
-                        </label>
-                        <input name="alpha" type="number" min="1" max="10" defaultValue="10"
-                        style={{
-                            height: "40%",
-                            width: "100%",
-                            marginTop: "2%"
-                        }} />
-                    </div>
-                    <div key="3" ref="rateDiv"
-                    style={{
-                        width: "30%",
-                        height: "80%",
-                        padding: "4px 5%",
-                        display: "inline-block"
-                    }} >
-                        <label
-                        style={{
-                            height: "40%"
-                        }} >
-                            Sampling Rate
-                        </label>
-                        <input name="rate" type="number" min="0.01" max="1.00"
-                        step="0.01" defaultValue="0.10"
-                        style={{
-                            height: "40%",
-                            width: "100%",
-                            marginTop: "2%"
-                        }} />
-                    </div>
-                    <div key="4" ref="iterDiv"
-                    style={{
-                        width: "20%",
-                        height: "80%",
-                        padding: "4px 5%",
-                        display: "none"
-                    }} >
-                        <label
-                        style={{
-                            height: "40%"
-                        }} >
-                            N_iter
-                        </label>
-                        <input name="iter" type="number" min="1" max="10" defaultValue="1"
-                        style={{
-                            height: "40%",
-                            width: "100%",
-                            marginTop: "2%"
-                        }} />
+                        <SyncButton ref="refresh" theme="NakiriAyame" text={ "⭮" } style={{
+                            fontSize: "16px"
+                        }} executer={ this.props.reset } />
                     </div>
                 </div>
                 <table
@@ -220,19 +142,11 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         style={{
                             padding: "6px"
                         }} >
-                            <th key="1"
-                            style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "16%",
-                                padding: "2px 0"
-                            }} >
-                                Load
-                            </th>
                             <th key="2" colSpan={ 2 } rowSpan={ 2 }
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "36%",
-                                padding: 0,
+                                width: "50%",
+                                padding: "1px 8px 4px",
                                 textAlign: 'left'
                             }} >
                                 <label key="this_paper"
@@ -344,7 +258,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="3"
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "24%",
+                                width: "25%",
                                 padding: "2px 0"
                             }} >
                                 Apply
@@ -352,27 +266,19 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="4"
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "24%",
+                                width: "25%",
                                 padding: "2px 0"
                             }} >
                                 Optimize
                             </th>
                         </tr>
                         <tr key="buttons" >
-                            <td key="1"
-                            style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                padding: "6px 0"
-                            }} >
-                                <SyncButton theme="NakiriAyame" text={ "o" }
-                                    executer={ this.props.reset } />
-                            </td>
                             <td key="3"
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 padding: "6px 0"
                             }} >
-                                <SyncButton theme="NakiriAyame" text={ "o" }
+                                <SyncButton theme="NakiriAyame" text={ "▶" }
                                     executer={ this.executer.bind(this) } />
                             </td>
                             <td key="4"
@@ -380,12 +286,111 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
                                 padding: "6px 0"
                             }} >
-                                <SyncButton theme="NakiriAyame" text={ "o" } ref="btnBetter"
+                                <SyncButton theme="NakiriAyame" text={ "▶" } ref="btnBetter"
                                     executer={ this.props.better } />
                             </td>
                         </tr>
                     </tbody>
                 </table>
+                <div key="params"
+                style={{
+                    width: this.props.width - this.props.padding[1] * 2 - 3,
+                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                    padding: "0",
+                    textAlign: "start",
+                    overflowX: "scroll",
+                    height: "70px",
+                    overflowY: "hidden"
+                }} >
+                    <div key="1" ref="radiusDiv"
+                    style={{
+                        width: "80px",
+                        height: "80%",
+                        padding: "4px 5%",
+                        display: "none"
+                    }} >
+                        <ValueBar width={ 80 } height={ 18 }
+                        min={ 0.02 } max={ 0.2 } step={ 0.02 } defaultValue={ 0.04 }
+                        style={{
+                            transform: "unset",
+                            alignItems: ""
+                        }}
+                        valueFormatter={
+                            (value: number) => `radius=${ value.toFixed(2) }`
+                        }
+                        onValueChange={
+                            (value: number) => {
+                                System.params.radius = parseFloat(value.toFixed(2));
+                            }
+                        } />
+                    </div>
+                    <div key="2" ref="alphaDiv"
+                    style={{
+                        width: "80px",
+                        height: "80%",
+                        padding: "4px 5%",
+                        display: "inline-block"
+                    }} >
+                        <ValueBar width={ 80 } height={ 18 }
+                        min={ 0.1 } max={ 0.9 } step={ 0.05 } defaultValue={ 0.6 }
+                        style={{
+                            transform: "unset",
+                            alignItems: ""
+                        }}
+                        valueFormatter={
+                            (value: number) => `alpha=${ value.toFixed(2) }`
+                        }
+                        onValueChange={
+                            (value: number) => {
+                                System.params.alpha = parseFloat(value.toFixed(2));
+                            }
+                        } />
+                    </div>
+                    <div key="3" ref="rateDiv"
+                    style={{
+                        width: "120px",
+                        height: "80%",
+                        padding: "4px 5%",
+                        display: "inline-block"
+                    }} >
+                        <ValueBar width={ 120 } height={ 18 }
+                        min={ 0.01 } max={ 1.00 } step={ 0.01 } defaultValue={ 0.10 }
+                        style={{
+                            transform: "unset",
+                            alignItems: ""
+                        }}
+                        valueFormatter={
+                            (value: number) => `sample_rate=${ value.toFixed(2) }`
+                        }
+                        onValueChange={
+                            (value: number) => {
+                                System.params.rate = parseFloat(value.toFixed(2));
+                            }
+                        } />
+                    </div>
+                    <div key="4" ref="iterDiv"
+                    style={{
+                        width: "54px",
+                        height: "80%",
+                        padding: "4px 5%",
+                        display: "none"
+                    }} >
+                        <ValueBar width={ 54 } height={ 18 }
+                        min={ 1 } max={ 10 } step={ 1 } defaultValue={ 1 }
+                        style={{
+                            transform: "unset",
+                            alignItems: ""
+                        }}
+                        valueFormatter={
+                            (value: number) => `n_iter=${ Math.floor(value) }`
+                        }
+                        onValueChange={
+                            (value: number) => {
+                                System.params.iter = Math.floor(value);
+                            }
+                        } />
+                    </div>
+                </div>
             </div>
         );
     }

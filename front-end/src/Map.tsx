@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-20 19:01:08
+ * @Last Modified time: 2020-04-21 21:38:23
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -533,6 +533,20 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             for (let a: number = 0; a < value.length; a++) {
                 for (let b: number = 0; b < value[a].length; b++) {
                     if (value[a][b] === pIndex) {
+                        let xMin: number = Infinity;
+                        let xMax: number = -Infinity;
+                        let yMin: number = Infinity;
+                        let yMax: number = -Infinity;
+                        value[a].forEach((i: number) => {
+                            const x: number = this.fx(System.data[i].lng);
+                            const y: number = this.fy(System.data[i].lat);
+                            [xMin, xMax, yMin, yMax] = [
+                                Math.min(xMin, x),
+                                Math.max(xMax, x),
+                                Math.min(yMin, y),
+                                Math.max(yMax, y)
+                            ];
+                        });
                         const p: Promise<AxiosResponse<CommandResult<{
                             [id: number]: boolean;
                         }|CommandError>>> = axios.get(
@@ -544,83 +558,50 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                                 headers: 'Content-type:text/html;charset=utf-8'
                             }
                         );
+                        const cx: number = (xMin + xMax) / 2;
+                        const cy: number = (yMin + yMax) / 2;
                         p.then((value: AxiosResponse<CommandResult<{
                             [id: number]: boolean;
                         } | CommandError>>) => {
                             if (value.data.state === "successed") {
                                 this.testCandidate(value.data.value as {
                                     [id: number]: boolean;
-                                });
+                                }, [cx, cy]);
                             } else {
                                 console.warn("error", value.data.value);
                             }
                         }).catch((reason: any) => {
-                            console.log("error", reason);
+                            console.warn("error", reason);
                         });
-                        this.ctx_r!.fillStyle = "rgb(78,201,143)";
-                        this.ctx_r!.strokeStyle = "rgb(78,201,143)";
-                        this.ctx_r!.lineWidth = 20;
-                        value[a].forEach((i: number, _i: number) => {
-                            const x: number = this.fx(System.data[i].lng);
-                            const y: number = this.fy(System.data[i].lat);
-                            const neighbors: [
-                                {x: number; y: number;},
-                                {x: number; y: number;}
-                            ] = value[a].map((id: number) => {
-                                return {
-                                    x: this.fx(System.data[id].lng),
-                                    y: this.fy(System.data[id].lat)
-                                };
-                            }).filter((_: {
-                                x: number;
-                                y: number;
-                            }, _j: number) => {
-                                return _i !== _j && _i + 1 !== _j;
-                            }).sort((a, b) => {
-                                return (
-                                    Math.pow(a.x - x, 2) + Math.pow(a.y - y, 2)
-                                ) - (
-                                    Math.pow(b.x - x, 2) + Math.pow(b.y - y, 2)
-                                );
-                            }).slice(0, 2) as [
-                                {x: number; y: number;},
-                                {x: number; y: number;}
-                            ];
-                            this.ctx_r!.beginPath();
-                            this.ctx_r!.moveTo(x, y);
-                            if (_i < value[a].length - 1) {
-                                this.ctx_r!.lineTo(
-                                    this.fx(System.data[value[a][_i + 1]].lng),
-                                    this.fy(System.data[value[a][_i + 1]].lat)
-                                );
-                                this.ctx_r!.stroke();
-                                this.ctx_r!.moveTo(x, y);
-                            }
-                            this.ctx_r!.lineTo(neighbors[0].x, neighbors[0].y);
-                            this.ctx_r!.lineTo(neighbors[1].x, neighbors[1].y);
-                            this.ctx_r!.fill();
-                            this.ctx_r!.stroke();
-                        });
+                        this.ctx_r!.fillStyle = "rgb(71,71,71)";
+                        this.ctx_r!.strokeStyle = "rgb(71,71,71)";
+                        this.ctx_r!.beginPath();
+                        this.ctx_r!.arc(
+                            cx,
+                            cy,
+                            Math.sqrt(
+                                Math.max(
+                                    Math.pow(xMax - xMin, 2) + Math.pow(yMax - yMin, 2),
+                                    Math.pow(xMax - xMin, 2) + Math.pow(yMin - yMax, 2)
+                                )
+                            ) / 2 + 8,
+                            0,
+                            2 * Math.PI
+                        );
+                        this.ctx_r!.stroke();
+                        this.ctx_r!.fill();
                         this.ctx_r!.lineWidth = 1;
-                        this.ctx_r!.fillStyle = "#ccffccc0";
+                        this.ctx_r!.fillStyle = "#cccccca0";
                         this.ctx_r!.strokeStyle = "#000000";
                         value[a].forEach((i: number) => {
+                            const x: number = this.fx(System.data[i].lng);
+                            const y: number = this.fy(System.data[i].lat);
+                            
                             if (this.props.mode === "rect") {
-                                this.ctx_r!.fillRect(
-                                    this.fx(System.data[i].lng) - 3,
-                                    this.fy(System.data[i].lat) - 3,
-                                    6,
-                                    6
-                                );
+                                this.ctx_r!.fillRect(x - 3, y - 3, 6, 6);
                             } else {
                                 this.ctx_r!.beginPath();
-                                this.ctx_r!.arc(
-                                    this.fx(System.data[i].lng),
-                                    this.fy(System.data[i].lat),
-                                    3,
-                                    0,
-                                    2 * Math.PI
-                                );
+                                this.ctx_r!.arc(x, y, 3, 0, 2 * Math.PI);
                                 this.ctx_r!.stroke();
                                 this.ctx_r!.fill();
                             }
@@ -636,9 +617,19 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
 
     private testCandidate(points: {
         [id: number]: boolean;
-    }): void {
+    }, center: [number, number]): void {
         this.toReplace = [];
-        let yAver: number = 0;
+        const len: number = Object.entries(points).length;
+        const step: number = 2 * Math.PI / len;
+        const projections: Array<{
+            x: number;
+            y: number;
+        }> = Object.entries(points).map((_: {}, i: number) => {
+            return {
+                x: center[0] + Math.sin(step * i) * 100,
+                y: center[1] - Math.cos(step * i) * 100
+            };
+        });
         const positions: Array<{
             x: number;
             y: number;
@@ -647,75 +638,54 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }> = Object.entries(points).map((entry: [string, boolean]) => {
             const _x: number = this.fx(System.data[parseInt(entry[0])].lng);
             const _y: number = this.fy(System.data[parseInt(entry[0])].lat);
-            yAver += _y;
+            let minIdx: number = 0;
+            let min: number = Infinity;
+            projections.forEach((c: {x: number; y: number;}, i: number) => {
+                const dist: number = Math.pow(c.x - _x, 2) + Math.pow(c.y - _y, 2);
+                if (dist < min) {
+                    min = dist;
+                    minIdx = i;
+                }
+            });
             return {
                 x: _x,
                 y: _y,
                 id: parseInt(entry[0]),
-                available: entry[1]
+                available: entry[1],
+                nearest: minIdx
             };
-        }).sort((a, b) => a.x - b.x);
-        const len: number = positions.length;
-        yAver /= len;
-        const left: number = Math.round(len / 2);
-
-        this.ctx_r!.lineWidth = 3;
-
-        positions.slice(0, left).sort(
-            (a, b) => a.y - b.y
-        ).forEach((p: {
-            x: number;
-            y: number;
-            id: number;
-            available: boolean;
-        }, index: number) => {
-            const x: number = p.x - 48;
-            const y: number = (yAver - left / 2 * 20) + index * 20;
-            this.ctx_r!.strokeStyle = 'rgb(88,124,12)';
-            this.ctx_r!.moveTo(p.x, p.y);
-            this.ctx_r!.lineTo(x, y);
-            this.ctx_r!.stroke();
-            this.ctx_r!.strokeStyle = 'rgb(30,30,30)';
-            this.ctx_r!.fillStyle = `rgb(${ p.available ? "42,169,176" : "214,121,103" })`;
-            this.ctx_r!.strokeRect(x - 6, y - 6, 12, 12);
-            this.ctx_r!.fillRect(x - 6, y - 6, 12, 12);
-            if (p.available) {
-                this.toReplace.push({
-                    x: x,
-                    y: y,
-                    to: p.id
-                });
-            }
-        });
-
-        positions.slice(left, len).sort(
-            (a, b) => a.y - b.y
-        ).forEach((p: {
-            x: number;
-            y: number;
-            id: number;
-            available: boolean;
-        }, index: number) => {
-            const x: number = p.x + 48;
-            const y: number = (yAver - (len - left) / 2 * 20) + index * 20;
-            this.ctx_r!.strokeStyle = 'rgb(88,124,12)';
-            this.ctx_r!.moveTo(p.x, p.y);
-            this.ctx_r!.lineTo(x, y);
-            this.ctx_r!.stroke();
-            this.ctx_r!.strokeStyle = 'rgb(30,30,30)';
-            this.ctx_r!.fillStyle = `rgb(${ p.available ? "42,169,176" : "214,121,103" })`;
-            this.ctx_r!.strokeRect(x - 6, y - 6, 12, 12);
-            this.ctx_r!.fillRect(x - 6, y - 6, 12, 12);
-            if (p.available) {
-                this.toReplace.push({
-                    x: x,
-                    y: y,
-                    to: p.id
-                });
-            }
-        });
+        }).sort((a, b) => a.nearest - b.nearest);
 
         this.ctx_r!.lineWidth = 1;
+
+        positions.forEach((p: {
+            x: number;
+            y: number;
+            id: number;
+            available: boolean;
+        }, index: number) => {
+            const r: number = Math.sqrt(
+                Math.pow(p.x - center[0], 2)
+                + Math.pow(p.y - center[1], 2)
+            );
+            const x: number = center[0] + Math.sin(step * index) * (r * 1.6 + 30);
+            const y: number = center[1] - Math.cos(step * index) * (r * 1.6 + 30);
+            this.ctx_r!.strokeStyle = 'rgb(165,112,163)';
+            this.ctx_r!.moveTo(p.x, p.y);
+            this.ctx_r!.lineTo(x, y);
+            this.ctx_r!.stroke();
+            this.ctx_r!.strokeStyle = 'rgb(30,30,30)';
+            this.ctx_r!.fillStyle = `rgb(${ p.available ? "8,240,116" : "148,21,27" })`;
+            this.ctx_r!.strokeRect(x - 6, y - 6, 12, 12);
+            this.ctx_r!.fillRect(x - 6, y - 6, 12, 12);
+            if (p.available) {
+                this.toReplace.push({
+                    x: x,
+                    y: y,
+                    to: p.id
+                });
+            }
+        });
     }
 
     private clickHandle(x: number, y: number): boolean {

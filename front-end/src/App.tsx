@@ -2,10 +2,9 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-20 14:55:54
+ * @Last Modified time: 2020-04-21 18:23:36
  */
 import React, { Component } from 'react';
-import $ from "jquery";
 import './App.css';
 import { Map } from './Map';
 import { Container } from './prototypes/Container';
@@ -45,7 +44,7 @@ class App extends Component<{}, {}, null> {
             better={ this.better.bind(this) } />
           </Container>
           <HighlightItems ref="hl" height={ 104 } />
-          <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 12 } />
+          <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 0 } />
         </div>
         <Container theme="NakiriAyame" title="Map View" >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 13 } center={[-0.21, 51.46]}
@@ -85,7 +84,7 @@ class App extends Component<{}, {}, null> {
       d.target = void 0;
     });
 
-    const rate: number = parseFloat($("input[name=rate]").val()! as string);
+    const rate: number = System.params.rate;
 
     const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
       `/random/${ System.filepath!.split(".").join("_dot") }/${ rate }`, {
@@ -149,7 +148,7 @@ class App extends Component<{}, {}, null> {
       d.target = void 0;
     });
 
-    const rate: number = parseFloat($("input[name=rate]").val()! as string);
+    const rate: number = System.params.rate;
 
     const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
       `/zorder/${ System.filepath!.split(".").join("_dot") }/${ rate }`, {
@@ -213,7 +212,7 @@ class App extends Component<{}, {}, null> {
       d.target = void 0;
     });
 
-    const radius: number = parseFloat($("input[name=radius]").val()! as string);
+    const radius: number = System.params.radius;
 
     const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
       `/bns/${ System.filepath!.split(".").join("_dot") }/${ radius }`, {
@@ -277,8 +276,8 @@ class App extends Component<{}, {}, null> {
       d.target = void 0;
     });
 
-    const alpha: number = parseFloat($("input[name=alpha]").val()! as string);
-    const rate: number = parseFloat($("input[name=rate]").val()! as string);
+    const alpha: number = System.params.alpha;
+    const rate: number = System.params.rate;
 
     const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
       `/ours/${ System.filepath!.split(".").join("_dot") }/${ alpha }/${ rate }`, {
@@ -399,7 +398,7 @@ class App extends Component<{}, {}, null> {
       d.target = void 0;
     });
 
-    const n_iter: number = parseFloat($("input[name=iter]").val()! as string);
+    const n_iter: number = System.params.iter;
 
     const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
       `/better/${ System.filepath!.split(".").join("_dot") }/${ n_iter }`, {

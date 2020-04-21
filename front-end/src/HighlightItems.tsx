@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-13 21:26:18 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-19 17:37:43
+ * @Last Modified time: 2020-04-21 23:48:15
  */
 
 import React, { Component } from "react";
@@ -74,6 +74,20 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
         let width: number = 0;
         let count: number = 0;
 
+        const max: number = Math.max(...(
+            this.state.after ? [
+                this.state.after.HH.all,
+                this.state.after.LH.all,
+                this.state.after.LL.all,
+                this.state.after.HL.all
+            ] : [
+                this.state.before.HH,
+                this.state.before.LH,
+                this.state.before.LL,
+                this.state.before.LH
+            ]
+        ));
+
         return (
             <Container theme="NakiriAyame" title="Label View"
             width={ this.props.width ? this.props.width : "100%" }
@@ -83,7 +97,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
             }} >
                 <div
                 style={{
-                    width: "90%",
+                    width: "96%",
                     padding: "2.7% 1.8%",
                     height: this.props.height + 3.2,
                     background: ColorThemes.NakiriAyame.OuterBackground,
@@ -182,14 +196,11 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     x={ "13%" } y={ 0 }
                                     width={
                                         (() => {
-                                            width = this.state.after.HH.HH / (
-                                                this.state.after.HH.HH
-                                                + this.state.after.HH.LH
-                                                + this.state.after.HH.LL
-                                                + this.state.after.HH.HL
-                                            );
+                                            const rate: number = this.state.after.HH.all / max;
+                                            width = this.state.after.HH.HH
+                                                / this.state.after.HH.all;
                                             count += width;
-                                            return 82 * width + "%";
+                                            return rate * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
@@ -211,22 +222,21 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
                                     <rect key="rectHH-LH" ref="rectHH-LH"
-                                    x={ 13 + 82 * count + "%" } y={ 0 }
+                                    x={ 13 + (
+                                        this.state.after.HH.all / max
+                                    ) * 82 * count + "%" } y={ 0 }
                                     width={
                                         (() => {
-                                            width = this.state.after.HH.LH / (
-                                                this.state.after.HH.HH
-                                                + this.state.after.HH.LH
-                                                + this.state.after.HH.LL
-                                                + this.state.after.HH.HL
-                                            );
+                                            const rate: number = this.state.after.HH.all / max;
+                                            width = this.state.after.HH.LH
+                                                / this.state.after.HH.all;
                                             count += width;
-                                            return 82 * width + "%";
+                                            return rate * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("LH")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -244,22 +254,22 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
                                     <rect key="rectHH-LL" ref="rectHH-LL"
-                                    x={ 13 + 82 * count + "%" } y={ 0 }
+                                    x={ 13 + (
+                                        this.state.after.HH.all / max
+                                    ) * 82 * count + "%" } y={ 0 }
                                     width={
                                         (() => {
-                                            width = this.state.after.HH.LL / (
-                                                this.state.after.HH.HH
-                                                + this.state.after.HH.LH
-                                                + this.state.after.HH.LL
-                                                + this.state.after.HH.HL
-                                            );
+                                            width = this.state.after.HH.LL
+                                                / this.state.after.HH.all;
                                             count += width;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.HH.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("LL")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -277,17 +287,21 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
                                     <rect key="rectHH-HL" ref="rectHH-HL"
-                                    x={ 13 + 82 * count + "%" } y={ 0 }
+                                    x={ 13 + (
+                                        this.state.after.HH.all / max
+                                    ) * 82 * count + "%" } y={ 0 }
                                     width={
                                         (() => {
                                             width = 1 - count;
                                             count = 0;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.HH.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("HL")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -305,51 +319,16 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
 
-                                    <rect key="rectLH-HH" ref="rectLH-HH"
+                                    <rect key="rectLH-LH" ref="rectLH-LH"
                                     x={ "13%" } y={ "26%" }
                                     width={
                                         (() => {
-                                            width = this.state.after.LH.HH / (
-                                                this.state.after.LH.HH
-                                                + this.state.after.LH.LH
-                                                + this.state.after.LH.LL
-                                                + this.state.after.LH.HL
-                                            );
+                                            width = this.state.after.LH.LH
+                                                / this.state.after.LH.all;
                                             count += width;
-                                            return 82 * width + "%";
-                                        })()
-                                    } height = { "22%" }
-                                    style={{
-                                        fill: System.colorF("HH")[0],
-                                        fillOpacity: 0.24
-                                    }}
-                                    onMouseOver={
-                                        () => {
-                                            $(this.refs["num_LH"]).text(
-                                                this.state.after!.LH.HH
-                                            ).css("color", "rgb(2,115,191)");
-                                            System.highlight("LH", "HH");
-                                        }
-                                    }
-                                    onMouseOut={
-                                        () => {
-                                            $(this.refs["num_LH"]).text(
-                                                this.state.after!.LH.all
-                                            ).css("color", "initial");
-                                        }
-                                    } />
-                                    <rect key="rectLH-LH" ref="rectLH-LH"
-                                    x={ 13 + 82 * count + "%" } y={ "26%" }
-                                    width={
-                                        (() => {
-                                            width = this.state.after.LH.LH / (
-                                                this.state.after.LH.HH
-                                                + this.state.after.LH.LH
-                                                + this.state.after.LH.LL
-                                                + this.state.after.LH.HL
-                                            );
-                                            count += width;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.LH.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
@@ -370,23 +349,55 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                             ).css("color", "initial");
                                         }
                                     } />
-                                    <rect key="rectLH-LL" ref="rectLH-LL"
-                                    x={ 13 + 82 * count + "%" } y={ "26%" }
+                                    <rect key="rectLH-HH" ref="rectLH-HH"
+                                    x={ 13 + (
+                                        this.state.after.LH.all / max
+                                    ) * 82 * count + "%" } y={ "26%" }
                                     width={
                                         (() => {
-                                            width = this.state.after.LH.LL / (
-                                                this.state.after.LH.HH
-                                                + this.state.after.LH.LH
-                                                + this.state.after.LH.LL
-                                                + this.state.after.LH.HL
-                                            );
+                                            width = this.state.after.LH.HH
+                                                / this.state.after.LH.all;
                                             count += width;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.LH.all / max
+                                            ) * 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HH")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            $(this.refs["num_LH"]).text(
+                                                this.state.after!.LH.HH
+                                            ).css("color", "rgb(2,115,191)");
+                                            System.highlight("LH", "HH");
+                                        }
+                                    }
+                                    onMouseOut={
+                                        () => {
+                                            $(this.refs["num_LH"]).text(
+                                                this.state.after!.LH.all
+                                            ).css("color", "initial");
+                                        }
+                                    } />
+                                    <rect key="rectLH-LL" ref="rectLH-LL"
+                                    x={ 13 + (
+                                        this.state.after.LH.all / max
+                                    ) * 82 * count + "%" } y={ "26%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LH.LL
+                                                / this.state.after.LH.all;
+                                            count += width;
+                                            return (
+                                                this.state.after.LH.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("LL")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -404,17 +415,21 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
                                     <rect key="rectLH-HL" ref="rectLH-HL"
-                                    x={ 13 + 82 * count + "%" } y={ "26%" }
+                                    x={ 13 + (
+                                        this.state.after.LH.all / max
+                                    ) * 82 * count + "%" } y={ "26%" }
                                     width={
                                         (() => {
                                             width = 1 - count;
                                             count = 0;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.LH.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("HL")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -432,84 +447,16 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
 
-                                    <rect key="rectLL-HH" ref="rectLL-HH"
+                                    <rect key="rectLL-LL" ref="rectLL-LL"
                                     x={ "13%" } y={ "52%" }
                                     width={
                                         (() => {
-                                            width = this.state.after.LL.HH / (
-                                                this.state.after.LL.HH
-                                                + this.state.after.LL.LH
-                                                + this.state.after.LL.LL
-                                                + this.state.after.LL.HL
-                                            );
+                                            width = this.state.after.LL.LL
+                                                / this.state.after.LL.all;
                                             count += width;
-                                            return 82 * width + "%";
-                                        })()
-                                    } height = { "22%" }
-                                    style={{
-                                        fill: System.colorF("HH")[0],
-                                        fillOpacity: 0.24
-                                    }}
-                                    onMouseOver={
-                                        () => {
-                                            $(this.refs["num_LL"]).text(
-                                                this.state.after!.LL.HH
-                                            ).css("color", "rgb(2,115,191)");
-                                            System.highlight("LL", "HH");
-                                        }
-                                    }
-                                    onMouseOut={
-                                        () => {
-                                            $(this.refs["num_LL"]).text(
-                                                this.state.after!.LL.all
-                                            ).css("color", "initial");
-                                        }
-                                    } />
-                                    <rect key="rectLL-LH" ref="rectLL-LH"
-                                    x={ 13 + 82 * count + "%" } y={ "52%" }
-                                    width={
-                                        (() => {
-                                            width = this.state.after.LL.LH / (
-                                                this.state.after.LL.HH
-                                                + this.state.after.LL.LH
-                                                + this.state.after.LL.LL
-                                                + this.state.after.LL.HL
-                                            );
-                                            count += width;
-                                            return 82 * width + "%";
-                                        })()
-                                    } height = { "22%" }
-                                    style={{
-                                        fill: System.colorF("LH")[0],
-                                        fillOpacity: 0.24
-                                    }}
-                                    onMouseOver={
-                                        () => {
-                                            $(this.refs["num_LL"]).text(
-                                                this.state.after!.LL.LH
-                                            ).css("color", "rgb(2,115,191)");
-                                            System.highlight("LL", "LH");
-                                        }
-                                    }
-                                    onMouseOut={
-                                        () => {
-                                            $(this.refs["num_LL"]).text(
-                                                this.state.after!.LL.all
-                                            ).css("color", "initial");
-                                        }
-                                    } />
-                                    <rect key="rectLL-LL" ref="rectLL-LL"
-                                    x={ 13 + 82 * count + "%" } y={ "52%" }
-                                    width={
-                                        (() => {
-                                            width = this.state.after.LL.LL / (
-                                                this.state.after.LL.HH
-                                                + this.state.after.LL.LH
-                                                + this.state.after.LL.LL
-                                                + this.state.after.LL.HL
-                                            );
-                                            count += width;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.LL.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
@@ -530,18 +477,88 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                             ).css("color", "initial");
                                         }
                                     } />
+                                    <rect key="rectLL-HH" ref="rectLL-HH"
+                                    x={ 13 + (
+                                        this.state.after.LL.all / max
+                                    ) * 82 * count + "%" } y={ "52%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LL.HH
+                                                / this.state.after.LL.all;
+                                            count += width;
+                                            return (
+                                                this.state.after.LL.all / max
+                                            ) * 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HH")[0],
+                                        fillOpacity: 0.5
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            $(this.refs["num_LL"]).text(
+                                                this.state.after!.LL.HH
+                                            ).css("color", "rgb(2,115,191)");
+                                            System.highlight("LL", "HH");
+                                        }
+                                    }
+                                    onMouseOut={
+                                        () => {
+                                            $(this.refs["num_LL"]).text(
+                                                this.state.after!.LL.all
+                                            ).css("color", "initial");
+                                        }
+                                    } />
+                                    <rect key="rectLL-LH" ref="rectLL-LH"
+                                    x={ 13 + (
+                                        this.state.after.LL.all / max
+                                    ) * 82 * count + "%" } y={ "52%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.LL.LH
+                                                / this.state.after.LL.all;
+                                            count += width;
+                                            return (
+                                                this.state.after.LL.all / max
+                                            ) * 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("LH")[0],
+                                        fillOpacity: 0.5
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            $(this.refs["num_LL"]).text(
+                                                this.state.after!.LL.LH
+                                            ).css("color", "rgb(2,115,191)");
+                                            System.highlight("LL", "LH");
+                                        }
+                                    }
+                                    onMouseOut={
+                                        () => {
+                                            $(this.refs["num_LL"]).text(
+                                                this.state.after!.LL.all
+                                            ).css("color", "initial");
+                                        }
+                                    } />
                                     <rect key="rectLL-HL" ref="rectLL-HL"
-                                    x={ 13 + 82 * count + "%" } y={ "52%" }
+                                    x={ 13 + (
+                                        this.state.after.LL.all / max
+                                    ) * 82 * count + "%" } y={ "52%" }
                                     width={
                                         (() => {
                                             width = 1 - count;
                                             count = 0;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.LL.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("HL")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -559,23 +576,53 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
 
-                                    <rect key="rectHL-HH" ref="rectHL-HH"
+                                    <rect key="rectHL-HL" ref="rectHL-HL"
                                     x={ "13%" } y={ "78%" }
                                     width={
                                         (() => {
-                                            width = this.state.after.HL.HH / (
-                                                this.state.after.HL.HH
-                                                + this.state.after.HL.LH
-                                                + this.state.after.HL.LL
-                                                + this.state.after.HL.HL
-                                            );
+                                            width = this.state.after.HL.HL
+                                                / this.state.after.HL.all;
                                             count += width;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.HL.all / max
+                                            ) * 82 * width + "%";
+                                        })()
+                                    } height = { "22%" }
+                                    style={{
+                                        fill: System.colorF("HL")[0]
+                                    }}
+                                    onMouseOver={
+                                        () => {
+                                            $(this.refs["num_HL"]).text(
+                                                this.state.after!.HL.HL
+                                            ).css("color", "rgb(2,115,191)");
+                                            System.highlight("HL", "HL");
+                                        }
+                                    }
+                                    onMouseOut={
+                                        () => {
+                                            $(this.refs["num_HL"]).text(
+                                                this.state.after!.HL.all
+                                            ).css("color", "initial");
+                                        }
+                                    } />
+                                    <rect key="rectHL-HH" ref="rectHL-HH"
+                                    x={ 13 + (
+                                        this.state.after.HL.all / max
+                                    ) * 82 * count + "%" } y={ "78%" }
+                                    width={
+                                        (() => {
+                                            width = this.state.after.HL.HH
+                                                / this.state.after.HL.all;
+                                            count += width;
+                                            return (
+                                                this.state.after.HL.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("HH")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -593,22 +640,22 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
                                     <rect key="rectHL-LH" ref="rectHL-LH"
-                                    x={ 13 + 82 * count + "%" } y={ "78%" }
+                                    x={ 13 + (
+                                        this.state.after.HL.all / max
+                                    ) * 82 * count + "%" } y={ "78%" }
                                     width={
                                         (() => {
-                                            width = this.state.after.HL.LH / (
-                                                this.state.after.HL.HH
-                                                + this.state.after.HL.LH
-                                                + this.state.after.HL.LL
-                                                + this.state.after.HL.HL
-                                            );
+                                            width = this.state.after.HL.LH
+                                                / this.state.after.HL.all;
                                             count += width;
-                                            return 82 * width + "%";
+                                            return (
+                                                this.state.after.HL.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("LH")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -626,22 +673,21 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         }
                                     } />
                                     <rect key="rectHL-LL" ref="rectHL-LL"
-                                    x={ 13 + 82 * count + "%" } y={ "78%" }
+                                    x={ 13 + (
+                                        this.state.after.HL.all / max
+                                    ) * 82 * count + "%" } y={ "78%" }
                                     width={
                                         (() => {
-                                            width = this.state.after.HL.LL / (
-                                                this.state.after.HL.HH
-                                                + this.state.after.HL.LH
-                                                + this.state.after.HL.LL
-                                                + this.state.after.HL.HL
-                                            );
-                                            count += width;
-                                            return 82 * width + "%";
+                                            width = 1 - count;
+                                            count = 0;
+                                            return (
+                                                this.state.after.HL.all / max
+                                            ) * 82 * width + "%";
                                         })()
                                     } height = { "22%" }
                                     style={{
                                         fill: System.colorF("LL")[0],
-                                        fillOpacity: 0.24
+                                        fillOpacity: 0.5
                                     }}
                                     onMouseOver={
                                         () => {
@@ -649,33 +695,6 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 this.state.after!.HL.LL
                                             ).css("color", "rgb(2,115,191)");
                                             System.highlight("HL", "LL");
-                                        }
-                                    }
-                                    onMouseOut={
-                                        () => {
-                                            $(this.refs["num_HL"]).text(
-                                                this.state.after!.HL.all
-                                            ).css("color", "initial");
-                                        }
-                                    } />
-                                    <rect key="rectHL-HL" ref="rectHL-HL"
-                                    x={ 13 + 82 * count + "%" } y={ "78%" }
-                                    width={
-                                        (() => {
-                                            width = 1 - count;
-                                            count = 0;
-                                            return 82 * width + "%";
-                                        })()
-                                    } height = { "22%" }
-                                    style={{
-                                        fill: System.colorF("HL")[0]
-                                    }}
-                                    onMouseOver={
-                                        () => {
-                                            $(this.refs["num_HL"]).text(
-                                                this.state.after!.HL.HL
-                                            ).css("color", "rgb(2,115,191)");
-                                            System.highlight("HL", "HL");
                                         }
                                     }
                                     onMouseOut={
@@ -747,28 +766,40 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                             <tr key="1">
                                 <td ref="num_HH">
                                     { this.state.after
-                                        ? this.state.after.HH.all
+                                        ? (
+                                            100 * this.state.after.HH.HH
+                                            / this.state.after.HH.all
+                                        ).toFixed(2) + "%"
                                         : this.state.before.HH }
                                 </td>
                             </tr>
                             <tr key="2">
                                 <td ref="num_LH">
                                     { this.state.after
-                                        ? this.state.after.LH.all
+                                        ? (
+                                            100 * this.state.after.LH.LH
+                                            / this.state.after.LH.all
+                                        ).toFixed(2) + "%"
                                         : this.state.before.LH }
                                 </td>
                             </tr>
                             <tr key="3">
                                 <td ref="num_LL">
                                     { this.state.after
-                                        ? this.state.after.LL.all
+                                        ? (
+                                            100 * this.state.after.LL.LL
+                                            / this.state.after.LL.all
+                                        ).toFixed(2) + "%"
                                         : this.state.before.LL }
                                 </td>
                             </tr>
                             <tr key="4">
                                 <td ref="num_HL">
                                     { this.state.after
-                                        ? this.state.after.HL.all
+                                        ? (
+                                            100 * this.state.after.HL.HL
+                                            / this.state.after.HL.all
+                                        ).toFixed(2) + "%"
                                         : this.state.before.HL }
                                 </td>
                             </tr>
@@ -777,8 +808,8 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                     <label
                     style={{
                         position: "relative",
-                        left: 183,
-                        top: -120,
+                        left: 177,
+                        top: -145,
                         textAlign: "end",
                         color: ColorThemes.NakiriAyame.Red,
                         fontSize: "90%"
