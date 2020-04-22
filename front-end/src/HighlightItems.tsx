@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-13 21:26:18 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-21 23:48:15
+ * @Last Modified time: 2020-04-21 23:57:27
  */
 
 import React, { Component } from "react";
@@ -89,7 +89,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
         ));
 
         return (
-            <Container theme="NakiriAyame" title="Label View"
+            <Container theme="NakiriAyame" title="Spatical Autocorrelation"
             width={ this.props.width ? this.props.width : "100%" }
             height="auto"
             style={{
@@ -217,7 +217,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_HH"]).text(
-                                                this.state.after!.HH.all
+                                                (100 * this.state.after!.HH.HH
+                                                    / this.state.after!.HH.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -249,7 +251,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_HH"]).text(
-                                                this.state.after!.HH.all
+                                                (100 * this.state.after!.HH.HH
+                                                    / this.state.after!.HH.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -282,7 +286,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_HH"]).text(
-                                                this.state.after!.HH.all
+                                                (100 * this.state.after!.HH.HH
+                                                    / this.state.after!.HH.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -314,7 +320,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_HH"]).text(
-                                                this.state.after!.HH.all
+                                                (100 * this.state.after!.HH.HH
+                                                    / this.state.after!.HH.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -345,7 +353,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_LH"]).text(
-                                                this.state.after!.LH.all
+                                                (100 * this.state.after!.LH.LH
+                                                    / this.state.after!.LH.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -377,7 +387,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_LH"]).text(
-                                                this.state.after!.LH.all
+                                                (100 * this.state.after!.LH.LH
+                                                    / this.state.after!.LH.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -410,7 +422,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_LH"]).text(
-                                                this.state.after!.LH.all
+                                                (100 * this.state.after!.LH.LH
+                                                    / this.state.after!.LH.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -442,7 +456,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_LH"]).text(
-                                                this.state.after!.LH.all
+                                                (100 * this.state.after!.LH.LH
+                                                    / this.state.after!.LH.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -473,7 +489,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_LL"]).text(
-                                                this.state.after!.LL.all
+                                                (100 * this.state.after!.LL.LL
+                                                    / this.state.after!.LL.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -506,7 +524,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_LL"]).text(
-                                                this.state.after!.LL.all
+                                                (100 * this.state.after!.LL.LL
+                                                    / this.state.after!.LL.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -539,7 +559,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_LL"]).text(
-                                                this.state.after!.LL.all
+                                                (100 * this.state.after!.LL.LL
+                                                    / this.state.after!.LL.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -571,7 +593,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_LL"]).text(
-                                                this.state.after!.LL.all
+                                                (100 * this.state.after!.LL.LL
+                                                    / this.state.after!.LL.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -602,7 +626,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_HL"]).text(
-                                                this.state.after!.HL.all
+                                                (100 * this.state.after!.HL.HL
+                                                    / this.state.after!.HL.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -635,7 +661,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_HL"]).text(
-                                                this.state.after!.HL.all
+                                                (100 * this.state.after!.HL.HL
+                                                    / this.state.after!.HL.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -668,7 +696,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_HL"]).text(
-                                                this.state.after!.HL.all
+                                                (100 * this.state.after!.HL.HL
+                                                    / this.state.after!.HL.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />
@@ -700,7 +730,9 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     onMouseOut={
                                         () => {
                                             $(this.refs["num_HL"]).text(
-                                                this.state.after!.HL.all
+                                                (100 * this.state.after!.HL.HL
+                                                    / this.state.after!.HL.all
+                                                ).toFixed(2) + "%"
                                             ).css("color", "initial");
                                         }
                                     } />

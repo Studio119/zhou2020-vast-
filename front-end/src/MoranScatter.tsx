@@ -36,6 +36,7 @@ export interface MoranScatterState {
     }>;
     strech: boolean;
     nSpan: number;
+    showOnlyMistaken: boolean;
 };
 
 export class MoranScatter extends Component<MoranScatterProps, MoranScatterState, null> {
@@ -68,7 +69,8 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         this.state = {
             list: [],
             strech: false,
-            nSpan: 0
+            nSpan: 0,
+            showOnlyMistaken: false
         };
         this.canvas1 = null;
         this.canvas2 = null;
@@ -180,8 +182,9 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     yS += spansY[i];
                 }
                 for (let i: number = 0; i < this.state.nSpan; i++) {
-                    const w: number = 0.3 * Math.sqrt(1 -
-                        Math.abs(this.state.nSpan / 2 - i - 1) / this.state.nSpan
+                    const w: number = 0.3 * Math.pow(1 -
+                        Math.abs(this.state.nSpan / 2 - i - 1) / this.state.nSpan,
+                        1.4 * (this.state.nSpan + 10) / 42
                     );
                     let dx: number = (1 - w) * spansX[i] / xS + w / this.state.nSpan;
                     const tx: number = xOffset;
@@ -241,13 +244,11 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             xTicks.push(this.snapshots.x[0]);
         }
         for (
-            let i: number = Math.floor(this.snapshots.x[0]);
-            i <= Math.ceil(this.snapshots.x[1]);
+            let i: number = Math.floor(this.snapshots.x[0]) - 1;
+            i <= Math.ceil(this.snapshots.x[1]) + 1;
             i++
         ) {
-            if (i !== 0) {
-                xTicks.push(i);
-            }
+            xTicks.push(i);
         }
         if (this.snapshots.x[1] < 1) {
             xTicks.push(this.snapshots.x[1]);
@@ -259,13 +260,11 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             yTicks.push(this.snapshots.y[0]);
         }
         for (
-            let i: number = Math.floor(this.snapshots.y[0]);
-            i <= Math.ceil(this.snapshots.y[1]);
+            let i: number = Math.floor(this.snapshots.y[0]) - 1;
+            i <= Math.ceil(this.snapshots.y[1]) + 1;
             i++
         ) {
-            if (i !== 0) {
-                yTicks.push(i);
-            }
+            yTicks.push(i);
         }
         if (this.snapshots.y[1] < 1) {
             yTicks.push(this.snapshots.y[1]);
@@ -288,7 +287,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     width: this.props.width ? this.props.width : "100%",
                     height: this.props.height,
                     marginBottom: '-4px',
-                    opacity: System.type === "dataset" ? 1 : 0.25
+                    opacity: System.type === "dataset" || !this.state.showOnlyMistaken ? 1 : 0.25
                 }} />
                 <canvas ref="canvas2" key="canvas2" id={ this.props.id + "_canvas2" }
                 width={ this.props.width ? this.props.width : "100%" }
@@ -416,6 +415,12 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
 
         this.ctx1!.lineWidth = 0.6;
         this.ctx2!.lineWidth = 0.4;
+
+        System.setPointFilter = (b: boolean) => {
+            this.setState({
+                showOnlyMistaken: b
+            });
+        };
     }
 
     private process(): void {
@@ -470,7 +475,13 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
             this.ctx1!.fillStyle = item.color[0];
 
             this.ctx1!.beginPath();
-            this.ctx1!.arc(item.x, item.y, this.state.strech ? 1.2 : 3, 0, 2 * Math.PI);
+            this.ctx1!.arc(
+                item.x,
+                item.y,
+                this.state.strech && this.state.showOnlyMistaken ? 1.2 : 3,
+                0,
+                2 * Math.PI
+            );
             this.ctx1!.stroke();
             this.ctx1!.fill();
         });
@@ -657,7 +668,6 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
 
     private axis(type: "x" | "y",
     fx: (d: number) => number, fy: (d: number) => number, ticks: Array<number>): JSX.Element {
-        ticks.push(0);
         if (type === "x") {
             return (
                 <g key={ type }>
@@ -671,9 +681,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     {
                         ticks.map((t: number, i: number) => {
                             const x: number = fx(t);
-                            if (x < this.props.padding || x > 100 - this.props.padding) {
-                                return null;
-                            }
+                            
                             return (
                                 <g key={ type + "_tick_" + i } >
                                     {
@@ -731,9 +739,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     {
                         ticks.map((t: number, i: number) => {
                             const y: number = fy(t);
-                            if (y < this.props.padding || y > 100 - this.props.padding) {
-                                return null;
-                            }
+                            
                             return (
                                 <g key={ type + "_tick_" + i } >
                                     {

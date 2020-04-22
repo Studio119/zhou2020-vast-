@@ -19,6 +19,7 @@ interface SystemType {
     highlight: (value: LISAtype | "none", value2?: LISAtype) => void;
     initialize: () => void;
     update: () => void;
+    setPointFilter: (b: boolean) => void;
     params: {
         radius: number;
         alpha: number;
@@ -54,6 +55,7 @@ export const System: SystemType = {
     highlight: () => {},
     initialize: () => {},
     update: () => {},
+    setPointFilter: () => {},
     params: {
         radius: 0.4,
         alpha: 0.6,

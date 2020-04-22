@@ -46,7 +46,8 @@ export interface MapViewState<T> {
         value: T;
         projection: number;
     }>;
-    behavior: "scatter" | "purity" | "KDE";
+    behavior: "scatter" | "purity" | "KDE" | "heat";
+    showMistake: boolean;
 }
 
 export interface Sketch {
@@ -87,7 +88,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private drawing: boolean;
     private tickDone: number;
     private adjust: (value: number) => void;
+    private adjustExtend: (value: number) => void;
     private step: number;
+    private expand: number;
     private replaceFrom: number;
     private toReplace: Array<{
         x: number;
@@ -100,7 +103,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.mounted = false;
         this.state = {
             data: [],
-            behavior: "scatter"
+            behavior: "scatter",
+            showMistake: false
         };
         this.canvas = null;
         this.ctx = null;
@@ -127,7 +131,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.drawing = false;
         this.tickDone = 0;
         this.adjust = () => {};
+        this.adjustExtend = () => {};
         this.step = 16;
+        this.expand = 12;
         this.replaceFrom = NaN;
         this.toReplace = [];
     }
@@ -222,7 +228,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: this.state.behavior === "scatter" ? 0 : 1,
+                        opacity: this.state.behavior === "scatter" || this.state.behavior === "heat"
+                                    ? 0 : 1,
                         background: "#eeeeee"
                     }} />
                     <canvas key="1" id={ this.props.id + "_canvas" } ref="canvas"
@@ -232,7 +239,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         left: 0,
                         pointerEvents: 'none',
                         opacity: this.state.behavior === "scatter" ? (
-                            System.type === "dataset" ? 1 : 0.25
+                            System.type === "dataset" || !this.state.showMistake ? 1 : 0.25
                         ) : 0
                     }} />
                     <canvas key="2" id={ this.props.id + "_canvas2" } ref="canvas2"
@@ -242,7 +249,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         left: 0,
                         pointerEvents: 'none',
                         opacity: this.state.behavior === "scatter" ? (
-                            System.type === "dataset" ? 1 : 0.25
+                            System.type === "dataset" || !this.state.showMistake ? 1 : 0.25
                         ) : 0
                     }} />
                     <canvas key="r" id={ this.props.id + "_canvas_r" } ref="canvas_r"
@@ -410,13 +417,22 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 position: "relative",
                 top: "-850px",
                 left: "12px",
-                width: this.state.behavior === "scatter" ? "109px" : "230px",
+                width: this.state.behavior === "scatter"
+                    || this.state.behavior === "heat" ? "144px" : "422px",
                 padding: "4px 6px",
                 marginBottom: "-56px",
                 background: ColorThemes.NakiriAyame.OuterBackground,
                 border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                borderRadius: this.state.behavior === "scatter" ? 0 : "0 12px 10px 0"
+                borderRadius: this.state.behavior === "scatter"
+                    || this.state.behavior === "heat" ? 0 : "0 12px 10px 0"
             }} >
+                <SyncButton theme="NakiriAyame" text="⇌"
+                executer={ this.changeView.bind(this) }
+                style={{
+                    marginRight: 8,
+                    fontSize: "77%",
+                    height: 24
+                }} />
                 <SyncButton theme="NakiriAyame" text="switch"
                 executer={ this.shift.bind(this) } />
                 <label
@@ -432,14 +448,31 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }} >
                     { this.state.behavior }
                 </label>
-                <ValueBar width={ 100 } height={ 16 }
-                min={ 4 } max={ 16 } defaultValue={ this.step } step={ 1 }
+                <ValueBar width={ 80 } height={ 16 }
+                min={ 2 } max={ 16 } defaultValue={ this.step } step={ 1 }
                 onValueChange={
                     this.adjust.bind(this)
                 }
+                valueFormatter={
+                    (value: number) => `size=${ value }`
+                }
                 style={{
                     transform: "translateY(26%)",
-                    display: this.state.behavior === "scatter" ? "none" : "inline-block"
+                    display: this.state.behavior === "scatter" || this.state.behavior === "heat"
+                            ? "none" : "inline-block"
+                }} />
+                <ValueBar width={ 80 } height={ 16 }
+                min={ 4 } max={ 16 } defaultValue={ this.expand } step={ 1 }
+                onValueChange={
+                    this.adjustExtend.bind(this)
+                }
+                valueFormatter={
+                    (value: number) => `expand=${ value }`
+                }
+                style={{
+                    transform: "translateY(26%)",
+                    display: this.state.behavior === "scatter" || this.state.behavior === "heat"
+                            ? "none" : "inline-block"
                 }} />
             </div>
         </>)
@@ -468,6 +501,17 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             const v: number = Math.floor(value);
             if (v !== this.step) {
                 this.step = v;
+                this.process();
+                this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+                setTimeout(() => {
+                    this.heat();
+                }, 10);
+            }
+        };
+        this.adjustExtend = (value: number) => {
+            const v: number = Math.floor(value);
+            if (v !== this.expand) {
+                this.expand = v;
                 this.process();
                 this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
                 setTimeout(() => {
@@ -519,6 +563,14 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 100 * this.tickDone / this.timers.length + "%"
             );
         }
+    }
+
+    private changeView(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
+        this.setState({
+            showMistake: !this.state.showMistake
+        });
+        System.setPointFilter(!this.state.showMistake);
+        resolve();
     }
 
     private showZorderSubset(pIndex: number): void {
@@ -689,6 +741,13 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     private clickHandle(x: number, y: number): boolean {
+        // 是否处于可交互场景
+        if (System.tail !== "_o" && System.tail !== "_ob") {
+            return false;
+        } else if (this.state.behavior !== "scatter" || !this.state.showMistake) {
+            return false;
+        }
+
         // 是否点击到可替换点
         if (!isNaN(this.replaceFrom)) {
             for (let i: number = 0; i < this.toReplace.length; i++) {
@@ -1137,6 +1196,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     private heat(): void {
+        const expand: number = this.expand / this.step;
         if (this.state.behavior === "KDE") {
             this.props.load(true);
 
@@ -1166,6 +1226,15 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     y: number;
                     type: LISAtype;
                 }> = [];
+
+                // 分类别的点中心
+                let centers_parts: Array<{
+                    cx: number;
+                    cy: number;
+                    x: number;
+                    y: number;
+                    type: LISAtype;
+                }> = [];
         
                 // 点中心
                 let centers: Array<{
@@ -1177,8 +1246,6 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     value: number;
                 }> = [];
         
-                let max: number = NaN;
-        
                 this.state.data.forEach((d: {
                     lng: number;
                     lat: number;
@@ -1188,125 +1255,127 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     if (this.props.filter && !System.active[i]) {
                         return;
                     }
-                    
-                    const pos: [number, number] = index(this.fx(d.lng), this.fy(d.lat));
-                    const x: number = this.step * (pos[0] + 0.5);
-                    const y: number = this.step * (pos[1] + 0.5);
-        
-                    points.push({
-                        x: x,
-                        y: y,
-                        type: d.value
-                    });
-                    
-                    if (pos[0] < 0 || pos[0] >= box.length
-                        || pos[1] < 0 || pos[1] >= box[0].length
-                        || box[pos[0]][pos[1]]) {
-                        return;
-                    }
-                    box[pos[0]][pos[1]] = true;
-                    
-                    let neighbors: Array<{
-                        index: number;
-                        dist: number;
-                    }> = [];
-        
-                    this.state.data.forEach((e: {
-                        lng: number;
-                        lat: number;
-                        value: LISAtype;
-                        projection: number;
-                    }, j: number) => {
-                        if (i === j) {
-                            return;
-                        }
-                        if (this.props.filter && !System.active[j]) {
-                            return;
-                        }
-                        const dist: number = Math.sqrt(
-                            Math.pow(this.fx(e.lng) - x, 2)
-                            + Math.pow(this.fy(e.lat) - y, 2)
-                        );
-                        if (dist < 1e-6) {
-                            return;
-                        }
-                        if (neighbors.length < 13 || neighbors[12].dist > dist) {
-                            neighbors.push({
-                                index: j,
-                                dist: dist
+
+                    // 考虑扩展像素
+                    for (let _y: number = - expand; _y <= expand; _y++) {
+                        const width: number = Math.floor(Math.sqrt(
+                            Math.pow(expand, 2)
+                            - Math.pow(Math.abs(_y), 2)
+                        ));
+                        
+                        for (let _x: number = - width; _x <= width; _x++) {
+                            const pos: [number, number] = [
+                                index(this.fx(d.lng), this.fy(d.lat))[0] + _x,
+                                index(this.fx(d.lng), this.fy(d.lat))[1] + _y
+                            ];
+                            const x: number = this.step * (pos[0] + 0.5);
+                            const y: number = this.step * (pos[1] + 0.5);
+                
+                            if (_x === 0 && _y === 0) {
+                                points.push({
+                                    x: x,
+                                    y: y,
+                                    type: d.value
+                                });
+                            }
+                            
+                            if (pos[0] < 0 || pos[0] >= box.length
+                                || pos[1] < 0 || pos[1] >= box[0].length
+                                || box[pos[0]][pos[1]]) {
+                                continue;
+                            }
+                            box[pos[0]][pos[1]] = true;
+                            
+                            let neighbors: Array<{
+                                index: number;
+                                dist: number;
+                            }> = [];
+                
+                            this.state.data.forEach((e: {
+                                lng: number;
+                                lat: number;
+                                value: LISAtype;
+                                projection: number;
+                            }, j: number) => {
+                                if (i === j) {
+                                    return;
+                                }
+                                if (this.props.filter && !System.active[j]) {
+                                    return;
+                                }
+                                const dist: number = Math.sqrt(
+                                    Math.pow(this.fx(e.lng) - x, 2)
+                                    + Math.pow(this.fy(e.lat) - y, 2)
+                                );
+                                if (dist < 1e-6) {
+                                    return;
+                                }
+                                if (neighbors.length < 13 || neighbors[12].dist > dist) {
+                                    neighbors.push({
+                                        index: j,
+                                        dist: dist
+                                    });
+                                    neighbors.sort((a, b) => {
+                                        return a.dist - b.dist;
+                                    });
+                                    if (neighbors.length > 13) {
+                                        neighbors.length = 13;
+                                    }
+                                }
                             });
-                            neighbors.sort((a, b) => {
-                                return a.dist - b.dist;
+                
+                            centers_parts.push({
+                                cx: x,
+                                cy: y,
+                                x: this.step * pos[0],
+                                y: this.step * pos[1],
+                                type: "HH"
+                            }, {
+                                cx: x,
+                                cy: y,
+                                x: this.step * pos[0],
+                                y: this.step * pos[1],
+                                type: "LH"
+                            }, {
+                                cx: x,
+                                cy: y,
+                                x: this.step * pos[0],
+                                y: this.step * pos[1],
+                                type: "LL"
+                            }, {
+                                cx: x,
+                                cy: y,
+                                x: this.step * pos[0],
+                                y: this.step * pos[1],
+                                type: "HL"
                             });
-                            if (neighbors.length > 13) {
-                                neighbors.length = 13;
-                            }
-                        }
-                    });
-        
-                    let max: number = 0;
-                    let TYPE: LISAtype = d.value;
-        
-                    let count = {
-                        HH: 0,
-                        LH: 0,
-                        LL: 0,
-                        HL: 0
-                    };
-        
-                    for (let k: number = 0; k < neighbors.length; k++) {
-                        const n: {index: number; dist: number} = neighbors[k];
-                        if (k <= 7) {
-                            count[this.state.data[n.index].value] ++;
-                            if (count[this.state.data[n.index].value] > max) {
-                                max = count[this.state.data[n.index].value];
-                                TYPE = this.state.data[n.index].value;
-                            }
-                        } else {
-                            let t: number = 0;
-                            if (count.HH === max) {
-                                t ++;
-                            }
-                            if (count.LH === max) {
-                                t ++;
-                            }
-                            if (count.LL === max) {
-                                t ++;
-                            }
-                            if (count.HL === max) {
-                                t ++;
-                            }
-                            if (t === 1) {
-                                break;
-                            }
                         }
                     }
-        
-                    centers.push({
-                        cx: x,
-                        cy: y,
-                        x: this.step * pos[0],
-                        y: this.step * pos[1],
-                        type: TYPE,
-                        value: NaN
-                    });
                 });
         
                 const p: Promise<AxiosResponse<CommandResult<FileData.Kde|CommandError>>> = axios.post(
                     `/kde`, {
                         points: points,
-                        centers: centers
+                        centers: centers_parts
                     }
                 );
         
                 p.then((value: AxiosResponse<CommandResult<FileData.Kde|CommandError>>) => {
                     if (value.data.state === "successed") {
-                        (value.data.value as FileData.Kde).forEach((val: number, i: number) => {
-                            centers[i].value = val;
-                            if (isNaN(max) || val > max) {
-                                max = val;
-                            }
-                        });
+                        const max: number = Math.max(...(value.data.value as FileData.Kde));
+
+                        for (let i: number = 0; i < centers_parts.length / 4; i++) {
+                            centers.push(
+                                (value.data.value as FileData.Kde).slice(
+                                    i * 4, (i + 1) * 4
+                                ).map((val: number, j: number) => {
+                                    return {
+                                        ...centers_parts[i * 4 + j],
+                                        value: val
+                                    };
+                                }).sort((a, b) => (b.value - a.value))[0]
+                            );
+                        }
                 
                         centers.forEach((p: {
                             x: number;
@@ -1325,7 +1394,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }).finally(() => {
                     this.props.load(false);
                 });
-            }, 10);
+            }, 10 * Math.sqrt(expand + 1));
         } else if (this.state.behavior === "purity") {
             const index: (x: number, y: number) => [number, number] = (x: number, y: number) => {
                 return [
@@ -1358,114 +1427,127 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         if (this.props.filter && !System.active[i]) {
                             return;
                         }
-                        const pos: [number, number] = index(this.fx(d.lng), this.fy(d.lat));
-                        if (pos[0] < 0 || pos[0] >= box.length
-                            || pos[1] < 0 || pos[1] >= box[0].length
-                            || box[pos[0]][pos[1]]) {
-                            return;
-                        }
-                        box[pos[0]][pos[1]] = true;
-                        
-                        const x: number = this.step * (pos[0] + 0.5);
-                        const y: number = this.step * (pos[1] + 0.5);
-        
-                        let neighbors: Array<{
-                            index: number;
-                            dist: number;
-                        }> = [];
-        
-                        this.state.data.forEach((e: {
-                            lng: number;
-                            lat: number;
-                            value: LISAtype;
-                            projection: number;
-                        }, j: number) => {
-                            if (i === j) {
-                                return;
-                            }
-                            if (this.props.filter && !System.active[j]) {
-                                return;
-                            }
-                            const dist: number = Math.sqrt(
-                                Math.pow(this.fx(e.lng) - x, 2)
-                                + Math.pow(this.fy(e.lat) - y, 2)
-                            );
-                            if (dist < 1e-6) {
-                                return;
-                            }
-                            if (neighbors.length < 13 || neighbors[12].dist > dist) {
-                                neighbors.push({
-                                    index: j,
-                                    dist: dist
+                        // 考虑扩展像素
+                        for (let _y: number = - expand; _y <= expand; _y++) {
+                            const width: number = Math.floor(Math.sqrt(
+                                Math.pow(expand, 2)
+                                - Math.pow(Math.abs(_y), 2)
+                            ));
+                            
+                            for (let _x: number = - width; _x <= width; _x++) {
+                                const pos: [number, number] = [
+                                    index(this.fx(d.lng), this.fy(d.lat))[0] + _x,
+                                    index(this.fx(d.lng), this.fy(d.lat))[1] + _y
+                                ];
+                                if (pos[0] < 0 || pos[0] >= box.length
+                                    || pos[1] < 0 || pos[1] >= box[0].length
+                                    || box[pos[0]][pos[1]]) {
+                                    continue;
+                                }
+                                box[pos[0]][pos[1]] = true;
+                                
+                                const x: number = this.step * (pos[0] + 0.5);
+                                const y: number = this.step * (pos[1] + 0.5);
+                
+                                let neighbors: Array<{
+                                    index: number;
+                                    dist: number;
+                                }> = [];
+                
+                                this.state.data.forEach((e: {
+                                    lng: number;
+                                    lat: number;
+                                    value: LISAtype;
+                                    projection: number;
+                                }, j: number) => {
+                                    if (i === j) {
+                                        return;
+                                    }
+                                    if (this.props.filter && !System.active[j]) {
+                                        return;
+                                    }
+                                    const dist: number = Math.sqrt(
+                                        Math.pow(this.fx(e.lng) - x, 2)
+                                        + Math.pow(this.fy(e.lat) - y, 2)
+                                    );
+                                    if (dist < 1e-6) {
+                                        return;
+                                    }
+                                    if (neighbors.length < 13 || neighbors[12].dist > dist) {
+                                        neighbors.push({
+                                            index: j,
+                                            dist: dist
+                                        });
+                                        neighbors.sort((a, b) => {
+                                            return a.dist - b.dist;
+                                        });
+                                        if (neighbors.length > 13) {
+                                            neighbors.length = 13;
+                                        }
+                                    }
                                 });
-                                neighbors.sort((a, b) => {
-                                    return a.dist - b.dist;
-                                });
-                                if (neighbors.length > 13) {
-                                    neighbors.length = 13;
+                
+                                let max: number = 0;
+                                let sum: number = 0;
+                                let TYPE: LISAtype = d.value;
+                                let contribution: number = 0;
+                
+                                let count = {
+                                    HH: 0,
+                                    LH: 0,
+                                    LL: 0,
+                                    HL: 0
+                                };
+                
+                                for (let k: number = 0; k < neighbors.length; k++) {
+                                    const n: {index: number; dist: number} = neighbors[k];
+                                    if (k <= 7) {
+                                        count[this.state.data[n.index].value] ++;
+                                        sum ++;
+                                        if (count[this.state.data[n.index].value] > max) {
+                                            max = count[this.state.data[n.index].value];
+                                            TYPE = this.state.data[n.index].value;
+                                        }
+                                    } else {
+                                        let t: number = 0;
+                                        if (count.HH === max) {
+                                            t ++;
+                                        }
+                                        if (count.LH === max) {
+                                            t ++;
+                                        }
+                                        if (count.LL === max) {
+                                            t ++;
+                                        }
+                                        if (count.HL === max) {
+                                            t ++;
+                                        }
+                                        if (t === 1) {
+                                            break;
+                                        }
+                                    }
                                 }
-                            }
-                        });
-        
-                        let max: number = 0;
-                        let sum: number = 0;
-                        let TYPE: LISAtype = d.value;
-                        let contribution: number = 0;
-        
-                        let count = {
-                            HH: 0,
-                            LH: 0,
-                            LL: 0,
-                            HL: 0
-                        };
-        
-                        for (let k: number = 0; k < neighbors.length; k++) {
-                            const n: {index: number; dist: number} = neighbors[k];
-                            if (k <= 7) {
-                                count[this.state.data[n.index].value] ++;
-                                sum ++;
-                                if (count[this.state.data[n.index].value] > max) {
-                                    max = count[this.state.data[n.index].value];
-                                    TYPE = this.state.data[n.index].value;
+                
+                                for (let k: number = 0; k < sum; k++) {
+                                    const n: {index: number; dist: number} = neighbors[k];
+                                    if (this.state.data[n.index].value === TYPE) {
+                                        contribution ++;
+                                    }
                                 }
-                            } else {
-                                let t: number = 0;
-                                if (count.HH === max) {
-                                    t ++;
-                                }
-                                if (count.LH === max) {
-                                    t ++;
-                                }
-                                if (count.LL === max) {
-                                    t ++;
-                                }
-                                if (count.HL === max) {
-                                    t ++;
-                                }
-                                if (t === 1) {
-                                    break;
-                                }
+                
+                                contribution /= sum;
+                
+                                this.ctx_base!.globalAlpha = contribution;
+                                this.ctx_base!.fillStyle = System.colorF(TYPE)[0];
+                                this.ctx_base!.fillRect(
+                                    this.step * pos[0],
+                                    this.step * pos[1],
+                                    this.step,
+                                    this.step
+                                );
+                                this.ctx_base!.globalAlpha = 1;
                             }
                         }
-        
-                        for (let k: number = 0; k < sum; k++) {
-                            const n: {index: number; dist: number} = neighbors[k];
-                            if (this.state.data[n.index].value === TYPE) {
-                                contribution ++;
-                            }
-                        }
-        
-                        contribution /= sum;
-        
-                        this.ctx_base!.globalAlpha = contribution;
-                        this.ctx_base!.fillStyle = System.colorF(TYPE)[0];
-                        this.ctx_base!.fillRect(
-                            this.step * pos[0],
-                            this.step * pos[1],
-                            this.step,
-                            this.step
-                        );
-                        this.ctx_base!.globalAlpha = 1;
                     }, i / 1000)
                 );
             });
@@ -1475,11 +1557,22 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private redraw(source: "2" | "all" = "all"): void {
         this.ready_r = [];
         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+        (this.refs["map"] as MapBox).updateHeatMap([]);
         if (this.state.behavior !== "scatter" && System.filepath) {
             this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
-            this.heat();
+            if (this.state.behavior === "heat") {
+                let box: Array<[number, number]> = [];
+                System.data.forEach((d: DataItem, i: number) => {
+                    if (System.active[i]) {
+                        box.push([d.lng, d.lat]);
+                    }
+                });
+                (this.refs["map"] as MapBox).updateHeatMap(box);
+            } else {
+                this.heat();
+            }
             return;
         }
         this.process();
@@ -1592,7 +1685,11 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }
             });
         } else {
-            $(this.canvas!).css("opacity", System.type === "dataset" ? 1 : 0.25);
+            $(this.canvas!).css(
+                "opacity",
+                System.type === "dataset" || !this.state.showMistake
+                    ? 1 : 0.25
+            );
 
             this.state.data.forEach((d: { lng: number; lat: number; value: LISAtype; }, index: number) => {
                 if (isNaN(d.lat) || isNaN(d.lng) || !System.data[index].target) {
@@ -1652,7 +1749,10 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 this.state.behavior === "scatter"
                     ? "purity"
                         : this.state.behavior === "purity"
-                            ? "KDE" : "scatter"
+                            ? "KDE"
+                                : this.state.behavior === "KDE"
+                                    ? "heat"
+                                    : "scatter"
         });
         resolve();
     }
@@ -1758,18 +1858,20 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             this.ctx_r!.stroke();
             this.ctx_r!.fill();
         }
-        this.ctx_r!.fillStyle = style[2];
-        this.ctx_r!.strokeStyle = 'rgb(156,156,156)';
-        this.ctx_r!.lineWidth = 1.8;
-        this.ctx_r!.beginPath();
-        this.ctx_r!.moveTo(x, y);
-        this.ctx_r!.lineTo(x, y - 24);
-        this.ctx_r!.lineTo(x + 13, y - 17);
-        this.ctx_r!.lineTo(x, y - 12);
-        this.ctx_r!.closePath();
-        this.ctx_r!.stroke();
-        this.ctx_r!.fill();
-        this.ctx_r!.lineWidth = 1;
+        if (this.state.showMistake) {
+            this.ctx_r!.fillStyle = style[2];
+            this.ctx_r!.strokeStyle = 'rgb(156,156,156)';
+            this.ctx_r!.lineWidth = 1.8;
+            this.ctx_r!.beginPath();
+            this.ctx_r!.moveTo(x, y);
+            this.ctx_r!.lineTo(x, y - 24);
+            this.ctx_r!.lineTo(x + 13, y - 17);
+            this.ctx_r!.lineTo(x, y - 12);
+            this.ctx_r!.closePath();
+            this.ctx_r!.stroke();
+            this.ctx_r!.fill();
+            this.ctx_r!.lineWidth = 1;
+        }
     }
 
     public load(data: Array<DataItem>): void {
