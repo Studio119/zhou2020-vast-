@@ -150,6 +150,14 @@ def Zorder_auto_voting(filename, m, N, alpha, dirname, outputname):
         c = random.sample(b, 1)
         sample_list.append(c[0][0])
 
+    with open("../storage/zorder_temp.json", mode='w', encoding='utf8') as f:
+        obj = []
+        for g in z_lsit:
+            obj.append([
+                int(e[0]) for e in g
+            ])
+        json.dump(obj, f)
+
     # z_list包含每个分组，统计每个分组的中心点，类比泊松盘，找到10个邻近分组。并获取每个分组内高低值的点分布
     grouping_number = len(z_lsit)
     center_list = []

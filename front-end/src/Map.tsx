@@ -1226,15 +1226,6 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     y: number;
                     type: LISAtype;
                 }> = [];
-
-                // 分类别的点中心
-                let centers_parts: Array<{
-                    cx: number;
-                    cy: number;
-                    x: number;
-                    y: number;
-                    type: LISAtype;
-                }> = [];
         
                 // 点中心
                 let centers: Array<{
@@ -1243,9 +1234,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     x: number;
                     y: number;
                     type: LISAtype;
-                    value: number;
                 }> = [];
-        
+
                 this.state.data.forEach((d: {
                     lng: number;
                     lat: number;
@@ -1255,6 +1245,12 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     if (this.props.filter && !System.active[i]) {
                         return;
                     }
+
+                    points.push({
+                        x: this.fx(d.lng),
+                        y: this.fy(d.lat),
+                        type: d.value
+                    });
 
                     // 考虑扩展像素
                     for (let _y: number = - expand; _y <= expand; _y++) {
@@ -1268,17 +1264,6 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                                 index(this.fx(d.lng), this.fy(d.lat))[0] + _x,
                                 index(this.fx(d.lng), this.fy(d.lat))[1] + _y
                             ];
-                            const x: number = this.step * (pos[0] + 0.5);
-                            const y: number = this.step * (pos[1] + 0.5);
-                
-                            if (_x === 0 && _y === 0) {
-                                points.push({
-                                    x: x,
-                                    y: y,
-                                    type: d.value
-                                });
-                            }
-                            
                             if (pos[0] < 0 || pos[0] >= box.length
                                 || pos[1] < 0 || pos[1] >= box[0].length
                                 || box[pos[0]][pos[1]]) {
@@ -1286,11 +1271,14 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                             }
                             box[pos[0]][pos[1]] = true;
                             
+                            const x: number = this.step * (pos[0] + 0.5);
+                            const y: number = this.step * (pos[1] + 0.5);
+            
                             let neighbors: Array<{
                                 index: number;
                                 dist: number;
                             }> = [];
-                
+            
                             this.state.data.forEach((e: {
                                 lng: number;
                                 lat: number;
@@ -1323,78 +1311,94 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                                     }
                                 }
                             });
-                
-                            centers_parts.push({
-                                cx: x,
-                                cy: y,
+            
+                            let max: number = 0;
+                            let TYPE: LISAtype = d.value;
+            
+                            let count = {
+                                HH: 0,
+                                LH: 0,
+                                LL: 0,
+                                HL: 0
+                            };
+            
+                            for (let k: number = 0; k < neighbors.length; k++) {
+                                const n: {index: number; dist: number} = neighbors[k];
+                                if (k <= 7) {
+                                    count[this.state.data[n.index].value] ++;
+                                    if (count[this.state.data[n.index].value] > max) {
+                                        max = count[this.state.data[n.index].value];
+                                        TYPE = this.state.data[n.index].value;
+                                    }
+                                } else {
+                                    let t: number = 0;
+                                    if (count.HH === max) {
+                                        t ++;
+                                    }
+                                    if (count.LH === max) {
+                                        t ++;
+                                    }
+                                    if (count.LL === max) {
+                                        t ++;
+                                    }
+                                    if (count.HL === max) {
+                                        t ++;
+                                    }
+                                    if (t === 1) {
+                                        break;
+                                    }
+                                }
+                            }
+
+                            centers.push({
+                                cx: this.step * (pos[0] + 0.5),
+                                cy: this.step * (pos[1] + 0.5),
                                 x: this.step * pos[0],
                                 y: this.step * pos[1],
-                                type: "HH"
-                            }, {
-                                cx: x,
-                                cy: y,
-                                x: this.step * pos[0],
-                                y: this.step * pos[1],
-                                type: "LH"
-                            }, {
-                                cx: x,
-                                cy: y,
-                                x: this.step * pos[0],
-                                y: this.step * pos[1],
-                                type: "LL"
-                            }, {
-                                cx: x,
-                                cy: y,
-                                x: this.step * pos[0],
-                                y: this.step * pos[1],
-                                type: "HL"
+                                type: TYPE
                             });
                         }
                     }
                 });
-        
+
                 const p: Promise<AxiosResponse<CommandResult<FileData.Kde|CommandError>>> = axios.post(
                     `/kde`, {
                         points: points,
-                        centers: centers_parts
+                        centers: centers.sort(() => Math.random() - 0.5)
                     }
                 );
         
                 p.then((value: AxiosResponse<CommandResult<FileData.Kde|CommandError>>) => {
                     if (value.data.state === "successed") {
-                        const max: number = Math.max(...(value.data.value as FileData.Kde));
+                        const res: FileData.Kde = value.data.value as FileData.Kde;
+                        const max: number = Math.max(...res);
 
-                        for (let i: number = 0; i < centers_parts.length / 4; i++) {
-                            centers.push(
-                                (value.data.value as FileData.Kde).slice(
-                                    i * 4, (i + 1) * 4
-                                ).map((val: number, j: number) => {
-                                    return {
-                                        ...centers_parts[i * 4 + j],
-                                        value: val
-                                    };
-                                }).sort((a, b) => (b.value - a.value))[0]
-                            );
-                        }
-                
+                        this.process();
+
                         centers.forEach((p: {
                             x: number;
                             y: number;
                             type: LISAtype;
-                            value: number;
-                        }) => {
-                            this.ctx_base!.globalAlpha = p.value / max * 0.9 + 0.1;
-                            this.ctx_base!.fillStyle = System.colorF(p.type)[0];
-                            this.ctx_base!.fillRect(p.x, p.y, this.step, this.step);
-                            this.ctx_base!.globalAlpha = 1;
+                        }, i: number) => {
+                            this.timers.push(
+                                setTimeout(() => {
+                                    this.ctx_base!.globalAlpha = res[i] / max * 0.9 + 0.1;
+                                    this.ctx_base!.fillStyle = System.colorF(p.type)[0];
+                                    this.ctx_base!.fillRect(p.x, p.y, this.step, this.step);
+                                    this.ctx_base!.globalAlpha = 1;
+                                    this.makeStep();
+                                }, i)
+                            );
                         });
+                    } else {
+                        console.error(value.data);
                     }
                 }).catch((reason: any) => {
                     console.error(reason);
                 }).finally(() => {
                     this.props.load(false);
                 });
-            }, 10 * Math.sqrt(expand + 1));
+            }, 10);
         } else if (this.state.behavior === "purity") {
             const index: (x: number, y: number) => [number, number] = (x: number, y: number) => {
                 return [
