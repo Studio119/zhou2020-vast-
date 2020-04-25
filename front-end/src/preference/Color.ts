@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-10-24 17:47:11 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-05 13:39:27
+ * @Last Modified time: 2020-04-25 19:45:01
  */
 
 
@@ -184,9 +184,9 @@ const toRgb: (hsl: string) => string
                         : p;
 
             if (params.length === 4) {
-                return `rgba(${ r * 255 },${ g * 255 },${ b * 255 },${ params[3] })`;
+                return `rgba(${ Math.floor(r * 255) },${ Math.floor(g * 255) },${ Math.floor(b * 255) },${ params[3] })`;
             }
-            return `rgb(${ r * 255 },${ g * 255 },${ b * 255 })`;
+            return `rgb(${ Math.floor(r * 255) },${ Math.floor(g * 255) },${ Math.floor(b * 255) })`;
         }
         return 'none';
     };

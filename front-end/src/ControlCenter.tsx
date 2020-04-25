@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-21 18:16:52
+ * @Last Modified time: 2020-04-25 21:29:11
  */
 
 import React, { Component } from "react";
@@ -45,25 +45,20 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                 height: this.props.height - this.props.padding[0] * 2,
                 padding: `${ this.props.padding[0] }px ${ this.props.padding[1] }px`,
                 background: ColorThemes.NakiriAyame.OuterBackground,
-                color: ColorThemes.NakiriAyame.InnerBackground
+                color: ColorThemes.NakiriAyame.InnerBackground,
+                border: "none"
             }} >
                 <div key="loadfile" style={{
                     width: this.props.width - this.props.padding[1] * 2 - 23,
-                    height: '54px',
                     overflow: "hidden",
                     padding: '2px 10px',
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground,
                     display: "flex"
                 }} >
                     <form style={{
                         width: "86%",
-                        height: "100%",
                         textAlign: "left",
                         display: "inline-block"
                     }} >
-                        <label>
-                            Import dataset from
-                        </label>
                         <input type="file" ref="actualInput" accept=".csv" name="file"
                         onChange={
                             (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,14 +73,14 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         }} />
                         <div key="fakeInput"
                         style={{
-                            margin: "2px 10px",
+                            margin: "6px 10px",
                             textAlign: 'end'
                         }} >
                             <label key="filename" ref="filename"
                             style={{
                                 display: "inline-block",
                                 height: "100%",
-                                width: "54%",
+                                width: "60%",
                                 textAlign: "right",
                                 overflow: "hidden",
                                 marginBottom: "-6px",
@@ -118,14 +113,14 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     $(this.refs["actualInput"]).click();
                                 }
                             } >
-                                Open
+                                Load
                             </button>
                         </div>
                     </form>
                     <div style={{
                         textAlign: "left",
                         display: "inline-block",
-                        margin: "3.8% auto"
+                        margin: "1.2% auto"
                     }} >
                         <SyncButton ref="refresh" theme="NakiriAyame" text={ "⭮" } style={{
                             fontSize: "16px"
@@ -134,8 +129,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                 </div>
                 <table
                 style={{
-                    width: this.props.width - this.props.padding[1] * 2,
-                    border: "1.6px solid " + ColorThemes.NakiriAyame.InnerBackground
+                    width: this.props.width - this.props.padding[1] * 2
                 }} >
                     <tbody>
                         <tr key="names"
@@ -145,58 +139,10 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="2" colSpan={ 2 } rowSpan={ 2 }
                             style={{
                                 border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "50%",
+                                width: "60%",
                                 padding: "1px 8px 4px",
                                 textAlign: 'left'
                             }} >
-                                <label key="this_paper"
-                                style={{
-                                    display: 'block',
-                                    fontWeight: 'normal'
-                                }} >
-                                    <input name="algo" type="radio" value="this_paper"
-                                    onChange={
-                                        () => {
-                                            $(this.refs["radiusDiv"]).css("display", "none");
-                                            $(this.refs["alphaDiv"]).css("display", "inline-block");
-                                            $(this.refs["rateDiv"]).css("display", "inline-block");
-                                            if (System.tail === "_o" || System.tail === "_ob") {
-                                                $(this.refs["radiusDiv"]).css(
-                                                    "display", "none"
-                                                );
-                                                $(this.refs["alphaDiv"]).css(
-                                                    "display", "none"
-                                                );
-                                                $(this.refs["rateDiv"]).css(
-                                                    "display", "none"
-                                                );
-                                                $(this.refs["iterDiv"]).css(
-                                                    "display", "inline-block"
-                                                );
-                                                (this.refs["btnBetter"] as SyncButton).setState({
-                                                    active: true
-                                                });
-                                            } else {
-                                                $(this.refs["radiusDiv"]).css(
-                                                    "display", "none"
-                                                );
-                                                $(this.refs["alphaDiv"]).css(
-                                                    "display", "inline-block"
-                                                );
-                                                $(this.refs["rateDiv"]).css(
-                                                    "display", "inline-block"
-                                                );
-                                                $(this.refs["iterDiv"]).css(
-                                                    "display", "none"
-                                                );
-                                                (this.refs["btnBetter"] as SyncButton).setState({
-                                                    active: false
-                                                });
-                                            }
-                                        }
-                                    } />
-                                    Our method
-                                </label>
                                 <label key="random_sampling"
                                 style={{
                                     display: 'block',
@@ -205,16 +151,12 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     <input name="algo" type="radio" value="random_sampling"
                                     onChange={
                                         () => {
-                                            $(this.refs["radiusDiv"]).css("display", "none");
-                                            $(this.refs["alphaDiv"]).css("display", "none");
-                                            $(this.refs["rateDiv"]).css("display", "inline-block");
-                                            $(this.refs["iterDiv"]).css("display", "none");
                                             (this.refs["btnBetter"] as SyncButton).setState({
                                                 active: false
                                             });
                                         }
                                     } />
-                                    Random sp
+                                    Random Sample
                                 </label>
                                 <label key="blue_noise_sampling"
                                 style={{
@@ -224,16 +166,12 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     <input name="algo" type="radio" value="blue_noise_sampling"
                                     onChange={
                                         () => {
-                                            $(this.refs["radiusDiv"]).css("display", "inline-block");
-                                            $(this.refs["alphaDiv"]).css("display", "none");
-                                            $(this.refs["rateDiv"]).css("display", "none");
-                                            $(this.refs["iterDiv"]).css("display", "none");
                                             (this.refs["btnBetter"] as SyncButton).setState({
                                                 active: false
                                             });
                                         }
                                     } />
-                                    BNS
+                                    Blue Noise Sample
                                 </label>
                                 <label key="pure_z-order"
                                 style={{
@@ -243,33 +181,48 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     <input name="algo" type="radio" value="pure_z-order"
                                     onChange={
                                         () => {
-                                            $(this.refs["radiusDiv"]).css("display", "none");
-                                            $(this.refs["alphaDiv"]).css("display", "none");
-                                            $(this.refs["rateDiv"]).css("display", "inline-block");
-                                            $(this.refs["iterDiv"]).css("display", "none");
                                             (this.refs["btnBetter"] as SyncButton).setState({
                                                 active: false
                                             });
                                         }
                                     } />
-                                    Z-order
+                                    Z-order Sample
+                                </label>
+                                <label key="this_paper"
+                                style={{
+                                    display: 'block',
+                                    fontWeight: 'normal'
+                                }} >
+                                    <input name="algo" type="radio" value="this_paper"
+                                    onChange={
+                                        () => {
+                                            if (System.tail === "_o" || System.tail === "_ob") {
+                                                (this.refs["btnBetter"] as SyncButton).setState({
+                                                    active: true
+                                                });
+                                            } else {
+                                                (this.refs["btnBetter"] as SyncButton).setState({
+                                                    active: false
+                                                });
+                                            }
+                                        }
+                                    } />
+                                    Our method
                                 </label>
                             </th>
                             <th key="3"
                             style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "25%",
+                                width: "20%",
                                 padding: "2px 0"
                             }} >
                                 Apply
                             </th>
                             <th key="4"
                             style={{
-                                border: "1.2px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                                width: "25%",
+                                width: "20%",
                                 padding: "2px 0"
                             }} >
-                                Optimize
+                                Update
                             </th>
                         </tr>
                         <tr key="buttons" >
@@ -307,7 +260,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         width: "80px",
                         height: "80%",
                         padding: "4px 5%",
-                        display: "none"
+                        display: "inline-block"
                     }} >
                         <ValueBar width={ 80 } height={ 18 }
                         min={ 0.02 } max={ 0.2 } step={ 0.02 } defaultValue={ 0.04 }
@@ -373,7 +326,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         width: "54px",
                         height: "80%",
                         padding: "4px 5%",
-                        display: "none"
+                        display: "inline-block"
                     }} >
                         <ValueBar width={ 54 } height={ 18 }
                         min={ 1 } max={ 10 } step={ 1 } defaultValue={ 1 }
@@ -417,15 +370,9 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
             active: false
         });
 
-        $(this.refs["iterDiv"]).css("display", "none");
-        
         if (val === "this_paper") {
             this.props.ourSample((value?: void | PromiseLike<void> | undefined) => {
                 resolve(value);
-                $(this.refs["radiusDiv"]).css("display", "none");
-                $(this.refs["alphaDiv"]).css("display", "none");
-                $(this.refs["rateDiv"]).css("display", "none");
-                $(this.refs["iterDiv"]).css("display", "inline-block");
                 (this.refs["btnBetter"] as SyncButton).setState({
                     active: true
                 });

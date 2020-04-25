@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-26 18:44:41 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-10 21:04:19
+ * @Last Modified time: 2020-04-25 21:20:12
  */
 
 import React, { Component } from 'react';
@@ -201,16 +201,23 @@ class ValueBar extends Component<ValueBarProps, ValueBarState, {}> {
 
     public render(): JSX.Element {
         return (
-            <div className="ValueBar" style={{ display: 'inline-block', alignItems: 'center', transform: 'translateY(45%)',
-            padding: "0 4px 0 2px", ...this.props.style }} ref="container" >
+            <div className="ValueBar" ref="container"
+            style={{
+                display: 'inline-block',
+                alignItems: 'center',
+                transform: 'translateY(45%)',
+                padding: "0 4px 0 2px",
+                ...this.props.style
+            }} >
                 {
                     this.props.label
-                        ? <p key="label" style={
-                            { display: 'inline-block',
+                        ? <p key="label" style={{
+                                display: 'inline-block',
                                 verticalAlign: 'top',
                                 margin: '0px 4px 0px 0px',
                                 transform: 'translateY(-6%)',
-                                fontSize: this.props.height * 0.8 + 'px' }}>
+                                fontSize: this.props.height * 0.8 + 'px'
+                            }}>
                                 { this.props.label }
                             </p>
                         : <></>

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 15:08:14 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-21 18:22:02
+ * @Last Modified time: 2020-04-25 22:25:39
  */
 
 import { DataItem, LISAtype } from "./TypeLib";
@@ -29,12 +29,10 @@ interface SystemType {
 };
 
 const colorD: {[type: string]: [string, string]} = {
-    "NS": ["#B2B2B2", "#000000"],
-    "HH": ["#000000", "rgb(226,226,226)"],
-    "HL": ["#F3BD00", "rgb(35,24,27)"],
-    "LL": ["#206DEE", "rgb(34,34,34)"],
-    // "LL": ["#509DC2", "rgb(34,34,34)"],
-    "LH": ["#E70000", "rgb(45,31,30)"]
+    "HH": ["rgb(244,57,10)", "rgb(48,11,2)"],
+    "LH": ["rgb(80,244,9)", "rgb(11,39,30)"],
+    "LL": ["rgb(9,196,244)", "rgb(7,26,43)"],
+    "HL": ["rgb(173,9,244)", "rgb(34,16,33)"]
 };
 
 export const System: SystemType = {

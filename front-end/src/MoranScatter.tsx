@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-21 18:26:08
+ * @Last Modified time: 2020-04-25 21:21:52
  */
 
 import React, { Component } from "react";
@@ -271,7 +271,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         }
 
         return (
-            <Container theme="NakiriAyame" title="Moran Scatter" >
+            <Container theme="NakiriAyame" title="Moran Scatterplot" >
                 <div key="background"
                 style={{
                     width: this.props.width ? this.props.width : "100%",
@@ -377,9 +377,10 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     position: "relative",
                     top: "-1545px",
                     left: "248px",
-                    width: "138px"
+                    width: "138px",
+                    color: "black"
                 }} >
-                    <ValueBar width={ 100 } height={ 16 }
+                    <ValueBar label="T" width={ 100 } height={ 16 }
                     min={ 0 } max={ 32 } defaultValue={ this.state.nSpan } step={ 1 }
                     onValueChange={
                         this.adjust.bind(this)
@@ -692,7 +693,10 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                         style={{
                                             fontSize: 13,
                                             transform: `translateY(15px)`,
-                                            fontWeight: 'bold'
+                                            fontWeight: 'bold',
+                                            visibility: x < this.props.padding
+                                                || x > 100 - this.props.padding
+                                                ? "hidden" : "visible"
                                         }} >
                                             { t }
                                         </text>
@@ -701,21 +705,34 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                         t === 0 ? null :
                                         <line key={ type + "_" + i + "_line" }
                                         x1={ x + "%" } x2={ x + "%" }
-                                        y1={ 0 } y2="100%"
+                                        y1={ this.props.padding + "%" }
+                                        y2={ 100 - this.props.padding + "%" }
                                         style={{
-                                            stroke: ColorThemes.NakiriAyame.InnerBackground
+                                            stroke: ColorThemes.NakiriAyame.InnerBackground,
+                                            strokeOpacity: 0.3,
+                                            visibility: x < this.props.padding
+                                                || x > 100 - this.props.padding
+                                                ? "hidden" : "visible"
                                         }} />
                                     }
                                     {
-                                        [0.2, 0.4, 0.6, 0.8].map((offset: number) => {
+                                        [0.5].map((offset: number) => {
                                             return (
                                                 <line key={ type + "_" + (i + offset) + "_line" }
                                                 x1={ fx(t + offset) + "%" }
                                                 x2={ fx(t + offset) + "%" }
-                                                y1={ 0 } y2="100%"
+                                                y1={ this.props.padding + "%" }
+                                                y2={ 100 - this.props.padding + "%" }
                                                 style={{
                                                     stroke: ColorThemes.NakiriAyame.InnerBackground,
-                                                    strokeOpacity: 0.4
+                                                    strokeOpacity: 0.1,
+                                                    visibility: fx(
+                                                            t + offset
+                                                        ) < this.props.padding
+                                                        || fx(
+                                                            t + offset
+                                                        ) > 100 - this.props.padding
+                                                        ? "hidden" : "visible"
                                                 }} />
                                             );
                                         })
@@ -750,7 +767,10 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                         style={{
                                             fontSize: 13,
                                             transform: `translate(-8px, 5px)`,
-                                            fontWeight: 'bold'
+                                            fontWeight: 'bold',
+                                            visibility: y < this.props.padding
+                                                || y > 100 - this.props.padding
+                                                ? "hidden" : "visible"
                                         }} >
                                             { t }
                                         </text>
@@ -758,22 +778,35 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                     {
                                         t === 0 ? null :
                                         <line key={ type + "_" + i + "_line" }
-                                        x1={ 0 } x2="100%"
+                                        x1={ this.props.padding + "%" }
+                                        x2={ 100 - this.props.padding + "%" }
                                         y1={ y + "%" } y2={ y + "%" }
                                         style={{
-                                            stroke: ColorThemes.NakiriAyame.InnerBackground
+                                            stroke: ColorThemes.NakiriAyame.InnerBackground,
+                                            strokeOpacity: 0.3,
+                                            visibility: y < this.props.padding
+                                                || y > 100 - this.props.padding
+                                                ? "hidden" : "visible"
                                         }} />
                                     }
                                     {
-                                        [0.2, 0.4, 0.6, 0.8].map((offset: number) => {
+                                        [0.5].map((offset: number) => {
                                             return (
                                                 <line key={ type + "_" + (i + offset) + "_line" }
                                                 y1={ fy(t + offset) + "%" }
                                                 y2={ fy(t + offset) + "%" }
-                                                x1={ 0 } x2="100%"
+                                                x1={ this.props.padding + "%" }
+                                                x2={ 100 - this.props.padding + "%" }
                                                 style={{
                                                     stroke: ColorThemes.NakiriAyame.InnerBackground,
-                                                    strokeOpacity: 0.4
+                                                    strokeOpacity: 0.1,
+                                                    visibility: fy(
+                                                            t + offset
+                                                        ) < this.props.padding
+                                                        || fy(
+                                                            t + offset
+                                                        ) > 100 - this.props.padding
+                                                        ? "hidden" : "visible"
                                                 }} />
                                             );
                                         })

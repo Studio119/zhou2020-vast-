@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-21 18:23:36
+ * @Last Modified time: 2020-04-25 21:26:37
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -34,8 +34,8 @@ class App extends Component<{}, {}, null> {
           display: "inline-block",
           margin: "0 -1px -1px 1px"
         }}>
-          <Container theme="NakiriAyame" title="Data View">
-            <ControlCenter width={ 386 } height={ 267 } padding={ [20, 20] }
+          <Container theme="NakiriAyame" title="Load Data" >
+            <ControlCenter width={ 386 } height={ 267 } padding={ [2, 10] }
             reset={ this.load.bind(this) }
             ourSample={ this.ourSample.bind(this) }
             randomSample={ this.randomSample.bind(this) }
@@ -44,7 +44,8 @@ class App extends Component<{}, {}, null> {
             better={ this.better.bind(this) } />
           </Container>
           <HighlightItems ref="hl" height={ 104 } />
-          <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 } padding={ 0 } />
+          <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 }
+          padding={ 5 } />
         </div>
         <Container theme="NakiriAyame" title="Map View" >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 13 } center={[-0.21, 51.46]}
