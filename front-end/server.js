@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-20 14:53:01
+ * @Last Modified time: 2020-04-26 18:06:57
  */
 
 const express = require('express');
@@ -298,49 +298,6 @@ app.get("/better/:filepath/:n_iter", (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
     const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\better.py"
                     + " " + json_path + " " + ori_path + " " + 0.6 + " " + req.params["n_iter"];
-
-    process.exec(cmd, (error, _, stderr) => {
-        if (stderr) {
-            res.json(
-                formatResult(
-                    cmd,
-                    false,
-                    stderr
-                )
-            );
-        } else if (error) {
-            res.json(
-                formatResult(
-                    cmd,
-                    false,
-                    error
-                )
-            );
-        } else {
-            res.json(
-                formatResult(
-                    cmd,
-                    true,
-                    JSON.parse(fs.readFileSync(output_path))
-                )
-            );
-        }
-    });
-});
-
-
-app.post("/kde", (req, res) => {
-    const points = req.body.points;
-    const centers = req.body.centers;
-    const input_path1 = "..\\storage\\pointsOnMap.json";
-    const input_path2 = "..\\storage\\rectsOnMap.json";
-    const output_path = "..\\storage\\kdeOnMap.json";
-
-    fs.writeFileSync(input_path1, JSON.stringify(points));
-    fs.writeFileSync(input_path2, JSON.stringify(centers));
-
-    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
-    const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\kde.py";
 
     process.exec(cmd, (error, _, stderr) => {
         if (stderr) {

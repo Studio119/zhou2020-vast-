@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-25 21:21:52
+ * @Last Modified time: 2020-04-26 17:32:30
  */
 
 import React, { Component } from "react";
@@ -271,7 +271,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         }
 
         return (
-            <Container theme="NakiriAyame" title="Moran Scatterplot" >
+            <Container theme="Caffee" title="Moran Scatterplot" >
                 <div key="background"
                 style={{
                     width: this.props.width ? this.props.width : "100%",
@@ -378,7 +378,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                     top: "-1545px",
                     left: "248px",
                     width: "138px",
-                    color: "black"
+                    color: "#131213"
                 }} >
                     <ValueBar label="T" width={ 100 } height={ 16 }
                     min={ 0 } max={ 32 } defaultValue={ this.state.nSpan } step={ 1 }

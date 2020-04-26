@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-01 15:33:28 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-05 13:40:09
+ * @Last Modified time: 2020-04-26 16:26:50
  */
 
 import React, { Component } from "react";
@@ -59,7 +59,8 @@ export class Container extends Component<ContainerProps, any, React.ReactNode | 
                         borderBottom: "1px solid " + ColorThemes[this.props.theme].Border,
                         color: ColorThemes[this.props.theme].OuterColor,
                         padding: "3px 0px",
-                        fontWeight: 'bold',
+                        fontWeight: 500,
+                        letterSpacing: "0.7px",
                         textAlign: 'left',
                         ...this.props.titleStyle
                     }}>
@@ -77,7 +78,6 @@ export class Container extends Component<ContainerProps, any, React.ReactNode | 
                         width: "100%",
                         height: "auto",
                         background: ColorThemes[this.props.theme].InnerBackground,
-                        // borderBottom: "1px solid " + ColorThemes[this.props.theme].Border,
                         color: ColorThemes[this.props.theme].InnerColor,
                         padding: "0px",
                         ...this.props.style

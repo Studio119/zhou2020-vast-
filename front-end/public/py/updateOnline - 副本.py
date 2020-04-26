@@ -49,7 +49,7 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
 
     # 计算不替换前多少点的自身特征发生变化
     val_in = np.array([d["value"] for d in sampled1])
-    mean1 = np.mean(val_in)
+    mean = np.mean(val_in)
     before_wrong_num = 0
     for i in sampled1:
         if i['type'][0] == oriData[i['id']]['type'][0]:
@@ -64,7 +64,6 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
             continue
         else:
             # 判断自身特征是否发生变化
-            num1 = 0
             after_wrong_num = 0
             sampled.append(oriData[i])
             val_in = np.array([d["value"] for d in sampled])
@@ -78,18 +77,8 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
                 else:
                     after_wrong_num += 1
             # T1任务保持住了
-            # if after_wrong_num <= before_wrong_num - 1:
-            #     num 1 =
-            #     T1 = True
-            if oriData[selected_point_index]['type'][0] == SIGN(oriData[selected_point_index]['value'] - mean1):
-                if after_wrong_num <= before_wrong_num:
-                    num1 = before_wrong_num - after_wrong_num
-                    T1 = True
-            else:
-                if after_wrong_num <= before_wrong_num - 1:
-                    num1 = before_wrong_num - 1 - after_wrong_num
-                    T1 = True
-
+            if after_wrong_num <= before_wrong_num - 1:
+                T1 = True
 
             ## 判断自身的local 和neighbouring 特征都能保持住 ，即T3任务
             # 首先判断自身
@@ -115,8 +104,6 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
 
             # T2任务，简便计算，即与该点邻近的点，仅出现在离该点最近的100个点中
             bynear_index = [ int(d[0]) for d in c[:100]]
-            num3 = 0 # 之后错误的点数
-            num2 = 0 # 之前就错误的点数
             # 循环这100个点，找出其中与该点邻近的点
             for j in bynear_index:
                 dis_dict = {}
@@ -137,22 +124,18 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
                     if beforeIsRight(j, sampled, oriData):
                         # 保持住了，则在计算换了之后，这个点的采样前后是否会不会打破正确性
                         if SIGN(sp_lag) == oriData[j]['type'][1]:
-                            pass
+                            T2 = True
                         else:
-                            num3 += 1
+                            T2 = False
                     # 之前就没保持住，那么采样后无所谓，能保持住是最好的
                     else:
-                        num2 += 1
-                        if SIGN(sp_lag) == oriData[j]['type'][1]:
-                            pass
-                        else:
-                            num3 += 1
-                # if not T2:
-                #     break
-        if T3:
-            isReplaced[str(i)] = [True, num1 + (num2 - num3)]
+                        T2 = True
+                if not T2:
+                    break
+        if T1 and T2 and T3:
+            isReplaced[str(i)] = [True, random.random() / random.random() / (random.random() - 0.5)]
         else:
-            isReplaced[str(i)] = [False, num1 + (num2 - num3)]
+            isReplaced[str(i)] = [False, random.random() / random.random() / (random.random() - 0.5)]
     return isReplaced
 
 

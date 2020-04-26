@@ -1,4 +1,18 @@
 body {
   overflow: hidden;
   width: 1536px;
+  background-color: #88696A;
+}
+
+.App {
+  margin-left: -1px;
+}
+
+#params p {
+  width: 80px;
+}
+
+#params svg {
+  margin-right: 16px;
+  transform: translateY(2px);
 }

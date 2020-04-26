@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-10-24 17:47:11 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-25 19:45:01
+ * @Last Modified time: 2020-04-26 17:33:01
  */
 
 
@@ -483,9 +483,21 @@ const Color = {
 }
 
 
-export type ColorThemeKey = "NakiriAyame";
+export type ColorThemeKey = "Caffee" | "NakiriAyame";
 
 export const ColorThemes = {
+    Caffee: {
+        // OuterBackground: '#4E3327',
+        OuterBackground: '#F0F0F0',
+        Border: '#231711',
+        // OuterColor: '#FEFEFE',
+        OuterColor: '#141414',
+        InnerBackground: '#FEFEFE',
+        InnerColor: '#FCD3AE',
+        Red: '#C32936',
+        Green: '#2E7917',
+        Grey: '#877977'
+    },
     NakiriAyame: {
         OuterBackground: '#FCFBFC',
         Border: '#D2394A',
@@ -495,6 +507,10 @@ export const ColorThemes = {
         Red: '#AD2138',
         Green: '#52826D',
         Grey: '#D3C1BE'
+    },
+    OokamiMio: {
+        Black: '#333130',
+        Red: '#FE685F'
     }
 };
 

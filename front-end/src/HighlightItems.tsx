@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-13 21:26:18 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-25 13:44:18
+ * @Last Modified time: 2020-04-26 20:02:17
  */
 
 import React, { Component } from "react";
@@ -89,7 +89,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
         ));
 
         return (
-            <Container theme="NakiriAyame" title="Spatial Autocorrelation"
+            <Container theme="Caffee" title="Spatial Autocorrelation"
             width={ this.props.width ? this.props.width : "100%" }
             height="auto"
             style={{
@@ -840,7 +840,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                     <label
                     style={{
                         position: "relative",
-                        left: 177,
+                        left: 158,
                         top: -145,
                         textAlign: "end",
                         color: ColorThemes.NakiriAyame.Red,
@@ -854,7 +854,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                 count += this.state.after.LL.all - this.state.after.LL.LL;
                                 count += this.state.after.HL.all - this.state.after.HL.HL;
                                 
-                                return count;
+                                return count + " failed";
                             })() : ""
                         }
                     </label>

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-25 23:07:28
+ * @Last Modified time: 2020-04-26 20:02:35
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -421,12 +421,13 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 display: "table",
                 padding: "4px 6px",
                 marginBottom: "-57px",
+                color: "black",
                 background: ColorThemes.NakiriAyame.OuterBackground,
                 border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
                 borderRadius: this.state.behavior === "scatterplot"
                     || this.state.behavior === "heatmap" ? 0 : "0 12px 10px 0"
             }} >
-                <SyncButton theme="NakiriAyame" text="⚐"
+                <SyncButton theme="Caffee" text="⚐"
                 executer={ this.changeView.bind(this) }
                 style={{
                     marginRight: 8,
@@ -450,7 +451,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }} >
                     { this.state.behavior }
                 </label>
-                <SyncButton theme="NakiriAyame" text={
+                <SyncButton theme="Caffee" text={
                     "➥ " + (
                         this.state.behavior === "scatterplot"
                             ? "purity dot plot"
@@ -614,7 +615,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                             ];
                         });
                         const p: Promise<AxiosResponse<CommandResult<{
-                            [id: number]: boolean;
+                            [id: number]: [boolean, number];
                         }|CommandError>>> = axios.get(
                             `/test/${ System.filepath!.split(".")[0] }/${ pIndex }/${
                                 JSON.stringify(value[a]).split(" ").join("")
@@ -626,13 +627,19 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         );
                         const cx: number = (xMin + xMax) / 2;
                         const cy: number = (yMin + yMax) / 2;
+                        const cr: number = Math.sqrt(
+                            Math.max(
+                                Math.pow(xMax - xMin, 2) + Math.pow(yMax - yMin, 2),
+                                Math.pow(xMax - xMin, 2) + Math.pow(yMin - yMax, 2)
+                            )
+                        ) / 2 + 8;
                         p.then((value: AxiosResponse<CommandResult<{
-                            [id: number]: boolean;
+                            [id: number]: [boolean, number];
                         } | CommandError>>) => {
                             if (value.data.state === "successed") {
                                 this.testCandidate(value.data.value as {
-                                    [id: number]: boolean;
-                                }, [cx, cy]);
+                                    [id: number]: [boolean, number];
+                                }, [cx, cy, cr]);
                             } else {
                                 console.warn("error", value.data.value);
                             }
@@ -645,12 +652,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         this.ctx_r!.arc(
                             cx,
                             cy,
-                            Math.sqrt(
-                                Math.max(
-                                    Math.pow(xMax - xMin, 2) + Math.pow(yMax - yMin, 2),
-                                    Math.pow(xMax - xMin, 2) + Math.pow(yMin - yMax, 2)
-                                )
-                            ) / 2 + 8,
+                            cr,
                             0,
                             2 * Math.PI
                         );
@@ -682,34 +684,39 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     private testCandidate(points: {
-        [id: number]: boolean;
-    }, center: [number, number]): void {
+        [id: number]: [boolean, number];
+    }, center: [number, number, number]): void {
         this.toReplace = [];
         const len: number = Object.entries(points).length;
         const step: number = 2 * Math.PI / len;
+
+        const r: number = center[2];
+
         const projections: Array<{
             x: number;
             y: number;
         }> = Object.entries(points).map((_: {}, i: number) => {
             return {
-                x: center[0] + Math.sin(step * i) * 100,
-                y: center[1] - Math.cos(step * i) * 100
+                x: center[0] + Math.sin(step * i) * r,
+                y: center[1] - Math.cos(step * i) * r
             };
         });
+
         const positions: Array<{
             x: number;
             y: number;
             id: number;
             available: boolean;
-        }> = Object.entries(points).map((entry: [string, boolean]) => {
+            contribution: number;
+        }> = Object.entries(points).map((entry: [string, [boolean, number]]) => {
             const _x: number = this.fx(System.data[parseInt(entry[0])].lng);
             const _y: number = this.fy(System.data[parseInt(entry[0])].lat);
             let minIdx: number = 0;
-            let min: number = Infinity;
+            let minValue: number = Infinity;
             projections.forEach((c: {x: number; y: number;}, i: number) => {
                 const dist: number = Math.pow(c.x - _x, 2) + Math.pow(c.y - _y, 2);
-                if (dist < min) {
-                    min = dist;
+                if (dist < minValue) {
+                    minValue = dist;
                     minIdx = i;
                 }
             });
@@ -717,7 +724,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 x: _x,
                 y: _y,
                 id: parseInt(entry[0]),
-                available: entry[1],
+                available: entry[1][0],
+                contribution: entry[1][1],
                 nearest: minIdx
             };
         }).sort((a, b) => a.nearest - b.nearest);
@@ -729,21 +737,20 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             y: number;
             id: number;
             available: boolean;
+            contribution: number;
         }, index: number) => {
-            const r: number = Math.sqrt(
-                Math.pow(p.x - center[0], 2)
-                + Math.pow(p.y - center[1], 2)
-            );
-            const x: number = center[0] + Math.sin(step * index) * (r * 1.6 + 30);
-            const y: number = center[1] - Math.cos(step * index) * (r * 1.6 + 30);
+            const x: number = center[0] + Math.sin(step * index) * (r + 48);
+            const y: number = center[1] - Math.cos(step * index) * (r + 48);
             this.ctx_r!.strokeStyle = 'rgb(165,112,163)';
             this.ctx_r!.moveTo(p.x, p.y);
             this.ctx_r!.lineTo(x, y);
             this.ctx_r!.stroke();
-            this.ctx_r!.strokeStyle = 'rgb(30,30,30)';
-            this.ctx_r!.fillStyle = `rgb(${ p.available ? "8,240,116" : "148,21,27" })`;
-            this.ctx_r!.strokeRect(x - 6, y - 6, 12, 12);
-            this.ctx_r!.fillRect(x - 6, y - 6, 12, 12);
+            this.drawCircle(
+                x,
+                y,
+                p.available,
+                p.contribution
+            );
             if (p.available) {
                 this.toReplace.push({
                     x: x,
@@ -752,6 +759,47 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 });
             }
         });
+    }
+
+    private drawCircle(x: number, y: number, available: boolean, val: number): void {
+        const color: string = `rgb(${
+            available ? "8,240,116" : "148,21,27"
+        })`;
+        this.ctx_r!.beginPath();
+        const r1: number = 10;
+        const r2: number = r1 * (0.36 + 0.64 / (1 + Math.pow(Math.E, val)));
+        this.ctx_r!.moveTo(x, y - r1);
+        const step: number = 32;
+        let lastDeg: number = 0;
+        for (let a: number = 1; a <= step; a++) {
+            const deg: number = Math.PI * 2 / step * a;
+            if (a % 2 === 0) {
+                this.ctx_r!.bezierCurveTo(
+                    x + Math.sin(deg) * r2,
+                    y - Math.cos(deg) * r2,
+                    x + Math.sin(lastDeg) * r1,
+                    y - Math.cos(lastDeg) * r1,
+                    x + Math.sin(deg) * r1,
+                    y - Math.cos(deg) * r1
+                );
+            } else {
+                this.ctx_r!.bezierCurveTo(
+                    x + Math.sin(deg) * r1,
+                    y - Math.cos(deg) * r1,
+                    x + Math.sin(lastDeg) * r2,
+                    y - Math.cos(lastDeg) * r2,
+                    x + Math.sin(deg) * r2,
+                    y - Math.cos(deg) * r2
+                );
+            }
+            lastDeg = deg;
+        }
+        this.ctx_r!.lineWidth = 1;
+        this.ctx_r!.fillStyle = color;
+        this.ctx_r!.strokeStyle = "rgb(118,92,116)";
+        this.ctx_r!.closePath();
+        this.ctx_r!.stroke();
+        this.ctx_r!.fill();
     }
 
     private clickHandle(x: number, y: number): boolean {
@@ -765,12 +813,11 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         // 是否点击到可替换点
         if (!isNaN(this.replaceFrom)) {
             for (let i: number = 0; i < this.toReplace.length; i++) {
-                if (
-                    x >= this.toReplace[i].x - 6
-                    && x <= this.toReplace[i].x + 6
-                    && y >= this.toReplace[i].y - 6
-                    && y <= this.toReplace[i].y + 6
-                ) {
+                if (Math.pow(
+                    x - this.toReplace[i].x, 2
+                ) + Math.pow(
+                    y - this.toReplace[i].y, 2
+                ) <= 100) {
                     this.props.runReplace(this.replaceFrom, this.toReplace[i].to);
                     this.replaceFrom = NaN;
                     this.toReplace = [];

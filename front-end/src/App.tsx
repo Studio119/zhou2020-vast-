@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-25 21:26:37
+ * @Last Modified time: 2020-04-26 16:54:16
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -29,12 +29,12 @@ class App extends Component<{}, {}, null> {
         <Loading ref="loading" />
         <div style={{
           width: "386px",
-          height: "866.5px",
+          height: "867.5px",
           overflow: "hidden",
           display: "inline-block",
           margin: "0 -1px -1px 1px"
         }}>
-          <Container theme="NakiriAyame" title="Load Data" >
+          <Container theme="Caffee" title="Load Data">
             <ControlCenter width={ 386 } height={ 267 } padding={ [2, 10] }
             reset={ this.load.bind(this) }
             ourSample={ this.ourSample.bind(this) }
@@ -47,9 +47,12 @@ class App extends Component<{}, {}, null> {
           <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 }
           padding={ 5 } />
         </div>
-        <Container theme="NakiriAyame" title="Map View" >
+        <Container theme="Caffee" title="Map View"
+        style={{
+          marginLeft: "3.5px"
+        }} >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 13 } center={[-0.21, 51.46]}
-          width={ 1149 } height={ 837 } scaleType={ this.scale } filter={ true }
+          width={ 1142 } height={ 837 } scaleType={ this.scale } filter={ true }
           mode="circle"
           getZorderSubset={ this.getZorderSubset.bind(this) }
           runReplace={ this.replace.bind(this) }
