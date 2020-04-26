@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-26 17:32:30
+ * @Last Modified time: 2020-04-27 04:16:38
  */
 
 import React, { Component } from "react";
@@ -271,7 +271,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
         }
 
         return (
-            <Container theme="Caffee" title="Moran Scatterplot" >
+            <Container theme="Caffee" title="Moran Scatterplots" >
                 <div key="background"
                 style={{
                     width: this.props.width ? this.props.width : "100%",
@@ -686,7 +686,9 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                             return (
                                 <g key={ type + "_tick_" + i } >
                                     {
-                                        t === 0 ? null :
+                                        t === 0 || (
+                                            this.state.strech && i !== 1 && i !== ticks.length - 3
+                                        ) ? null :
                                         <text key={ type + "_" + i + "_text" }
                                         x={ x + "%" } y={ fy(0) + "%" }
                                         textAnchor="middle"
@@ -694,9 +696,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                             fontSize: 13,
                                             transform: `translateY(15px)`,
                                             fontWeight: 'bold',
-                                            visibility: x < this.props.padding
-                                                || x > 100 - this.props.padding
-                                                ? "hidden" : "visible"
+                                            visibility: "visible"
                                         }} >
                                             { t }
                                         </text>
@@ -760,7 +760,9 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                             return (
                                 <g key={ type + "_tick_" + i } >
                                     {
-                                        t === 0 ? null :
+                                        t === 0 || (
+                                            this.state.strech && i !== 1 && i !== ticks.length - 3
+                                        ) ? null :
                                         <text key={ type + "_" + i + "_text" }
                                         x={ fx(0) + "%" } y={ y + "%" }
                                         textAnchor="end"
@@ -768,9 +770,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                                             fontSize: 13,
                                             transform: `translate(-8px, 5px)`,
                                             fontWeight: 'bold',
-                                            visibility: y < this.props.padding
-                                                || y > 100 - this.props.padding
-                                                ? "hidden" : "visible"
+                                            visibility: "visible"
                                         }} >
                                             { t }
                                         </text>

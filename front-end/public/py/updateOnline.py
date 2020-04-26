@@ -81,7 +81,7 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
             # if after_wrong_num <= before_wrong_num - 1:
             #     num 1 =
             #     T1 = True
-            if oriData[selected_point_index]['type'][0] == SIGN(oriData[selected_point_index]['value'] - mean1):
+            if oriData[int(selected_point_index)]['type'][0] == SIGN(oriData[int(selected_point_index)]['value'] - mean1):
                 if after_wrong_num <= before_wrong_num:
                     num1 = before_wrong_num - after_wrong_num
                     T1 = True

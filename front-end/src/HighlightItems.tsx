@@ -86,7 +86,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                 this.state.before.LL,
                 this.state.before.LH
             ]
-        ));
+        ), 1);
 
         return (
             <Container theme="Caffee" title="Spatial Autocorrelation"
@@ -741,7 +741,8 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                 <>
                                     <rect key="rectHH"
                                     x={ "13%" } y={ 0 }
-                                    width={ "82%" } height = { "22%" }
+                                    width={ `${ 82 * this.state.before.HH / max }%` }
+                                    height = { "22%" }
                                     style={{
                                         fill: System.colorF("HH")[0]
                                     }}
@@ -752,7 +753,8 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     } />
                                     <rect key="rectLH"
                                     x={ "13%" } y={ "26%" }
-                                    width={ "82%" } height = { "22%" }
+                                    width={ `${ 82 * this.state.before.LH / max }%` }
+                                    height = { "22%" }
                                     style={{
                                         fill: System.colorF("LH")[0]
                                     }}
@@ -763,7 +765,8 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     } />
                                     <rect key="rectLL"
                                     x={ "13%" } y={ "52%" }
-                                    width={ "82%" } height = { "22%" }
+                                    width={ `${ 82 * this.state.before.LL / max }%` }
+                                    height = { "22%" }
                                     style={{
                                         fill: System.colorF("LL")[0]
                                     }}
@@ -774,7 +777,8 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                     } />
                                     <rect key="rectHL"
                                     x={ "13%" } y={ "78%" }
-                                    width={ "82%" } height = { "22%" }
+                                    width={ `${ 82 * this.state.before.HL / max }%` }
+                                    height = { "22%" }
                                     style={{
                                         fill: System.colorF("HL")[0]
                                     }}

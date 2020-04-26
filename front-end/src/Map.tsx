@@ -46,7 +46,7 @@ export interface MapViewState<T> {
         value: T;
         projection: number;
     }>;
-    behavior: "scatterplot" | "purity dot plot" | "KDE plot" | "heatmap";
+    behavior: "scatterplot" | "purity plot" | "KDE plot" | "heatmap";
     showMistake: boolean;
 }
 
@@ -438,31 +438,64 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         ? ColorThemes.NakiriAyame.Green
                         : "rgb(185,185,178)"
                 }} />
-                <label
+                <label key="1"
                 style={{
-                    display: 'inline-block',
-                    width: 'auto',
-                    color: ColorThemes.NakiriAyame.InnerBackground,
-                    border: "1px solid " + ColorThemes.NakiriAyame.Green,
-                    padding: "0 6px 4px",
-                    margin: "0 6px 0 0",
-                    fontSize: "14px",
-                    fontWeight: 501
+                    margin: "0 8px 0 2px"
                 }} >
-                    { this.state.behavior }
+                    |
                 </label>
-                <SyncButton theme="Caffee" text={
-                    "➥ " + (
-                        this.state.behavior === "scatterplot"
-                            ? "purity dot plot"
-                                : this.state.behavior === "purity dot plot"
-                                    ? "KDE plot"
-                                        : this.state.behavior === "KDE plot"
-                                            ? "heatmap"
-                                            : "scatterplot"
-                    )
+                {
+                    ([
+                        "scatterplot", "purity plot", "KDE plot", "heatmap"
+                    ] as Array<"scatterplot" | "purity plot" | "KDE plot" | "heatmap">
+                    ).map((b: "scatterplot" | "purity plot" | "KDE plot" | "heatmap") => {
+                        if (this.state.behavior === b) {
+                            return (
+                                <label key={ b }
+                                style={{
+                                    display: 'inline-block',
+                                    width: '84px',
+                                    color: ColorThemes.NakiriAyame.InnerBackground,
+                                    border: "1px solid " + ColorThemes.NakiriAyame.Green,
+                                    padding: "0 6px 4px",
+                                    margin: "0 2px",
+                                    fontSize: "14px",
+                                    fontWeight: 501
+                                }} >
+                                    { b }
+                                </label>
+                            );
+                        } else {
+                            return (
+                                <SyncButton key={ b } theme="Caffee" text={ `➥ ${ b }` }
+                                executer={
+                                    (resolve: (value?: void | PromiseLike<void> | undefined) => void) => {
+                                        this.setState({
+                                            behavior: b
+                                        });
+                                        resolve();
+                                    }
+                                }
+                                style={{
+                                    margin: "0 2px",
+                                    width: '96px',
+                                    backgroundColor: "#504D4D",
+                                    border: "none"
+                                }} />
+                            );
+                        }
+                    })
                 }
-                executer={ this.shift.bind(this) } />
+                {
+                    this.state.behavior === "scatterplot" || this.state.behavior === "heatmap"
+                    ? null :
+                    <label key="1"
+                    style={{
+                        margin: "0 -2px 0 8px"
+                    }} >
+                        |
+                    </label>
+                }
                 <ValueBar width={ 80 } height={ 16 }
                 min={ 2 } max={ 16 } defaultValue={ this.step } step={ 1 }
                 onValueChange={
@@ -1475,7 +1508,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     setTimeout(goon, 10);
                 }
             });
-        } else if (this.state.behavior === "purity dot plot") {
+        } else if (this.state.behavior === "purity plot") {
             let box: Array<Array<boolean>> = [];
         
             this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
@@ -1817,20 +1850,6 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.bounds = bounds;
         this.applySynchronizedBounds();
         this.redraw();
-    }
-
-    private shift(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-        this.setState({
-            behavior:
-                this.state.behavior === "scatterplot"
-                    ? "purity dot plot"
-                        : this.state.behavior === "purity dot plot"
-                            ? "KDE plot"
-                                : this.state.behavior === "KDE plot"
-                                    ? "heatmap"
-                                    : "scatterplot"
-        });
-        resolve();
     }
 
     public highlight(type: LISAtype, type2?: LISAtype): void {

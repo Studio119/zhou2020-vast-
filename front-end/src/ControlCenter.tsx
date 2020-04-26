@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-26 19:45:55
+ * @Last Modified time: 2020-04-27 04:13:39
  */
 
 import React, { Component } from "react";
@@ -156,9 +156,10 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                             (this.refs["btnBetter"] as SyncButton).setState({
                                                 active: false
                                             });
+                                            this.forceUpdate();
                                         }
                                     } />
-                                    Random Sample
+                                    Random
                                 </label>
                                 <label key="blue_noise_sampling"
                                 style={{
@@ -172,9 +173,10 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                             (this.refs["btnBetter"] as SyncButton).setState({
                                                 active: false
                                             });
+                                            this.forceUpdate();
                                         }
                                     } />
-                                    Blue Noise Sample
+                                    Blue Noise
                                 </label>
                                 <label key="pure_z-order"
                                 style={{
@@ -188,9 +190,10 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                             (this.refs["btnBetter"] as SyncButton).setState({
                                                 active: false
                                             });
+                                            this.forceUpdate();
                                         }
                                     } />
-                                    Z-order Sample
+                                    Z-order
                                 </label>
                                 <label key="this_paper"
                                 style={{
@@ -210,9 +213,10 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                                     active: false
                                                 });
                                             }
+                                            this.forceUpdate();
                                         }
                                     } />
-                                    Our Method
+                                    Ours
                                 </label>
                             </th>
                             <th key="3"
@@ -220,7 +224,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                 width: "20%",
                                 padding: "2px 0"
                             }} >
-                                Apply
+                                Sample
                             </th>
                             <th key="4"
                             style={{
@@ -264,7 +268,15 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         width: "100%",
                         height: "80%",
                         padding: "4px 5%",
-                        display: "inline-flex"
+                        display: "inline-flex",
+                        opacity: (() => {
+                            const val: string = $("input[name=algo]:checked").val()! as string;
+                            return val === "blue_noise_sampling" ? 1 : 0.4;
+                        })(),
+                        pointerEvents: (() => {
+                            const val: string = $("input[name=algo]:checked").val()! as string;
+                            return val === "blue_noise_sampling" ? "unset" : "none";
+                        })()
                     }} >
                         <ValueBar width={ 160 } height={ 18 } label="radius"
                         min={ 0.02 } max={ 0.2 } step={ 0.02 } defaultValue={ 0.04 }
@@ -286,7 +298,15 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         width: "100%",
                         height: "80%",
                         padding: "4px 5%",
-                        display: "inline-flex"
+                        display: "inline-flex",
+                        opacity: (() => {
+                            const val: string = $("input[name=algo]:checked").val()! as string;
+                            return val === "this_paper" ? 1 : 0.4;
+                        })(),
+                        pointerEvents: (() => {
+                            const val: string = $("input[name=algo]:checked").val()! as string;
+                            return val === "this_paper" ? "unset" : "none";
+                        })()
                     }} >
                         <ValueBar width={ 160 } height={ 18 } label="alpha"
                         min={ 0.1 } max={ 0.9 } step={ 0.05 } defaultValue={ 0.6 }
@@ -308,7 +328,15 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         width: "100%",
                         height: "80%",
                         padding: "4px 5%",
-                        display: "inline-flex"
+                        display: "inline-flex",
+                        opacity: (() => {
+                            const val: string = $("input[name=algo]:checked").val()! as string;
+                            return val !== "blue_noise_sampling" ? 1 : 0.4;
+                        })(),
+                        pointerEvents: (() => {
+                            const val: string = $("input[name=algo]:checked").val()! as string;
+                            return val !== "blue_noise_sampling" ? "unset" : "none";
+                        })()
                     }} >
                         <ValueBar width={ 160 } height={ 18 } label="sample_rate"
                         min={ 0.01 } max={ 1.00 } step={ 0.01 } defaultValue={ 0.10 }
@@ -330,7 +358,11 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         width: "100%",
                         height: "80%",
                         padding: "4px 5%",
-                        display: "inline-flex"
+                        display: "inline-flex",
+                        opacity: System.tail === "_o" || System.tail === "_ob"
+                                            ? 1 : 0.4,
+                        pointerEvents: System.tail === "_o" || System.tail === "_ob"
+                                            ? "unset" : "none"
                     }} >
                         <ValueBar width={ 160 } height={ 18 } label="n_iter"
                         min={ 1 } max={ 10 } step={ 1 } defaultValue={ 1 }
@@ -358,6 +390,18 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
         (this.refs["btnBetter"] as SyncButton).setState({
             active: false
         });
+
+        $("#params").animate({
+            scrollTop: 32
+        }, 120);
+    }
+
+    public componentDidUpdate(): void {
+        const val: string = $("input[name=algo]:checked").val()! as string;
+        
+        $("#params").animate({
+            scrollTop: val === "blue_noise_sampling" ? 0 : val === "this_paper" ? 12 : 32
+        }, 120);
     }
 
     private onSelected(path: string): void {

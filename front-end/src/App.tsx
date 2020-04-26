@@ -34,7 +34,7 @@ class App extends Component<{}, {}, null> {
           display: "inline-block",
           margin: "0 -1px -1px 1px"
         }}>
-          <Container theme="Caffee" title="Load Data">
+          <Container theme="Caffee" title="Data Overview">
             <ControlCenter width={ 386 } height={ 267 } padding={ [2, 10] }
             reset={ this.load.bind(this) }
             ourSample={ this.ourSample.bind(this) }
@@ -47,9 +47,10 @@ class App extends Component<{}, {}, null> {
           <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 }
           padding={ 5 } />
         </div>
-        <Container theme="Caffee" title="Map View"
+        <Container theme="Caffee" title="Geographical View"
         style={{
-          marginLeft: "3.5px"
+          marginLeft: "3.5px",
+          marginBottom: "0.2px"
         }} >
           <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 13 } center={[-0.21, 51.46]}
           width={ 1142 } height={ 837 } scaleType={ this.scale } filter={ true }
