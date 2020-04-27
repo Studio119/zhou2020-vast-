@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-27 04:13:39
+ * @Last Modified time: 2020-04-27 21:17:00
  */
 
 import React, { Component } from "react";
@@ -279,13 +279,13 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         })()
                     }} >
                         <ValueBar width={ 160 } height={ 18 } label="radius"
-                        min={ 0.02 } max={ 0.2 } step={ 0.02 } defaultValue={ 0.04 }
+                        min={ 0.005 } max={ 0.05 } step={ 0.005 } defaultValue={ 0.02 }
                         style={{
                             transform: "unset",
                             alignItems: ""
                         }}
                         valueFormatter={
-                            (value: number) => `${ value.toFixed(2) }`
+                            (value: number) => `${ value.toFixed(3) }`
                         }
                         onValueChange={
                             (value: number) => {
@@ -418,12 +418,15 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
             active: false
         });
 
+        $(this.refs["iterDiv"]).css("opacity", 0.4).css("pointerEvents", "none");
+
         if (val === "this_paper") {
             this.props.ourSample((value?: void | PromiseLike<void> | undefined) => {
                 resolve(value);
                 (this.refs["btnBetter"] as SyncButton).setState({
                     active: true
                 });
+                $(this.refs["iterDiv"]).css("opacity", 1).css("pointerEvents", "unset");
             }, reject);
         } else if (val === "random_sampling") {
             this.props.randomSample(resolve, reject);

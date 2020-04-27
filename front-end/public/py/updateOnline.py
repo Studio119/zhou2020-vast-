@@ -11,14 +11,14 @@ import sys
 def SIGN(n):
     return "L" if n < 0 else "H"
 
-def sp(weight, c, oriData):
+def sp(weight, c, oriData, average):
     sum1 = 0
     # 加权平均
     for j in weight:
         sum1 += j
     sp_lag = 0
     for j in range(m.k):
-        sp_lag += (weight[j] / sum1) * oriData[int(c[j][0])]['value']
+        sp_lag += (weight[j] / sum1) * (oriData[int(c[j][0])]['value']-average)
     return sp_lag
 
 
@@ -107,7 +107,7 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
                 dis_dict[str(j['id'])] = verse_distance
             c = sorted(dis_dict.items(), key=lambda item: item[1], reverse= True)
             weight = [ d[1] for d in c[:m.k]]
-            sp_lag  = sp(weight, c, oriData)
+            sp_lag  = sp(weight, c, oriData, mean)
             if SIGN(sp_lag) == oriData[i]['type'][1]:
                 T3_2 = True
             if T3_1 and T3_2:
@@ -131,7 +131,7 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
                 target = [ int(d[0]) for d in c[:m.k]]
                 if i in target:
                     weight = [d[1] for d in c[:m.k]]
-                    sp_lag = sp(weight, c, oriData)
+                    sp_lag = sp(weight, c, oriData, mean)
                     ## 一旦出现将某个点之前是好的，但是变了之后却坏了，那就不要
                     #所以先计算没换之前，这个点的采样前后是否保持
                     if beforeIsRight(j, sampled, oriData):

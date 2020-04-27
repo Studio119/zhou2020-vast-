@@ -150,10 +150,10 @@ class MapBox extends Component<MapProps, {}, {}> {
                     "interpolate", ["linear"],
                     ["get", "mag"],
                     0, 0,
-                    10, 0.2,
-                    500, 0.6,
-                    10000, 0.7,
-                    20000, 1
+                    5, 0.2,
+                    100, 0.6,
+                    5000, 0.7,
+                    25000, 1
                   ],
                   // Increase the heatmap color weight weight by zoom level
                   // heatmap-intensity is a multiplier on top of heatmap-weight

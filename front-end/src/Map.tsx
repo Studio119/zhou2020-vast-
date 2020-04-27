@@ -469,11 +469,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                             return (
                                 <SyncButton key={ b } theme="Caffee" text={ `➥ ${ b }` }
                                 executer={
-                                    (resolve: (value?: void | PromiseLike<void> | undefined) => void) => {
-                                        this.setState({
-                                            behavior: b
-                                        });
-                                        resolve();
+                                    () => {
+                                        this.shift(b);
                                     }
                                 }
                                 style={{
@@ -489,7 +486,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 {
                     this.state.behavior === "scatterplot" || this.state.behavior === "heatmap"
                     ? null :
-                    <label key="1"
+                    <label key="2"
                     style={{
                         margin: "0 -2px 0 8px"
                     }} >
@@ -892,6 +889,15 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }
 
         return false;
+    }
+
+    private shift(b: "scatterplot" | "purity plot" | "KDE plot" | "heatmap"): void {
+        if (this.state.behavior === b) {
+            return;
+        }
+        this.setState({
+            behavior: b
+        });
     }
 
     public closeSketcher(): void {
@@ -1675,7 +1681,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 let box: Array<[number, number]> = [];
                 System.data.forEach((d: DataItem, i: number) => {
                     if (System.active[i]) {
-                        box.push([d.lng, d.lat]);
+                        box.push([d.lng, d.lat + 0.12]);
                     }
                 });
                 (this.refs["map"] as MapBox).updateHeatMap(box);

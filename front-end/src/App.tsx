@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-26 16:54:16
+ * @Last Modified time: 2020-04-27 20:50:45
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -317,6 +317,7 @@ class App extends Component<{}, {}, null> {
           System.update();
         }, 0);
       } else {
+        console.error(value.data);
         reject();
       }
     }).catch((reason: any) => {
