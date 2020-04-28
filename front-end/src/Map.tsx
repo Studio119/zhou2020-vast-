@@ -2,17 +2,17 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-26 20:02:35
+ * @Last Modified time: 2020-04-29 06:04:02
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
 import MapBox from './react-mapbox/MapBox';
 import axios from 'axios';
 import Color, { ColorThemes } from './preference/Color';
-import { DataItem, LISAtype } from './TypeLib';
+import { DataItem, LISAtype, FileData } from './TypeLib';
 import { System } from './Globe';
 import { SyncButton } from './prototypes/SyncButton';
-import ValueBar from './tools/ValueBar';
+// import ValueBar from './tools/ValueBar';
 import { AxiosResponse } from 'axios';
 import { CommandResult, CommandError } from './Command';
 
@@ -37,6 +37,7 @@ export interface MapViewProps {
         reject: (reason: any) => void
     ) => Promise<AxiosResponse<CommandResult<Array<number[]>|CommandError>>>;
     runReplace: (from: number, to: number) => void;
+    tryReplace: (from: number, to: number, callback: (data: FileData.Mode) => void) => void;
 }
 
 export interface MapViewState<T> {
@@ -46,7 +47,7 @@ export interface MapViewState<T> {
         value: T;
         projection: number;
     }>;
-    behavior: "scatterplot" | "purity plot" | "KDE plot" | "heatmap";
+    behavior: "Scatterplots" | "Ambiguity" | "heatmap";
     showMistake: boolean;
 }
 
@@ -87,10 +88,12 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private sketchers: Array<Sketch>;
     private drawing: boolean;
     private tickDone: number;
-    private adjust: (value: number) => void;
-    private adjustExtend: (value: number) => void;
-    private step: number;
-    private expand: number;
+    // private adjust: (value: number) => void;
+    // private adjustExtend: (value: number) => void;
+    // private step: number;
+    // private expand: number;
+    private ambType: "Replace" | "AmbiguityVis";
+    private heatmapType: "Origin" | "Sample" | "Difference";
     private replaceFrom: number;
     private toReplace: Array<{
         x: number;
@@ -103,7 +106,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.mounted = false;
         this.state = {
             data: [],
-            behavior: "scatterplot",
+            behavior: "Scatterplots",
             showMistake: false
         };
         this.canvas = null;
@@ -130,10 +133,12 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.sketchers = [];
         this.drawing = false;
         this.tickDone = 0;
-        this.adjust = () => {};
-        this.adjustExtend = () => {};
-        this.step = 16;
-        this.expand = 12;
+        // this.adjust = () => {};
+        // this.adjustExtend = () => {};
+        // this.step = 16;
+        // this.expand = 12;
+        this.ambType = "AmbiguityVis";
+        this.heatmapType = "Sample";
         this.replaceFrom = NaN;
         this.toReplace = [];
     }
@@ -215,7 +220,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                             : null
                     }
                 </div>
-                <div id="scatterplot"
+                <div id="Scatterplots"
                 style={{
                     position: 'relative',
                     pointerEvents: 'none',
@@ -228,9 +233,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: this.state.behavior === "scatterplot" || this.state.behavior === "heatmap"
-                                    ? 0 : 1,
-                        background: "#eeeeee"
+                        opacity: this.state.behavior === "Scatterplots" || this.state.behavior === "heatmap"
+                                    ? 0 : 1
                     }} />
                     <canvas key="1" id={ this.props.id + "_canvas" } ref="canvas"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
@@ -238,9 +242,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: this.state.behavior === "scatterplot" ? (
-                            System.type === "dataset" || !this.state.showMistake ? 1 : 0.25
-                        ) : 0
+                        opacity: this.state.behavior === "Scatterplots"
+                            ? 1 : this.state.behavior === "Ambiguity" ? 0.25 : 0
                     }} />
                     <canvas key="2" id={ this.props.id + "_canvas2" } ref="canvas2"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
@@ -248,9 +251,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         top: 0,
                         left: 0,
                         pointerEvents: 'none',
-                        opacity: this.state.behavior === "scatterplot" ? (
-                            System.type === "dataset" || !this.state.showMistake ? 1 : 0.25
-                        ) : 0
+                        opacity: this.state.behavior === "Scatterplots"
+                            ? 1 : this.state.behavior === "Ambiguity" ? 0.25 : 0
                     }} />
                     <canvas key="r" id={ this.props.id + "_canvas_r" } ref="canvas_r"
                     width={ `${ this.props.width }px` } height={`${ this.props.height }px`} style={{
@@ -416,39 +418,20 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             style={{
                 position: "relative",
                 top: "-850px",
-                left: "12px",
+                right: "-790px",
                 width: "auto",
                 display: "table",
                 padding: "4px 6px",
                 marginBottom: "-57px",
                 color: "black",
                 background: ColorThemes.NakiriAyame.OuterBackground,
-                border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
-                borderRadius: this.state.behavior === "scatterplot"
-                    || this.state.behavior === "heatmap" ? 0 : "0 12px 10px 0"
+                border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground
             }} >
-                <SyncButton theme="Caffee" text="⚐"
-                executer={ this.changeView.bind(this) }
-                style={{
-                    marginRight: 8,
-                    fontSize: "77%",
-                    height: 24,
-                    fontWeight: "bold",
-                    backgroundColor: this.state.showMistake
-                        ? ColorThemes.NakiriAyame.Green
-                        : "rgb(185,185,178)"
-                }} />
-                <label key="1"
-                style={{
-                    margin: "0 8px 0 2px"
-                }} >
-                    |
-                </label>
-                {
+                {/* {
                     ([
-                        "scatterplot", "purity plot", "KDE plot", "heatmap"
-                    ] as Array<"scatterplot" | "purity plot" | "KDE plot" | "heatmap">
-                    ).map((b: "scatterplot" | "purity plot" | "KDE plot" | "heatmap") => {
+                        "Scatterplots", "purity plot", "KDE plot", "heatmap"
+                    ] as Array<"Scatterplots" | "purity plot" | "KDE plot" | "heatmap">
+                    ).map((b: "Scatterplots" | "purity plot" | "KDE plot" | "heatmap") => {
                         if (this.state.behavior === b) {
                             return (
                                 <label key={ b }
@@ -467,7 +450,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                             );
                         } else {
                             return (
-                                <SyncButton key={ b } theme="Caffee" text={ `➥ ${ b }` }
+                                <SyncButton key={ b } text={ `➥ ${ b }` }
                                 executer={
                                     () => {
                                         this.shift(b);
@@ -477,49 +460,251 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                                     margin: "0 2px",
                                     width: '96px',
                                     backgroundColor: "#504D4D",
-                                    border: "none"
+                                    border: "none",
+                                    color: "aliceblue"
+                                }} />
+                            );
+                        }
+                    })
+                } */}
+                {
+                    ([
+                        "Scatterplots", "Ambiguity", "heatmap"
+                    ] as Array<"Scatterplots" | "Ambiguity" | "heatmap">
+                    ).map((b: "Scatterplots" | "Ambiguity" | "heatmap") => {
+                        if (this.state.behavior === b) {
+                            return (
+                                <label key={ b }
+                                style={{
+                                    display: 'inline-block',
+                                    width: '94px',
+                                    color: ColorThemes.NakiriAyame.InnerBackground,
+                                    border: "1px solid " + ColorThemes.NakiriAyame.Green,
+                                    padding: "0 6px 4px",
+                                    margin: "0 2px",
+                                    fontSize: "14px",
+                                    fontWeight: 501
+                                }} >
+                                    { "● " + b }
+                                </label>
+                            );
+                        } else {
+                            return (
+                                <SyncButton key={ b } text={ `- ${ b }` }
+                                executer={
+                                    () => {
+                                        this.shift(b);
+                                    }
+                                }
+                                style={{
+                                    margin: "0 2px",
+                                    width: '106px',
+                                    backgroundColor: "#504D4D",
+                                    border: "none",
+                                    color: "aliceblue"
                                 }} />
                             );
                         }
                     })
                 }
-                {
-                    this.state.behavior === "scatterplot" || this.state.behavior === "heatmap"
-                    ? null :
-                    <label key="2"
-                    style={{
-                        margin: "0 -2px 0 8px"
-                    }} >
-                        |
-                    </label>
-                }
-                <ValueBar width={ 80 } height={ 16 }
-                min={ 2 } max={ 16 } defaultValue={ this.step } step={ 1 }
-                onValueChange={
-                    this.adjust.bind(this)
-                }
-                valueFormatter={
-                    (value: number) => `size=${ value }`
-                }
-                style={{
-                    transform: "translateY(26%)",
-                    display: this.state.behavior === "scatterplot" || this.state.behavior === "heatmap"
-                            ? "none" : "inline-block"
-                }} />
-                <ValueBar width={ 80 } height={ 16 }
-                min={ 4 } max={ 16 } defaultValue={ this.expand } step={ 1 }
-                onValueChange={
-                    this.adjustExtend.bind(this)
-                }
-                valueFormatter={
-                    (value: number) => `expand=${ value }`
-                }
-                style={{
-                    transform: "translateY(26%)",
-                    display: this.state.behavior === "scatterplot" || this.state.behavior === "heatmap"
-                            ? "none" : "inline-block"
-                }} />
             </div>
+            {
+                this.state.behavior !== "Ambiguity" ? null :
+                <div key="buttonBox_ambiguity"
+                style={{
+                    position: "relative",
+                    top: "-784px",
+                    right: "-790px",
+                    width: "auto",
+                    display: "table",
+                    padding: "4px 8px 4px 4px",
+                    marginBottom: "-31px",
+                    color: "black",
+                    background: ColorThemes.NakiriAyame.OuterBackground,
+                    border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                    borderRadius: "4px"
+                }} >
+                    <label key="1" style={{
+                        margin: "0 10px",
+                        display: "inline-block",
+                        width: "140px"
+                    }} >
+                        <input type="radio" name="type_amb" value="AmbiguityVis"
+                        onChange={
+                            () => {
+                                this.ambType = "AmbiguityVis";
+                            }
+                        }
+                        defaultChecked={ this.ambType === "AmbiguityVis" } />
+                        <span style={{ padding: "0 4px" }} >
+                            AmbiguityVis
+                        </span>
+                    </label>
+                    <label key="spring" style={{
+                        width: "12px",
+                        display: "inline-block",
+                        margin: "0 10px"
+                    }} />
+                    <label key="2" style={{
+                        margin: "0 10px",
+                        display: "inline-block",
+                        width: "119px"
+                    }} >
+                        <input type="radio" name="type_amb" value="Replace"
+                        onChange={
+                            () => {
+                                this.ambType = "Replace";
+                            }
+                        }
+                        defaultChecked={ this.ambType === "Replace" } />
+                        <span style={{ padding: "0 4px" }} >
+                            Replace
+                        </span>
+                    </label>
+                </div>
+            }
+            {
+                this.state.behavior !== "heatmap" ? null :
+                <div key="buttonBox_heatmap"
+                style={{
+                    position: "relative",
+                    top: "-784px",
+                    right: "-790px",
+                    width: "auto",
+                    display: "table",
+                    padding: "4px 8px 4px 4px",
+                    marginBottom: "-31px",
+                    color: "black",
+                    background: ColorThemes.NakiriAyame.OuterBackground,
+                    border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                    borderRadius: "4px"
+                }} >
+                    <label key="1" style={{
+                        margin: 0,
+                        display: "inline-block",
+                        width: "88px"
+                    }} >
+                        <input type="radio" name="type_heat" value="Origin"
+                        onChange={
+                            () => {
+                                this.heatmapType = "Origin";
+                                this.redraw();
+                            }
+                        }
+                        defaultChecked={ this.heatmapType === "Origin" } />
+                        <span style={{ padding: "0 4px" }} >
+                            Origin
+                        </span>
+                    </label>
+                    <label key="spring" style={{
+                        width: "22px",
+                        display: "inline-block"
+                    }} />
+                    <label key="2" style={{
+                        margin: 0,
+                        display: "inline-block",
+                        width: "88px"
+                    }} >
+                        <input type="radio" name="type_heat" value="Sample"
+                        onChange={
+                            () => {
+                                this.heatmapType = "Sample";
+                                this.redraw();
+                            }
+                        }
+                        defaultChecked={ this.heatmapType === "Sample" } />
+                        <span style={{ padding: "0 4px" }} >
+                            Sample
+                        </span>
+                    </label>
+                    <label key="spring2" style={{
+                        width: "22px",
+                        display: "inline-block"
+                    }} />
+                    <label key="3" style={{
+                        margin: 0,
+                        display: "inline-block",
+                        width: "112px"
+                    }} >
+                        <input type="radio" name="type_heat" value="Difference"
+                        onChange={
+                            () => {
+                                this.heatmapType = "Difference";
+                                this.redraw();
+                            }
+                        }
+                        defaultChecked={ this.heatmapType === "Difference" } />
+                        <span style={{ padding: "0 4px" }} >
+                            Difference
+                        </span>
+                    </label>
+                </div>
+            }
+            {
+                // this.state.behavior !== "Scatterplots" ? null :
+                // <div key="buttonBox1"
+                // style={{
+                //     position: "relative",
+                //     top: "-784px",
+                //     right: "-710px",
+                //     width: "auto",
+                //     display: "table",
+                //     padding: "4px 8px 4px 4px",
+                //     marginBottom: "-31px",
+                //     color: "black",
+                //     background: ColorThemes.NakiriAyame.OuterBackground,
+                //     border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                //     borderRadius: "4px"
+                // }} >
+                //     <label>
+                //         <input type="checkbox" onChange={ this.changeView.bind(this) }
+                //         defaultChecked={ this.state.showMistake } />
+                //         <span style={{ padding: "0 4px" }} >⚐</span>
+                //     </label>
+                // </div>
+            }
+            {
+                // this.state.behavior === "Scatterplots" || this.state.behavior === "heatmap" ? null :
+                // <div key="buttonBox2"
+                // style={{
+                //     position: "relative",
+                //     top: "-784px",
+                //     right: "-710px",
+                //     width: "auto",
+                //     display: "table",
+                //     padding: "1px 8px 7px 4px",
+                //     marginBottom: "-31px",
+                //     color: "black",
+                //     background: ColorThemes.NakiriAyame.OuterBackground,
+                //     border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                //     borderRadius: "4px"
+                // }} >
+                //     <ValueBar width={ 80 } height={ 16 }
+                //     min={ 2 } max={ 16 } defaultValue={ this.step } step={ 1 }
+                //     onValueChange={
+                //         this.adjust.bind(this)
+                //     }
+                //     valueFormatter={
+                //         (value: number) => `size=${ value }`
+                //     }
+                //     style={{
+                //         transform: "translateY(26%)",
+                //         display: "inline-block"
+                //     }} />
+                //     <ValueBar width={ 80 } height={ 16 }
+                //     min={ 4 } max={ 16 } defaultValue={ this.expand } step={ 1 }
+                //     onValueChange={
+                //         this.adjustExtend.bind(this)
+                //     }
+                //     valueFormatter={
+                //         (value: number) => `expand=${ value }`
+                //     }
+                //     style={{
+                //         transform: "translateY(26%)",
+                //         display: "inline-block"
+                //     }} />
+                // </div>
+            }
         </>)
     }
 
@@ -542,28 +727,28 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.ctx_d = this.canvas_d!.getContext("2d");
         this.forceUpdate();
         this.setSketchType("line");
-        this.adjust = (value: number) => {
-            const v: number = Math.floor(value);
-            if (v !== this.step) {
-                this.step = v;
-                this.process();
-                this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
-                setTimeout(() => {
-                    this.heat();
-                }, 10);
-            }
-        };
-        this.adjustExtend = (value: number) => {
-            const v: number = Math.floor(value);
-            if (v !== this.expand) {
-                this.expand = v;
-                this.process();
-                this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
-                setTimeout(() => {
-                    this.heat();
-                }, 10);
-            }
-        };
+        // this.adjust = (value: number) => {
+        //     const v: number = Math.floor(value);
+        //     if (v !== this.step) {
+        //         this.step = v;
+        //         this.process();
+        //         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+        //         setTimeout(() => {
+        //             this.heat();
+        //         }, 10);
+        //     }
+        // };
+        // this.adjustExtend = (value: number) => {
+        //     const v: number = Math.floor(value);
+        //     if (v !== this.expand) {
+        //         this.expand = v;
+        //         this.process();
+        //         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+        //         setTimeout(() => {
+        //             this.heat();
+        //         }, 10);
+        //     }
+        // };
     }
 
     public componentDidUpdate(): void {
@@ -576,7 +761,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         System.highlight = (value: LISAtype | "none", value2?: LISAtype) => {
             if (value === "none") {
                 this.highlighted = [];
-                if (this.state.behavior === "scatterplot") {
+                if (this.state.behavior === "Scatterplots") {
                     this.redraw();
                 }
             } else {
@@ -610,13 +795,12 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }
     }
 
-    private changeView(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
-        this.setState({
-            showMistake: !this.state.showMistake
-        });
-        System.setPointFilter(!this.state.showMistake);
-        resolve();
-    }
+    // private changeView(): void {
+        // this.setState({
+        //     showMistake: !this.state.showMistake
+        // });
+        // System.setPointFilter(!this.state.showMistake);
+    // }
 
     private showZorderSubset(pIndex: number): void {
         this.replaceFrom = pIndex;
@@ -630,6 +814,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             for (let a: number = 0; a < value.length; a++) {
                 for (let b: number = 0; b < value[a].length; b++) {
                     if (value[a][b] === pIndex) {
+                        this.ctx_r!.clearRect(-2, -2, this.width + 4, this.props.height + 4);
                         let xMin: number = Infinity;
                         let xMax: number = -Infinity;
                         let yMin: number = Infinity;
@@ -676,18 +861,6 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         }).catch((reason: any) => {
                             console.warn("error", reason);
                         });
-                        this.ctx_r!.fillStyle = "rgb(71,71,71)";
-                        this.ctx_r!.strokeStyle = "rgb(71,71,71)";
-                        this.ctx_r!.beginPath();
-                        this.ctx_r!.arc(
-                            cx,
-                            cy,
-                            cr,
-                            0,
-                            2 * Math.PI
-                        );
-                        this.ctx_r!.stroke();
-                        this.ctx_r!.fill();
                         this.ctx_r!.lineWidth = 1;
                         this.ctx_r!.fillStyle = "#cccccca0";
                         this.ctx_r!.strokeStyle = "#000000";
@@ -771,10 +944,10 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }, index: number) => {
             const x: number = center[0] + Math.sin(step * index) * (r + 48);
             const y: number = center[1] - Math.cos(step * index) * (r + 48);
-            this.ctx_r!.strokeStyle = 'rgb(165,112,163)';
-            this.ctx_r!.moveTo(p.x, p.y);
-            this.ctx_r!.lineTo(x, y);
-            this.ctx_r!.stroke();
+            // this.ctx_r!.strokeStyle = 'rgb(165,112,163)';
+            // this.ctx_r!.moveTo(p.x, p.y);
+            // this.ctx_r!.lineTo(x, y);
+            // this.ctx_r!.stroke();
             this.drawCircle(
                 x,
                 y,
@@ -793,11 +966,11 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
 
     private drawCircle(x: number, y: number, available: boolean, val: number): void {
         const color: string = `rgb(${
-            available ? "8,240,116" : "148,21,27"
+            available ? "139,198,238" : "185,185,185"
         })`;
         this.ctx_r!.beginPath();
         const r1: number = 10;
-        const r2: number = r1 * (0.36 + 0.64 / (1 + Math.pow(Math.E, val)));
+        const r2: number = r1 * (0.36 + 0.64 / (1 + Math.pow(Math.E, val * 10)));
         this.ctx_r!.moveTo(x, y - r1);
         const step: number = 32;
         let lastDeg: number = 0;
@@ -836,7 +1009,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         // 是否处于可交互场景
         if (System.tail !== "_o" && System.tail !== "_ob") {
             return false;
-        } else if (this.state.behavior !== "scatterplot" || !this.state.showMistake) {
+        } else if (this.state.behavior !== "Ambiguity") {
             return false;
         }
 
@@ -848,9 +1021,17 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 ) + Math.pow(
                     y - this.toReplace[i].y, 2
                 ) <= 100) {
-                    this.props.runReplace(this.replaceFrom, this.toReplace[i].to);
-                    this.replaceFrom = NaN;
-                    this.toReplace = [];
+                    if (this.ambType === "Replace") {
+                        this.props.runReplace(this.replaceFrom, this.toReplace[i].to);
+                        this.replaceFrom = NaN;
+                        this.toReplace = [];
+                    } else {
+                        this.props.tryReplace(
+                            this.replaceFrom,
+                            this.toReplace[i].to,
+                            this.ambiguityVis.bind(this)
+                        );
+                    }
                     return true;
                 }
             }
@@ -891,13 +1072,152 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         return false;
     }
 
-    private shift(b: "scatterplot" | "purity plot" | "KDE plot" | "heatmap"): void {
+    private ambiguityVis(data: FileData.Mode): void {
+        (this.refs["map"] as MapBox).updateHeatMap([]);
+        this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+        this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        
+        this.process();
+
+        let nParts = Math.floor(Math.pow((this.state.data.length - 400) / 100, 0.8));
+        if (!nParts || nParts < 1) {
+            nParts = 1;
+        }
+        nParts *= (1 + this.cloneObserver.length);
+
+        let ready: Array<Array<[number, number, [string, string], number]>> = [];
+
+        for (let i: number = 0; i < nParts + 2; i++) {
+            ready.push([]);
+        }
+
+        let box: Array<{
+            lng: number;
+            lat: number;
+            value: {
+                origin: LISAtype;
+                before: LISAtype | null;
+                after: LISAtype | null;
+            }
+        }> = System.data.map((d: DataItem) => {
+            return {
+                lng: d.lng,
+                lat: d.lat,
+                value: {
+                    origin: d.type,
+                    before: d.target ? d.target.type : null,
+                    after: null
+                }
+            };
+        });
+
+        data.forEach((d: { id: number; type: LISAtype; }) => {
+            box[d.id].value.after = d.type;
+        });
+
+        box.forEach((d: {
+            lng: number;
+            lat: number;
+            value: {
+                origin: LISAtype;
+                before: LISAtype | null;
+                after: LISAtype | null;
+            }
+        }, i: number) => {
+            if (d.value.before) {
+                if (d.value.after) {
+                    if (d.value.before === d.value.after) {
+                        // 没有发生变化
+                        ready[i % nParts].push([
+                            d.lng,
+                            d.lat,
+                            ["#3C3C3C18", "#1D1D1D"],
+                            2.5
+                        ]);
+                    } else {
+                        if (d.value.before === d.value.origin) {
+                            // 好的变坏
+                            ready[i % nParts].push([
+                                d.lng,
+                                d.lat,
+                                ["rgb(255,69,48)", "#402020"],
+                                4
+                            ]);
+                        } else if (d.value.after === d.value.origin) {
+                            // 坏的变好
+                            ready[i % nParts].push([
+                                d.lng,
+                                d.lat,
+                                ["rgb(106,225,85)", "#202024"],
+                                4
+                            ]);
+                        } else {
+                            // 变了没意义
+                            ready[i % nParts].push([
+                                d.lng,
+                                d.lat,
+                                ["#3C3C3C80", "#1D1D1D"],
+                                4
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        this.ctx_r!.globalAlpha = 1;
+
+        ready.forEach((
+            list: Array<[number, number, [string, string], number]>,
+            index: number
+        ) => {
+            this.timers.push(
+                setTimeout(() => {
+                    list.forEach((
+                        d: [number, number, [string, string], number]
+                    ) => {
+                        this.ctx_r!.fillStyle = d[2][0];
+                        this.ctx_r!.strokeStyle = d[2][1];
+                        this.ctx_r!.beginPath();
+                        this.ctx_r!.arc(
+                            this.fx(d[0]),
+                            this.fy(d[1]),
+                            d[3],
+                            0,
+                            2 * Math.PI
+                        );
+                        this.ctx_r!.stroke();
+                        this.ctx_r!.fill();
+                    });
+                    this.makeStep();
+                }, index * 10)
+            );
+        });
+    }
+
+    private shift(b: "Scatterplots" | "Ambiguity" | "heatmap"): void {
         if (this.state.behavior === b) {
             return;
+        } else if (this.state.showMistake && b === "Scatterplots") {
+            this.setState({
+                behavior: b,
+                showMistake: false
+            });
+            System.setPointFilter(false);
+        } else if (!this.state.showMistake && b === "Ambiguity") {
+            this.setState({
+                behavior: b,
+                showMistake: true
+            });
+            System.setPointFilter(true);
+        } else {
+            this.setState({
+                behavior: b
+            });
         }
-        this.setState({
-            behavior: b
-        });
     }
 
     public closeSketcher(): void {
@@ -1295,401 +1615,434 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }
     }
 
-    private heat(): void {
-        const expand: number = Math.round(this.expand / this.step);
-        const index: (x: number, y: number) => [number, number] = (x: number, y: number) => {
-            return [
-                Math.round(x / this.step),
-                Math.round(y / this.step)
-            ];
-        };
-        if (this.state.behavior === "KDE plot") {
-            const expand: number = Math.max(Math.round(this.expand / this.step), 1);
-            // 点的数量
-            let box: Array<Array<{
-                HH: number;
-                LH: number;
-                LL: number;
-                HL: number;
-                all: number;
-            }>> = [];
-            // 值
-            let dots: Array<Array<{
-                HH: number;
-                LH: number;
-                LL: number;
-                HL: number;
-            }>> = [];
+    // private heat(): void {
+    //     const expand: number = Math.round(this.expand / this.step);
+    //     const index: (x: number, y: number) => [number, number] = (x: number, y: number) => {
+    //         return [
+    //             Math.round(x / this.step),
+    //             Math.round(y / this.step)
+    //         ];
+    //     };
+    //     if (this.state.behavior === "KDE plot") {
+    //         const expand: number = Math.max(Math.round(this.expand / this.step), 2);
+    //         // 点的数量
+    //         let box: Array<Array<{
+    //             HH: number;
+    //             LH: number;
+    //             LL: number;
+    //             HL: number;
+    //             all: number;
+    //         }>> = [];
+    //         // 值
+    //         let dots: Array<Array<{
+    //             HH: number;
+    //             LH: number;
+    //             LL: number;
+    //             HL: number;
+    //         }>> = [];
 
-            // 值的映射
-            const f: (val: number) => number = (val: number) => {
-                // return val >= 0.9 ? 1
-                //     : val >= 0.6 ? 0.7
-                //         : val >= 0.4 ? 0.4 : 0;
-                // return Math.sqrt(Math.round(Math.pow(val, 2) * 6)) / 6;
-                // return Math.pow(Math.round(Math.sqrt(val) * 6) / 6, 2);
-                return Math.log(val * (Math.E - 1) + 1);
-            };
+    //         // 值的映射
+    //         const f: (val: number) => number = (val: number) => {
+    //             // return val >= 0.9 ? 1
+    //             //     : val >= 0.6 ? 0.7
+    //             //         : val >= 0.4 ? 0.4 : 0;
+    //             // return Math.sqrt(Math.round(Math.pow(val, 2) * 6)) / 6;
+    //             // return Math.pow(Math.round(Math.sqrt(val) * 6) / 6, 2);
+    //             return Math.log(val * (Math.E - 1) + 1);
+    //         };
         
-            this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+    //         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
         
-            // 网格
-            for (let y: number = 0; y <= this.props.width + this.step; y += this.step) {
-                box.push([]);
-                dots.push([]);
-                for (let x: number = 0; x <= this.props.width + this.step; x += this.step) {
-                    box[y / this.step].push({
-                        HH: 0,
-                        LH: 0,
-                        LL: 0,
-                        HL: 0,
-                        all: 0
-                    });
-                    dots[y / this.step].push({
-                        HH: 0,
-                        LH: 0,
-                        LL: 0,
-                        HL: 0
-                    });
-                }
-            }
+    //         // 网格
+    //         for (let y: number = 0; y <= this.props.width + this.step; y += this.step) {
+    //             box.push([]);
+    //             dots.push([]);
+    //             for (let x: number = 0; x <= this.props.width + this.step; x += this.step) {
+    //                 box[y / this.step].push({
+    //                     HH: 0,
+    //                     LH: 0,
+    //                     LL: 0,
+    //                     HL: 0,
+    //                     all: 0
+    //                 });
+    //                 dots[y / this.step].push({
+    //                     HH: 0,
+    //                     LH: 0,
+    //                     LL: 0,
+    //                     HL: 0
+    //                 });
+    //             }
+    //         }
             
-            this.ctx_base!.globalAlpha = 1;
+    //         this.ctx_base!.globalAlpha = 1;
 
-            // 反卷积，value 是归一化的值
-            const contribute: (value: number, dist: number) => number
-            = (value: number, dist: number) => {
-                return 1 - Math.pow(dist, 2) / Math.pow(expand * (value * 10 + 1), 2);
-            };
+    //         // 反卷积，value 是归一化的值
+    //         const contribute: (value: number, dist: number) => number
+    //         = (value: number, dist: number) => {
+    //             return 1 - Math.pow(dist, 2) / Math.pow(expand * (value * 10 + 1), 2);
+    //         };
 
-            const fartheset: (value: number) => number
-            = (value: number) => {
-                return Math.floor(expand * (value * 10 + 1));
-            };
+    //         const fartheset: (value: number) => number
+    //         = (value: number) => {
+    //             return Math.floor(expand * (value * 10 + 1));
+    //         };
 
-            let max: number = 0;
+    //         let max: number = 0;
 
-            const paint: (tMax: number) => void = (tMax: number) => {
-                this.process();
-                for (let y: number = 0; y < dots.length; y++) {
-                    for (let x: number = 0; x < dots[y].length; x++) {
-                        this.timers.push(
-                            setTimeout(() => {
-                                let colors: Array<[string, number, number]> = [];
-                                (
-                                    ["HH", "LH", "LL", "HL"] as Array<"HH" | "LH" | "LL" | "HL">
-                                ).forEach((label: "HH" | "LH" | "LL" | "HL") => {
-                                    if (dots[y][x][label] <= 1e-3) {
-                                        return;
-                                    }
-                                    const fill: number = f(dots[y][x][label] / tMax);
-                                    const color: string = System.colorF(label)[0];
-                                    colors.push([color, fill, 0.7 - 0.4 * fill]);
-                                });
-                                if (colors.length) {
-                                    while (colors.length > 2) {
-                                        const a: [string, number, number] = colors.pop()!;
-                                        const b: [string, number, number] = colors.pop()!;
-                                        colors.push([
-                                            Color.interpolate(
-                                                a[0],
-                                                b[0],
-                                                b[1] / (a[1] + b[1])
-                                            ),
-                                            a[1] + b[1],
-                                            Math.min(a[2], b[2])
-                                        ]);
-                                    }
-                                    if (colors.length === 2) {
-                                        this.ctx_base!.fillStyle = Color.setLightness(
-                                            Color.interpolate(
-                                                colors[0][0],
-                                                colors[1][0],
-                                                colors[1][1] / (colors[0][1] + colors[1][1])
-                                            ),
-                                            Math.min(colors[0][2], colors[1][2])
-                                        );
-                                    } else {
-                                        this.ctx_base!.fillStyle = Color.setLightness(
-                                            colors[0][0],
-                                            colors[0][2]
-                                        );
-                                    }
-                                    this.ctx_base!.fillRect(
-                                        this.step * x,
-                                        this.step * y,
-                                        this.step,
-                                        this.step
-                                    );
-                                }
-                                this.makeStep();
-                            }, (x * box[x].length + y) / 10 + 10)
-                        );
-                    }
-                }
-            };
+    //         const paint: (tMax: number) => void = (tMax: number) => {
+    //             this.process();
+    //             for (let y: number = 0; y < dots.length; y++) {
+    //                 for (let x: number = 0; x < dots[y].length; x++) {
+    //                     this.timers.push(
+    //                         setTimeout(() => {
+    //                             let colors: Array<[string, number, number]> = [];
+    //                             (
+    //                                 ["HH", "LH", "LL", "HL"] as Array<"HH" | "LH" | "LL" | "HL">
+    //                             ).forEach((label: "HH" | "LH" | "LL" | "HL") => {
+    //                                 if (dots[y][x][label] <= 1e-3) {
+    //                                     return;
+    //                                 }
+    //                                 const fill: number = f(dots[y][x][label] / tMax);
+    //                                 const color: string = System.colorF(label)[0];
+    //                                 colors.push([color, fill, 0.7 - 0.4 * fill]);
+    //                             });
+    //                             if (colors.length) {
+    //                                 while (colors.length > 2) {
+    //                                     const a: [string, number, number] = colors.pop()!;
+    //                                     const b: [string, number, number] = colors.pop()!;
+    //                                     colors.push([
+    //                                         Color.interpolate(
+    //                                             a[0],
+    //                                             b[0],
+    //                                             b[1] / (a[1] + b[1])
+    //                                         ),
+    //                                         a[1] + b[1],
+    //                                         Math.min(a[2], b[2])
+    //                                     ]);
+    //                                 }
+    //                                 if (colors.length === 2) {
+    //                                     this.ctx_base!.fillStyle = Color.setLightness(
+    //                                         Color.interpolate(
+    //                                             colors[0][0],
+    //                                             colors[1][0],
+    //                                             colors[1][1] / (colors[0][1] + colors[1][1])
+    //                                         ),
+    //                                         Math.min(colors[0][2], colors[1][2])
+    //                                     );
+    //                                     this.ctx_base!.globalAlpha = Math.sqrt((
+    //                                         0.7 - Math.min(colors[0][2], colors[1][2])
+    //                                     ) / 0.4);
+    //                                 } else {
+    //                                     this.ctx_base!.fillStyle = Color.setLightness(
+    //                                         colors[0][0],
+    //                                         colors[0][2]
+    //                                     );
+    //                                     this.ctx_base!.globalAlpha = Math.sqrt((
+    //                                         0.7 - colors[0][2]
+    //                                     ) / 0.4);
+    //                                 }
+    //                                 this.ctx_base!.fillRect(
+    //                                     this.step * x,
+    //                                     this.step * y,
+    //                                     this.step,
+    //                                     this.step
+    //                                 );
+    //                             }
+    //                             this.makeStep();
+    //                         }, (x * box[x].length + y) / 10 + 10)
+    //                     );
+    //                 }
+    //             }
+    //         };
 
-            const goon: () => void = () => {
-                const vMax: number = max;
-                let _max: number = 0;
-                const updateTmax: (d: number) => void = (d: number) => {
-                    if (d > _max) {
-                        _max = d;
-                    }
-                };
-                const getTmax: () => number = () => _max;
-                this.process();
-                for (let y: number = 0; y < box.length; y++) {
-                    for (let x: number = 0; x < box[y].length; x++) {
-                        this.timers.push(
-                            setTimeout(() => {
-                                (
-                                    ["HH", "LH", "LL", "HL"] as Array<"HH" | "LH" | "LL" | "HL">
-                                ).forEach((label: "HH" | "LH" | "LL" | "HL") => {
-                                    const val: number = box[y][x][label] / vMax;
-                                    const exd: number = fartheset(val);
-                                    for (let _y: number = -exd; _y <= exd; _y++) {
-                                        const width: number = Math.floor(Math.sqrt(
-                                            Math.pow(exd, 2) - Math.pow(Math.abs(_y), 2)
-                                        ));
-                                        for (let _x: number = -width; _x <= width; _x++) {
-                                            const pos: [number, number] = [
-                                                y + _y,
-                                                x + _x
-                                            ];
-                                            if (pos[0] < 0 || pos[0] >= dots.length
-                                                || pos[1] < 0 || pos[1] >= dots[0].length) {
-                                                continue;
-                                            }
-                                            dots[pos[0]][pos[1]][label] += val * contribute(
-                                                val,
-                                                Math.sqrt(
-                                                    Math.pow(_x, 2) + Math.pow(_y, 2)
-                                                )
-                                            );
-                                            updateTmax(dots[pos[0]][pos[1]][label]);
-                                        }
-                                    }
-                                });
-                                this.makeStep();
-                                if (y === box.length - 1 && x === box[y].length - 1) {
-                                    setTimeout(() => {
-                                        paint(getTmax());
-                                    }, 100);
-                                }
-                            }, (x * box[x].length + y) / 1000 + 10)
-                        );
-                    }
-                }
-            };
+    //         const goon: () => void = () => {
+    //             const vMax: number = max;
+    //             let _max: number = 0;
+    //             const updateTmax: (d: number) => void = (d: number) => {
+    //                 if (d > _max) {
+    //                     _max = d;
+    //                 }
+    //             };
+    //             const getTmax: () => number = () => _max;
+    //             this.process();
+    //             for (let y: number = 0; y < box.length; y++) {
+    //                 for (let x: number = 0; x < box[y].length; x++) {
+    //                     this.timers.push(
+    //                         setTimeout(() => {
+    //                             (
+    //                                 ["HH", "LH", "LL", "HL"] as Array<"HH" | "LH" | "LL" | "HL">
+    //                             ).forEach((label: "HH" | "LH" | "LL" | "HL") => {
+    //                                 const val: number = box[y][x][label] / vMax;
+    //                                 const exd: number = fartheset(val);
+    //                                 for (let _y: number = -exd; _y <= exd; _y++) {
+    //                                     const width: number = Math.floor(Math.sqrt(
+    //                                         Math.pow(exd, 2) - Math.pow(Math.abs(_y), 2)
+    //                                     ));
+    //                                     for (let _x: number = -width; _x <= width; _x++) {
+    //                                         const pos: [number, number] = [
+    //                                             y + _y,
+    //                                             x + _x
+    //                                         ];
+    //                                         if (pos[0] < 0 || pos[0] >= dots.length
+    //                                             || pos[1] < 0 || pos[1] >= dots[0].length) {
+    //                                             continue;
+    //                                         }
+    //                                         dots[pos[0]][pos[1]][label] += val * contribute(
+    //                                             val,
+    //                                             Math.sqrt(
+    //                                                 Math.pow(_x, 2) + Math.pow(_y, 2)
+    //                                             )
+    //                                         );
+    //                                         updateTmax(dots[pos[0]][pos[1]][label]);
+    //                                     }
+    //                                 }
+    //                             });
+    //                             this.makeStep();
+    //                             if (y === box.length - 1 && x === box[y].length - 1) {
+    //                                 setTimeout(() => {
+    //                                     paint(getTmax());
+    //                                 }, 100);
+    //                             }
+    //                         }, (x * box[x].length + y) / 1000 + 10)
+    //                     );
+    //                 }
+    //             }
+    //         };
 
-            this.state.data.forEach((d: {
-                lng: number;
-                lat: number;
-                value: LISAtype;
-                projection: number;
-            }, i: number) => {
-                if (this.props.filter && !System.active[i]) {
-                    if (i === this.state.data.length - 1) {
-                        setTimeout(goon, 10);
-                    }
-                    return;
-                }
-                const pos: [number, number] = [
-                    index(this.fx(d.lng), this.fy(d.lat))[1],
-                    index(this.fx(d.lng), this.fy(d.lat))[0]
-                ];
-                if (pos[0] < 0 || pos[0] >= box.length || pos[1] < 0 || pos[1] >= box[0].length) {
-	                if (i === this.state.data.length - 1) {
-	                    setTimeout(goon, 10);
-	                }
-                    return;
-                }
-                box[pos[0]][pos[1]][d.value] ++;
-                box[pos[0]][pos[1]].all ++;
-                if (box[pos[0]][pos[1]].all > max) {
-                    max = box[pos[0]][pos[1]].all;
-                }
-                if (i === this.state.data.length - 1) {
-                    setTimeout(goon, 10);
-                }
-            });
-        } else if (this.state.behavior === "purity plot") {
-            let box: Array<Array<boolean>> = [];
+    //         this.state.data.forEach((d: {
+    //             lng: number;
+    //             lat: number;
+    //             value: LISAtype;
+    //             projection: number;
+    //         }, i: number) => {
+    //             if (this.props.filter && !System.active[i]) {
+    //                 if (i === this.state.data.length - 1) {
+    //                     setTimeout(goon, 10);
+    //                 }
+    //                 return;
+    //             }
+    //             const pos: [number, number] = [
+    //                 index(this.fx(d.lng), this.fy(d.lat))[1],
+    //                 index(this.fx(d.lng), this.fy(d.lat))[0]
+    //             ];
+    //             if (pos[0] < 0 || pos[0] >= box.length || pos[1] < 0 || pos[1] >= box[0].length) {
+	//                 if (i === this.state.data.length - 1) {
+	//                     setTimeout(goon, 10);
+	//                 }
+    //                 return;
+    //             }
+    //             box[pos[0]][pos[1]][d.value] ++;
+    //             box[pos[0]][pos[1]].all ++;
+    //             if (box[pos[0]][pos[1]].all > max) {
+    //                 max = box[pos[0]][pos[1]].all;
+    //             }
+    //             if (i === this.state.data.length - 1) {
+    //                 setTimeout(goon, 10);
+    //             }
+    //         });
+    //     } else if (this.state.behavior === "purity plot") {
+    //         let box: Array<Array<boolean>> = [];
         
-            this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
+    //         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
         
-            // 网格
-            for (let y: number = 0; y <= this.props.width + this.step; y += this.step) {
-                box.push([]);
-                for (let x: number = 0; x <= this.props.width + this.step; x += this.step) {
-                    box[y / this.step].push(false);
-                }
-            }
+    //         // 网格
+    //         for (let y: number = 0; y <= this.props.width + this.step; y += this.step) {
+    //             box.push([]);
+    //             for (let x: number = 0; x <= this.props.width + this.step; x += this.step) {
+    //                 box[y / this.step].push(false);
+    //             }
+    //         }
             
-            this.ctx_base!.globalAlpha = 1;
+    //         this.ctx_base!.globalAlpha = 1;
         
-            this.state.data.forEach((d: {
-                lng: number;
-                lat: number;
-                value: LISAtype;
-                projection: number;
-            }, i: number) => {
-                this.timers.push(
-                    setTimeout(() => {
-                        this.makeStep();
-                        if (this.props.filter && !System.active[i]) {
-                            return;
-                        }
-                        // 考虑扩展像素
-                        for (let _y: number = - expand; _y <= expand; _y++) {
-                            const width: number = Math.floor(Math.sqrt(
-                                Math.pow(expand, 2)
-                                - Math.pow(Math.abs(_y), 2)
-                            ));
+    //         this.state.data.forEach((d: {
+    //             lng: number;
+    //             lat: number;
+    //             value: LISAtype;
+    //             projection: number;
+    //         }, i: number) => {
+    //             this.timers.push(
+    //                 setTimeout(() => {
+    //                     this.makeStep();
+    //                     if (this.props.filter && !System.active[i]) {
+    //                         return;
+    //                     }
+    //                     // 考虑扩展像素
+    //                     for (let _y: number = - expand; _y <= expand; _y++) {
+    //                         const width: number = Math.floor(Math.sqrt(
+    //                             Math.pow(expand, 2)
+    //                             - Math.pow(Math.abs(_y), 2)
+    //                         ));
                             
-                            for (let _x: number = - width; _x <= width; _x++) {
-                                const pos: [number, number] = [
-                                    index(this.fx(d.lng), this.fy(d.lat))[1] + _y,
-                                    index(this.fx(d.lng), this.fy(d.lat))[0] + _x
-                                ];
-                                if (pos[0] < 0 || pos[0] >= box.length
-                                    || pos[1] < 0 || pos[1] >= box[0].length
-                                    || box[pos[0]][pos[1]]) {
-                                    continue;
-                                }
-                                box[pos[0]][pos[1]] = true;
+    //                         for (let _x: number = - width; _x <= width; _x++) {
+    //                             const pos: [number, number] = [
+    //                                 index(this.fx(d.lng), this.fy(d.lat))[1] + _y,
+    //                                 index(this.fx(d.lng), this.fy(d.lat))[0] + _x
+    //                             ];
+    //                             if (pos[0] < 0 || pos[0] >= box.length
+    //                                 || pos[1] < 0 || pos[1] >= box[0].length
+    //                                 || box[pos[0]][pos[1]]) {
+    //                                 continue;
+    //                             }
+    //                             box[pos[0]][pos[1]] = true;
                                 
-                                const x: number = this.step * (pos[1] + 0.5);
-                                const y: number = this.step * (pos[0] + 0.5);
+    //                             const x: number = this.step * (pos[1] + 0.5);
+    //                             const y: number = this.step * (pos[0] + 0.5);
                 
-                                let neighbors: Array<{
-                                    index: number;
-                                    dist: number;
-                                }> = [];
+    //                             let neighbors: Array<{
+    //                                 index: number;
+    //                                 dist: number;
+    //                             }> = [];
                 
-                                this.state.data.forEach((e: {
-                                    lng: number;
-                                    lat: number;
-                                    value: LISAtype;
-                                    projection: number;
-                                }, j: number) => {
-                                    if (i === j) {
-                                        return;
-                                    }
-                                    if (this.props.filter && !System.active[j]) {
-                                        return;
-                                    }
-                                    const dist: number = Math.sqrt(
-                                        Math.pow(this.fx(e.lng) - x, 2)
-                                        + Math.pow(this.fy(e.lat) - y, 2)
-                                    );
-                                    if (dist < 1e-6) {
-                                        return;
-                                    }
-                                    if (neighbors.length < 13 || neighbors[12].dist > dist) {
-                                        neighbors.push({
-                                            index: j,
-                                            dist: dist
-                                        });
-                                        neighbors.sort((a, b) => {
-                                            return a.dist - b.dist;
-                                        });
-                                        if (neighbors.length > 13) {
-                                            neighbors.length = 13;
-                                        }
-                                    }
-                                });
+    //                             this.state.data.forEach((e: {
+    //                                 lng: number;
+    //                                 lat: number;
+    //                                 value: LISAtype;
+    //                                 projection: number;
+    //                             }, j: number) => {
+    //                                 if (i === j) {
+    //                                     return;
+    //                                 }
+    //                                 if (this.props.filter && !System.active[j]) {
+    //                                     return;
+    //                                 }
+    //                                 const dist: number = Math.sqrt(
+    //                                     Math.pow(this.fx(e.lng) - x, 2)
+    //                                     + Math.pow(this.fy(e.lat) - y, 2)
+    //                                 );
+    //                                 if (dist < 1e-6) {
+    //                                     return;
+    //                                 }
+    //                                 if (neighbors.length < 13 || neighbors[12].dist > dist) {
+    //                                     neighbors.push({
+    //                                         index: j,
+    //                                         dist: dist
+    //                                     });
+    //                                     neighbors.sort((a, b) => {
+    //                                         return a.dist - b.dist;
+    //                                     });
+    //                                     if (neighbors.length > 13) {
+    //                                         neighbors.length = 13;
+    //                                     }
+    //                                 }
+    //                             });
                 
-                                let max: number = 0;
-                                let sum: number = 0;
-                                let TYPE: LISAtype = d.value;
-                                let contribution: number = 0;
+    //                             let max: number = 0;
+    //                             let sum: number = 0;
+    //                             let TYPE: LISAtype = d.value;
+    //                             let contribution: number = 0;
                 
-                                let count = {
-                                    HH: 0,
-                                    LH: 0,
-                                    LL: 0,
-                                    HL: 0
-                                };
+    //                             let count = {
+    //                                 HH: 0,
+    //                                 LH: 0,
+    //                                 LL: 0,
+    //                                 HL: 0
+    //                             };
                 
-                                for (let k: number = 0; k < neighbors.length; k++) {
-                                    const n: {index: number; dist: number} = neighbors[k];
-                                    if (k <= 7) {
-                                        count[this.state.data[n.index].value] ++;
-                                        sum ++;
-                                        if (count[this.state.data[n.index].value] > max) {
-                                            max = count[this.state.data[n.index].value];
-                                            TYPE = this.state.data[n.index].value;
-                                        }
-                                    } else {
-                                        let t: number = 0;
-                                        if (count.HH === max) {
-                                            t ++;
-                                        }
-                                        if (count.LH === max) {
-                                            t ++;
-                                        }
-                                        if (count.LL === max) {
-                                            t ++;
-                                        }
-                                        if (count.HL === max) {
-                                            t ++;
-                                        }
-                                        if (t === 1) {
-                                            break;
-                                        }
-                                    }
-                                }
+    //                             for (let k: number = 0; k < neighbors.length; k++) {
+    //                                 const n: {index: number; dist: number} = neighbors[k];
+    //                                 if (k <= 7) {
+    //                                     count[this.state.data[n.index].value] ++;
+    //                                     sum ++;
+    //                                     if (count[this.state.data[n.index].value] > max) {
+    //                                         max = count[this.state.data[n.index].value];
+    //                                         TYPE = this.state.data[n.index].value;
+    //                                     }
+    //                                 } else {
+    //                                     let t: number = 0;
+    //                                     if (count.HH === max) {
+    //                                         t ++;
+    //                                     }
+    //                                     if (count.LH === max) {
+    //                                         t ++;
+    //                                     }
+    //                                     if (count.LL === max) {
+    //                                         t ++;
+    //                                     }
+    //                                     if (count.HL === max) {
+    //                                         t ++;
+    //                                     }
+    //                                     if (t === 1) {
+    //                                         break;
+    //                                     }
+    //                                 }
+    //                             }
                 
-                                for (let k: number = 0; k < sum; k++) {
-                                    const n: {index: number; dist: number} = neighbors[k];
-                                    if (this.state.data[n.index].value === TYPE) {
-                                        contribution ++;
-                                    }
-                                }
+    //                             for (let k: number = 0; k < sum; k++) {
+    //                                 const n: {index: number; dist: number} = neighbors[k];
+    //                                 if (this.state.data[n.index].value === TYPE) {
+    //                                     contribution ++;
+    //                                 }
+    //                             }
                 
-                                contribution /= sum;
+    //                             contribution /= sum;
                 
-                                this.ctx_base!.fillStyle = Color.setLightness(
-                                    System.colorF(TYPE)[0],
-                                    0.4 + 0.4 * (1 - contribution)
-                                );
-                                this.ctx_base!.fillRect(
-                                    this.step * pos[1],
-                                    this.step * pos[0],
-                                    this.step,
-                                    this.step
-                                );
-                            }
-                        }
-                    }, i / 1000)
-                );
-            });
-        }
-    }
+    //                             this.ctx_base!.fillStyle = Color.setLightness(
+    //                                 System.colorF(TYPE)[0],
+    //                                 0.4 + 0.4 * (1 - contribution)
+    //                             );
+    //                             this.ctx_base!.fillRect(
+    //                                 this.step * pos[1],
+    //                                 this.step * pos[0],
+    //                                 this.step,
+    //                                 this.step
+    //                             );
+    //                         }
+    //                     }
+    //                 }, i / 1000)
+    //             );
+    //         });
+    //     }
+    // }
 
     private redraw(source: "2" | "all" = "all"): void {
         this.ready_r = [];
         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
         (this.refs["map"] as MapBox).updateHeatMap([]);
-        if (this.state.behavior !== "scatterplot" && System.filepath) {
+        if (this.state.behavior === "heatmap") {
             this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
-            if (this.state.behavior === "heatmap") {
-                let box: Array<[number, number]> = [];
-                System.data.forEach((d: DataItem, i: number) => {
-                    if (System.active[i]) {
-                        box.push([d.lng, d.lat + 0.12]);
-                    }
-                });
-                (this.refs["map"] as MapBox).updateHeatMap(box);
-            } else {
-                this.heat();
-            }
+            this.ready = [];
+            this.ready2 = [];
+            let box: Array<[number, number]> = [];
+            System.data.forEach((d: DataItem, i: number) => {
+                switch (this.heatmapType) {
+                    case "Origin":
+                        box.push([d.lng, d.lat]);
+                        break;
+                    case "Sample":
+                        if (System.active[i]) {
+                            box.push([d.lng, d.lat]);
+                        }
+                        break;
+                    case "Difference":
+                        if (!System.active[i]) {
+                            box.push([d.lng, d.lat]);
+                        }
+                        break;
+                }
+            });
+            (this.refs["map"] as MapBox).updateHeatMap(box);
             return;
         }
+        // if (this.state.behavior !== "Scatterplots" && System.filepath) {
+        //     this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        //     this.ctx2!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        //     this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
+        //     if (this.state.behavior === "heatmap") {
+        //         let box: Array<[number, number]> = [];
+        //         System.data.forEach((d: DataItem, i: number) => {
+        //             if (System.active[i]) {
+        //                 box.push([d.lng, d.lat + 0.12]);
+        //             }
+        //         });
+        //         (this.refs["map"] as MapBox).updateHeatMap(box);
+        //     } else {
+        //         this.heat();
+        //     }
+        //     return;
+        // }
         this.process();
         if (source === "all") {
             this.ctx!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
@@ -1860,7 +2213,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
 
     public highlight(type: LISAtype, type2?: LISAtype): void {
         this.highlighted = [];
-        if (this.state.behavior !== "scatterplot") {
+        if (this.state.behavior !== "Scatterplots") {
             return;
         }
         this.state.data.forEach((item: {value: LISAtype;}, index: number) => {
@@ -1909,7 +2262,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         d = (d - this.bounds[0][0]) / (this.bounds[0][1] - this.bounds[0][0])
             * (this.originBounds[0][1] - this.originBounds[0][0]) + this.originBounds[0][0]
             + 2 * (1 - (this.bounds[0][1] - this.bounds[0][0]) / (this.originBounds[0][1] - this.originBounds[0][0]));
-        return this.props.height * (d * d * (-0.00025304519602050573) - d * 0.01760550015218513 + 1.5344062688366468);
+        return this.props.height * (d * d * (-0.00025304519602050573) - d * 0.01700550015218513 + 1.5344062688366468);
     }
 
     private addPoint(x: number, y: number, style: [string, string], source: "1" | "2"): void {

@@ -151,9 +151,10 @@ class MapBox extends Component<MapProps, {}, {}> {
                     ["get", "mag"],
                     0, 0,
                     5, 0.2,
-                    100, 0.6,
-                    5000, 0.7,
-                    25000, 1
+                    20, 0.4,
+                    400, 0.6,
+                    8000, 0.8,
+                    60000, 1
                   ],
                   // Increase the heatmap color weight weight by zoom level
                   // heatmap-intensity is a multiplier on top of heatmap-weight
@@ -170,11 +171,11 @@ class MapBox extends Component<MapProps, {}, {}> {
                     "interpolate", ["linear"],
                     ["heatmap-density"],
                     0, 'rgba(34,125,81,0)',
-                    0.2, 'rgba(129,199,212,0.46)',
-                    0.4, 'rgba(102,186,183,0.54)',
-                    0.6, 'rgba(66,90,74,0.63)',
-                    0.8, 'rgba(255,196,8,0.72)',
-                    1, 'rgba(208,16,76,0.8)',
+                    0.2, 'rgba(119,147,233,0.5)',
+                    0.4, 'rgba(106,242,247,0.64)',
+                    0.6, 'rgba(66,248,109,0.8)',
+                    0.8, 'rgba(220,254,11,0.89)',
+                    1, 'rgba(247,46,8,1)',
                   ],
                   // Adjust the heatmap radius by zoom level
                   "heatmap-radius": [
@@ -190,8 +191,8 @@ class MapBox extends Component<MapProps, {}, {}> {
                   "heatmap-opacity": [
                     "interpolate", ["linear"],
                     ["zoom"],
-                    7, 1,
-                    9, 0.2,
+                    9, 1,
+                    15, 0.2,
                   ],
                 },
               });

@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:37 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-27 20:50:45
+ * @Last Modified time: 2020-04-29 06:00:53
  */
 import React, { Component } from 'react';
 import './App.css';
@@ -16,6 +16,7 @@ import { HighlightItems } from './HighlightItems';
 import axios, { AxiosResponse } from 'axios';
 import { CommandResult, CommandError } from './Command';
 import { Loading } from './Loading';
+import { DataOverview } from './DataOverview';
 
 
 class App extends Component<{}, {}, null> {
@@ -32,31 +33,35 @@ class App extends Component<{}, {}, null> {
           height: "867.5px",
           overflow: "hidden",
           display: "inline-block",
-          margin: "0 -1px -1px 1px"
+          margin: "0 4.7px -1px 1px"
         }}>
           <Container theme="Caffee" title="Data Overview">
-            <ControlCenter width={ 386 } height={ 267 } padding={ [2, 10] }
-            reset={ this.load.bind(this) }
+            <DataOverview width={ 386 } padding={ [2, 10] }
+              reset={ this.load.bind(this) } />
+          </Container>
+          <Container theme="Caffee" title="Control Panel">
+            <ControlCenter width={ 386 } padding={ [2, 10] }
             ourSample={ this.ourSample.bind(this) }
             randomSample={ this.randomSample.bind(this) }
             blueNoiseSample={ this.BNS.bind(this) }
             zorderSample={ this.zorderSample.bind(this) }
-            better={ this.better.bind(this) } />
+            better={ this.better.bind(this) }
+            reset={ this.load.bind(this) } />
           </Container>
-          <HighlightItems ref="hl" height={ 104 } />
-          <MoranScatter ref="sct" id="sct" width={ 386 } height={ 374 }
+          <HighlightItems ref="hl" height={ 92 } />
+          <MoranScatter ref="sct" id="sct" width={ 386 } height={ 366 }
           padding={ 5 } />
         </div>
         <Container theme="Caffee" title="Geographical View"
         style={{
-          marginLeft: "3.5px",
           marginBottom: "0.2px"
         }} >
-          <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 13 } center={[-0.21, 51.46]}
-          width={ 1142 } height={ 837 } scaleType={ this.scale } filter={ true }
+          <Map ref="map" id="map" minZoom={ 1 } zoom={ 7.5 } maxZoom={ 13 } center={[-0.21, 51.38]}
+          width={ 1144 } height={ 837 } scaleType={ this.scale } filter={ true }
           mode="circle"
           getZorderSubset={ this.getZorderSubset.bind(this) }
           runReplace={ this.replace.bind(this) }
+          tryReplace={ this.noreplace.bind(this) }
           load={
             (state: boolean) => {
               (this.refs["loading"] as Loading).setState({
@@ -78,8 +83,8 @@ class App extends Component<{}, {}, null> {
     System.type = "sample";
     System.tail = "_r";
 
-    this.map!.load([]);
-    this.sct!.load([]);
+    // this.map!.load([]);
+    // this.sct!.load([]);
     System.active = [];
     (this.refs["loading"] as Loading).setState({
       show: true
@@ -142,8 +147,8 @@ class App extends Component<{}, {}, null> {
     System.type = "sample";
     System.tail = "_z";
 
-    this.map!.load([]);
-    this.sct!.load([]);
+    // this.map!.load([]);
+    // this.sct!.load([]);
     System.active = [];
     (this.refs["loading"] as Loading).setState({
       show: true
@@ -206,8 +211,8 @@ class App extends Component<{}, {}, null> {
     System.type = "sample";
     System.tail = "_b";
 
-    this.map!.load([]);
-    this.sct!.load([]);
+    // this.map!.load([]);
+    // this.sct!.load([]);
     System.active = [];
     (this.refs["loading"] as Loading).setState({
       show: true
@@ -270,8 +275,8 @@ class App extends Component<{}, {}, null> {
     System.type = "sample";
     System.tail = "_o";
 
-    this.map!.load([]);
-    this.sct!.load([]);
+    // this.map!.load([]);
+    // this.sct!.load([]);
     System.active = [];
     (this.refs["loading"] as Loading).setState({
       show: true
@@ -335,8 +340,8 @@ class App extends Component<{}, {}, null> {
   private replace(from: number, to: number): void {
     System.type = "sample";
 
-    this.map!.load([]);
-    this.sct!.load([]);
+    // this.map!.load([]);
+    // this.sct!.load([]);
     System.active = [];
     (this.refs["loading"] as Loading).setState({
       show: true
@@ -389,12 +394,41 @@ class App extends Component<{}, {}, null> {
     });
   }
 
+  private noreplace(from: number, to: number, callback: (data: FileData.Mode) => void): void {
+    System.type = "sample";
+
+    (this.refs["loading"] as Loading).setState({
+      show: true
+    });
+
+    const p: Promise<AxiosResponse<CommandResult<FileData.Mode|CommandError>>> = axios.get(
+      `/noreplace/${ System.filepath!.split(".")[0] }/${ from }/${ to }`, {
+        headers: 'Content-type:text/html;charset=utf-8'
+      }
+    );
+    p.then((value: AxiosResponse<CommandResult<FileData.Mode|CommandError>>) => {
+      if (value.data.state === "successed") {
+        callback(value.data.value as FileData.Mode);
+      } else {
+        console.error(value.data);
+      }
+    }).catch((reason: any) => {
+      if (reason) {
+        console.error(reason);
+      }
+    }).finally(() => {
+      (this.refs["loading"] as Loading).setState({
+        show: false
+      });
+    });
+  }
+
   private better(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {
     System.type = "sample";
     System.tail = "_ob";
 
-    this.map!.load([]);
-    this.sct!.load([]);
+    // this.map!.load([]);
+    // this.sct!.load([]);
     System.active = [];
     (this.refs["loading"] as Loading).setState({
       show: true

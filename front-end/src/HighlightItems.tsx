@@ -98,8 +98,8 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                 <div
                 style={{
                     width: "96%",
-                    padding: "2.7% 1.8%",
-                    height: this.props.height + 3.2,
+                    padding: "2.1% 1.8%",
+                    height: this.props.height,
                     background: ColorThemes.NakiriAyame.OuterBackground,
                     color: ColorThemes.NakiriAyame.InnerBackground
                 }} >
@@ -210,7 +210,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_HH"]).text(
                                                 this.state.after!.HH.HH
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("HH", "HH");
                                         }
                                     }
@@ -220,7 +220,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.HH.HH
                                                     / this.state.after!.HH.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectHH-LH" ref="rectHH-LH"
@@ -244,7 +244,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_HH"]).text(
                                                 this.state.after!.HH.LH
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("HH", "LH");
                                         }
                                     }
@@ -254,7 +254,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.HH.HH
                                                     / this.state.after!.HH.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectHH-LL" ref="rectHH-LL"
@@ -279,7 +279,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_HH"]).text(
                                                 this.state.after!.HH.LL
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("HH", "LL");
                                         }
                                     }
@@ -289,7 +289,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.HH.HH
                                                     / this.state.after!.HH.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectHH-HL" ref="rectHH-HL"
@@ -313,7 +313,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_HH"]).text(
                                                 this.state.after!.HH.HL
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("HH", "HL");
                                         }
                                     }
@@ -323,7 +323,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.HH.HH
                                                     / this.state.after!.HH.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
 
@@ -346,7 +346,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_LH"]).text(
                                                 this.state.after!.LH.LH
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("LH", "LH");
                                         }
                                     }
@@ -356,7 +356,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.LH.LH
                                                     / this.state.after!.LH.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectLH-HH" ref="rectLH-HH"
@@ -380,7 +380,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_LH"]).text(
                                                 this.state.after!.LH.HH
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("LH", "HH");
                                         }
                                     }
@@ -390,7 +390,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.LH.LH
                                                     / this.state.after!.LH.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectLH-LL" ref="rectLH-LL"
@@ -415,7 +415,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_LH"]).text(
                                                 this.state.after!.LH.LL
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("LH", "LL");
                                         }
                                     }
@@ -425,7 +425,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.LH.LH
                                                     / this.state.after!.LH.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectLH-HL" ref="rectLH-HL"
@@ -449,7 +449,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_LH"]).text(
                                                 this.state.after!.LH.HL
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("LH", "HL");
                                         }
                                     }
@@ -459,7 +459,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.LH.LH
                                                     / this.state.after!.LH.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
 
@@ -482,7 +482,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_LL"]).text(
                                                 this.state.after!.LL.LL
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("LL", "LL");
                                         }
                                     }
@@ -492,7 +492,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.LL.LL
                                                     / this.state.after!.LL.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectLL-HH" ref="rectLL-HH"
@@ -517,7 +517,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_LL"]).text(
                                                 this.state.after!.LL.HH
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("LL", "HH");
                                         }
                                     }
@@ -527,7 +527,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.LL.LL
                                                     / this.state.after!.LL.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectLL-LH" ref="rectLL-LH"
@@ -552,7 +552,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_LL"]).text(
                                                 this.state.after!.LL.LH
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("LL", "LH");
                                         }
                                     }
@@ -562,7 +562,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.LL.LL
                                                     / this.state.after!.LL.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectLL-HL" ref="rectLL-HL"
@@ -586,7 +586,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_LL"]).text(
                                                 this.state.after!.LL.HL
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("LL", "HL");
                                         }
                                     }
@@ -596,7 +596,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.LL.LL
                                                     / this.state.after!.LL.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
 
@@ -619,7 +619,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_HL"]).text(
                                                 this.state.after!.HL.HL
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("HL", "HL");
                                         }
                                     }
@@ -629,7 +629,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.HL.HL
                                                     / this.state.after!.HL.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectHL-HH" ref="rectHL-HH"
@@ -654,7 +654,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_HL"]).text(
                                                 this.state.after!.HL.HH
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("HL", "HH");
                                         }
                                     }
@@ -664,7 +664,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.HL.HL
                                                     / this.state.after!.HL.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectHL-LH" ref="rectHL-LH"
@@ -689,7 +689,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_HL"]).text(
                                                 this.state.after!.HL.LH
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("HL", "LH");
                                         }
                                     }
@@ -699,7 +699,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.HL.HL
                                                     / this.state.after!.HL.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                     <rect key="rectHL-LL" ref="rectHL-LL"
@@ -723,7 +723,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                         () => {
                                             $(this.refs["num_HL"]).text(
                                                 this.state.after!.HL.LL
-                                            ).css("color", "rgb(2,115,191)");
+                                            ).css("fill", "rgb(2,115,191)");
                                             System.highlight("HL", "LL");
                                         }
                                     }
@@ -733,7 +733,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                                 (100 * this.state.after!.HL.HL
                                                     / this.state.after!.HL.all
                                                 ).toFixed(2) + "%"
-                                            ).css("color", "initial");
+                                            ).css("fill", "initial");
                                         }
                                     } />
                                 </>
@@ -791,61 +791,65 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                             )
                         }
                     </svg>
-                    <table
-                    style={{
-                        width: "10%",
-                        marginRight: "6%",
-                        textAlign: "-moz-center" as unknown as "center",
-                        display: "inline-block"
-                    }} >
-                        <tbody>
-                            <tr key="1">
-                                <td ref="num_HH">
-                                    { this.state.after
-                                        ? (
-                                            100 * this.state.after.HH.HH
-                                            / this.state.after.HH.all
-                                        ).toFixed(2) + "%"
-                                        : this.state.before.HH }
-                                </td>
-                            </tr>
-                            <tr key="2">
-                                <td ref="num_LH">
-                                    { this.state.after
-                                        ? (
-                                            100 * this.state.after.LH.LH
-                                            / this.state.after.LH.all
-                                        ).toFixed(2) + "%"
-                                        : this.state.before.LH }
-                                </td>
-                            </tr>
-                            <tr key="3">
-                                <td ref="num_LL">
-                                    { this.state.after
-                                        ? (
-                                            100 * this.state.after.LL.LL
-                                            / this.state.after.LL.all
-                                        ).toFixed(2) + "%"
-                                        : this.state.before.LL }
-                                </td>
-                            </tr>
-                            <tr key="4">
-                                <td ref="num_HL">
-                                    { this.state.after
-                                        ? (
-                                            100 * this.state.after.HL.HL
-                                            / this.state.after.HL.all
-                                        ).toFixed(2) + "%"
-                                        : this.state.before.HL }
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <svg width="16%" height={ this.props.height } >
+                        <text ref="num_HH"
+                        x={ "50%" } y={ "16%" }
+                        textAnchor="middle"
+                        style={{
+                            pointerEvents: "none"
+                        }} >
+                            { this.state.after
+                                ? (
+                                    100 * this.state.after.HH.HH
+                                    / this.state.after.HH.all
+                                ).toFixed(2) + "%"
+                                : this.state.before.HH }
+                        </text>
+                        <text ref="num_LH"
+                        x={ "50%" } y={ "42%" }
+                        textAnchor="middle"
+                        style={{
+                            pointerEvents: "none"
+                        }} >
+                            { this.state.after
+                                ? (
+                                    100 * this.state.after.LH.LH
+                                    / this.state.after.LH.all
+                                ).toFixed(2) + "%"
+                                : this.state.before.LH }
+                        </text>
+                        <text ref="num_LL"
+                        x={ "50%" } y={ "68%" }
+                        textAnchor="middle"
+                        style={{
+                            pointerEvents: "none"
+                        }} >
+                            { this.state.after
+                                ? (
+                                    100 * this.state.after.LL.LL
+                                    / this.state.after.LL.all
+                                ).toFixed(2) + "%"
+                                : this.state.before.LL }
+                        </text>
+                        <text ref="num_HL"
+                        x={ "50%" } y={ "94%" }
+                        textAnchor="middle"
+                        style={{
+                            pointerEvents: "none"
+                        }} >
+                            { this.state.after
+                                ? (
+                                    100 * this.state.after.HL.HL
+                                    / this.state.after.HL.all
+                                ).toFixed(2) + "%"
+                                : this.state.before.HL }
+                        </text>
+                    </svg>
                     <label
                     style={{
                         position: "relative",
-                        left: 158,
-                        top: -145,
+                        left: 144,
+                        top: -131,
                         textAlign: "end",
                         color: ColorThemes.NakiriAyame.Red,
                         fontSize: "90%"
@@ -858,7 +862,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                 count += this.state.after.LL.all - this.state.after.LL.LL;
                                 count += this.state.after.HL.all - this.state.after.HL.HL;
                                 
-                                return count + " failed";
+                                return "deviation: " + count;
                             })() : ""
                         }
                     </label>
@@ -869,6 +873,8 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
 
     public componentDidMount(): void {
         System.initialize = () => {
+            System.send();
+            
             let count: {
                 HH: number;
                 LH: number;
@@ -894,6 +900,8 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
         };
 
         System.update = () => {
+            System.send();
+            
             let count: {
                 HH: {
                     HH: number;

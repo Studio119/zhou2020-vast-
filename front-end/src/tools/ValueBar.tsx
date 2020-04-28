@@ -7,7 +7,7 @@
 
 import React, { Component } from 'react';
 import $ from 'jquery';
-import Color from '../preference/Color';
+
 
 export class ValueChangeCallback<T> {
     private valueBeforeChange: T;
@@ -225,35 +225,22 @@ class ValueBar extends Component<ValueBarProps, ValueBarState, {}> {
                 <svg className="ValueBarSVG" key="svg" xmlns="http://www.w3.org/2000/svg"
                         width={ this.props.width } height={ this.props.height }
                         style={{ display: 'inline-block' }} >
-                    <linearGradient id={ `B_grad${ this.id }` } x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" style={{
-                            stopColor: Color.setLightness(
-                                "rgb(123,77,53)", 0.4
-                            ),
-                            stopOpacity: 1
-                        }} />
-                        <stop offset="90%" style={{
-                            stopColor: Color.setLightness(
-                                "rgb(123,77,53)", 0.55
-                            ),
-                            stopOpacity: 1
-                        }} />
-                        <stop offset="100%" style={{
-                            stopColor: Color.setLightness(
-                                "rgb(123,77,53)", 0.68
-                            ),
-                            stopOpacity: 1
-                        }} />
-                    </linearGradient>
                     <rect key="background" ref="background"
                         x={ 10 } y={ this.props.height / 2 - 4 } rx={ 4 } ry={ 4 }
                         width={ this.props.width - 20 } height={ 6 }
-                        style={{ fill: `url(#B_grad${ this.id })` }} />
+                        style={{
+                            fill: `#BDBDBD`,
+                            stroke: "#202020"
+                        }} />
                     <circle key="flag" ref="flag"
                         cx={ 10 + (this.props.width - 20)
                             * (this.state.value - this.props.min) / (this.props.max - this.props.min) }
                         cy={ 8 } r={ 6 }
-                        style={{ fill: `url(#B_grad${ this.id })`, stroke: 'rgb(219,86,97)', strokeWidth: '2px' }} />
+                        style={{
+                            fill: `#FDFDFD`,
+                            stroke: '#303030',
+                            strokeWidth: '2px'
+                        }} />
                 </svg>
                 {
                     this.showValue
@@ -276,7 +263,7 @@ class ValueBar extends Component<ValueBarProps, ValueBarState, {}> {
 
     public componentDidMount(): void {
         $(this.refs["flag"]).on('mousedown', (event: JQuery.MouseDownEvent<React.ReactInstance, undefined, React.ReactInstance, React.ReactInstance>) => {
-            $(this.refs["flag"]).css("stroke", "rgb(240, 249, 254)");
+            $(this.refs["flag"]).css("stroke", "#75A0CC");
             this.dragging = true;
             $(this.refs["value"]).css("color", "rgb(53, 140, 214)");
             this.cxBeforeDragging = event.clientX;
@@ -333,7 +320,7 @@ class ValueBar extends Component<ValueBarProps, ValueBarState, {}> {
             this.debounceHandler = 2;
         });
         $('*').on('mouseup', () => {
-            $(this.refs["flag"]).css("stroke", "rgb(219,86,97)");
+            $(this.refs["flag"]).css("stroke", "#303030");
             $(this.refs["value"]).css("color", "inherit");
             this.dragging = false;
             this.callbackHandler.update({ value: this.valueAfterDragging });

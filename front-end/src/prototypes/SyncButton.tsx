@@ -6,11 +6,10 @@
  */
 
 import React, { Component } from "react";
-import Color, { ColorThemes, ColorThemeKey } from "../preference/Color";
+
 
 export interface SyncButtonProps<T> {
     text: string | number;
-    theme: ColorThemeKey;
     style?: React.CSSProperties;
     executer: (resolve: (value?: T | PromiseLike<T> | undefined) => void, reject: (reason?: any) => void) => void;
 };
@@ -62,11 +61,8 @@ export class SyncButton<T=void> extends Component<SyncButtonProps<T>, SyncButton
             <button
             style={{
                 padding: "1px 6px 4px",
-                border: `2px solid ${ ColorThemes[this.props.theme].Grey }`,
-                backgroundColor: Color.setLightness(
-                    ColorThemes[this.props.theme].Red, this.state.busy || !this.state.active ? 0.8 : 0.4
-                ),
-                color: ColorThemes[this.props.theme].InnerColor,
+                pointerEvents: this.state.active && !this.state.busy ? "initial" : "none",
+                opacity: this.state.active && !this.state.busy ? 1 : 0.4,
                 ...this.props.style
             }}
             onClick={ this.callback } >

@@ -58,8 +58,9 @@ export class Container extends Component<ContainerProps, any, React.ReactNode | 
                         background: ColorThemes[this.props.theme].OuterBackground,
                         borderBottom: "1px solid " + ColorThemes[this.props.theme].Border,
                         color: ColorThemes[this.props.theme].OuterColor,
-                        padding: "3px 0px",
-                        fontWeight: 500,
+                        padding: "2.8px 0px",
+                        fontWeight: 501,
+                        fontSize: "106%",
                         letterSpacing: "0.7px",
                         textAlign: 'left',
                         ...this.props.titleStyle

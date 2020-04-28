@@ -6,6 +6,7 @@
  */
 
 import { DataItem, LISAtype } from "./TypeLib";
+import Color from "./preference/Color";
 
 interface SystemType {
     filepath: string | null;
@@ -20,6 +21,7 @@ interface SystemType {
     initialize: () => void;
     update: () => void;
     setPointFilter: (b: boolean) => void;
+    send: () => void;
     params: {
         radius: number;
         alpha: number;
@@ -29,10 +31,10 @@ interface SystemType {
 };
 
 const colorD: {[type: string]: [string, string]} = {
-    "HH": ["rgb(244,57,10)", "rgb(48,11,2)"],
-    "LH": ["rgb(80,244,9)", "rgb(11,39,30)"],
-    "LL": ["rgb(9,196,244)", "rgb(7,26,43)"],
-    "HL": ["rgb(173,9,244)", "rgb(34,16,33)"]
+    "HH": [Color.setLightness(Color.Nippon.Ikkonzome, 0.42), "rgb(48,11,2)"],
+    "LH": [Color.setLightness(Color.Nippon.Yamabuki, 0.42), "rgb(11,39,30)"],
+    "LL": [Color.setLightness(Color.Nippon.Tokiwa, 0.42), "rgb(7,26,43)"],
+    "HL": [Color.setLightness("rgb(225,219,10)", 0.42), "rgb(34,16,33)"]
 };
 
 export const System: SystemType = {
@@ -40,6 +42,7 @@ export const System: SystemType = {
     maxValue: 1,
     tail: "",
     data: [],
+    send: () => {},
     type: "dataset",
     active: [],
     colorF: (value: LISAtype): [string, string] => {

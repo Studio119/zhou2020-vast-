@@ -15,26 +15,21 @@ import ValueBar from "./tools/ValueBar";
 
 export interface ControlCenterProps {
     width: number;
-    height: number;
     padding: [number, number];
-    reset: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     ourSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     randomSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     zorderSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     blueNoiseSample: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
     better: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
+    reset: (resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void) => void;
 };
 
-export interface ControlCenterState {
-    filepath: string | null;
-}
+export interface ControlCenterState {}
 
 export class ControlCenter extends Component<ControlCenterProps, ControlCenterState, null> {
     public constructor(props: ControlCenterProps) {
         super(props);
-        this.state = {
-            filepath: null
-        };
+        this.state = {};
     }
 
     public render(): JSX.Element {
@@ -42,106 +37,25 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
             <div id="ControlCenter"
             style={{
                 width: this.props.width - this.props.padding[1] * 2,
-                height: this.props.height - this.props.padding[0] * 2,
                 padding: `${ this.props.padding[0] }px ${ this.props.padding[1] }px`,
                 background: ColorThemes.NakiriAyame.OuterBackground,
                 color: ColorThemes.NakiriAyame.InnerBackground,
                 border: "none"
             }} >
-                <div key="loadfile" style={{
-                    width: this.props.width - this.props.padding[1] * 2 - 27,
-                    overflow: "hidden",
-                    padding: '4px 10px',
-                    display: "flex"
-                }} >
-                    <form style={{
-                        width: "86%",
-                        textAlign: "left",
-                        display: "inline-block"
-                    }} >
-                        <input type="file" ref="actualInput" accept=".csv" name="file"
-                        onChange={
-                            (event: React.ChangeEvent<HTMLInputElement>) => {
-                                this.onSelected(
-                                    event.target.value.split("fakepath\\")[1]
-                                );
-                                this.props.reset(() => {}, () => {});
-                            }
-                        }
-                        style={{
-                            display: "none"
-                        }} />
-                        <div key="fakeInput"
-                        style={{
-                            margin: "6px 10px",
-                            textAlign: 'end'
-                        }} >
-                            <label key="filename" ref="filename"
-                            style={{
-                                display: "inline-block",
-                                height: "100%",
-                                width: "60%",
-                                textAlign: "right",
-                                overflow: "hidden",
-                                marginBottom: "-6px",
-                                color: this.state.filepath
-                                            ? "rgb(0,120,215)"
-                                            : ColorThemes.NakiriAyame.Green,
-                                textDecorationLine: this.state.filepath
-                                            ? "underline"
-                                            : "none"
-                            }} >
-                                {
-                                    this.state.filepath
-                                        ? this.state.filepath
-                                        : "No file selected"
-                                }
-                            </label>
-                            <div key="spring" style={{
-                                height: "100%",
-                                width: "6%",
-                                display: "inline-block"
-                            }} />
-                            <button type="button" ref="filebutton"
-                            style={{
-                                display: "inline-block",
-                                height: "100%",
-                                width: "22%"
-                            }}
-                            onClick={
-                                () => {
-                                    $(this.refs["actualInput"]).click();
-                                }
-                            } >
-                                Load
-                            </button>
-                        </div>
-                    </form>
-                    <div style={{
-                        textAlign: "left",
-                        display: "inline-block",
-                        margin: "1.2% auto"
-                    }} >
-                        <SyncButton ref="refresh" theme="Caffee" text={ "⭮" } style={{
-                            fontSize: "16px"
-                        }} executer={ this.props.reset } />
-                    </div>
-                </div>
                 <table
                 style={{
-                    borderTop: "1px solid " + ColorThemes.NakiriAyame.Grey,
                     borderBottom: "1px solid " + ColorThemes.NakiriAyame.Grey,
-                    width: this.props.width - this.props.padding[1] * 2
+                    width: this.props.width - this.props.padding[1] * 2,
+                    fontSize: "14.8px"
                 }} >
                     <tbody>
-                        <tr key="names"
+                        <tr key="1"
                         style={{
                             padding: "6px"
                         }} >
-                            <th key="2" colSpan={ 2 } rowSpan={ 2 }
+                            <th key="1"
                             style={{
-                                width: "60%",
-                                padding: "1px 8px 4px",
+                                padding: "1px 8px",
                                 textAlign: 'left'
                             }} >
                                 <label key="random_sampling"
@@ -161,23 +75,12 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     } />
                                     Random
                                 </label>
-                                <label key="blue_noise_sampling"
-                                style={{
-                                    display: 'block',
-                                    fontWeight: 'normal',
-                                    margin: '1px 0'
-                                }} >
-                                    <input name="algo" type="radio" value="blue_noise_sampling"
-                                    onChange={
-                                        () => {
-                                            (this.refs["btnBetter"] as SyncButton).setState({
-                                                active: false
-                                            });
-                                            this.forceUpdate();
-                                        }
-                                    } />
-                                    Blue Noise
-                                </label>
+                            </th>
+                            <th key="2"
+                            style={{
+                                padding: "1px 8px",
+                                textAlign: 'left'
+                            }} >
                                 <label key="pure_z-order"
                                 style={{
                                     display: 'block',
@@ -195,6 +98,59 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     } />
                                     Z-order
                                 </label>
+                            </th>
+                            <th key="="
+                            style={{
+                                padding: "1px 8px",
+                                width: "7%"
+                            }} />
+                            <th key="3"
+                            style={{
+                                padding: "2px 0px 2px 6px"
+                            }} >
+                                <SyncButton text={ "Sample" }
+                                    executer={ this.executer.bind(this) } />
+                            </th>
+                            <th key="4"
+                            style={{
+                                padding: "2px 6px"
+                            }} >
+                                <SyncButton text={ "Reset" }
+                                    executer={ this.props.reset.bind(this) } />
+                            </th>
+                        </tr>
+                        <tr key="2"
+                        style={{
+                            padding: "6px"
+                        }} >
+                            <th key="1"
+                            style={{
+                                padding: "1px 8px",
+                                textAlign: 'left'
+                            }} >
+                                <label key="blue_noise_sampling"
+                                style={{
+                                    display: 'block',
+                                    fontWeight: 'normal',
+                                    margin: '1px 0'
+                                }} >
+                                    <input name="algo" type="radio" value="blue_noise_sampling"
+                                    onChange={
+                                        () => {
+                                            (this.refs["btnBetter"] as SyncButton).setState({
+                                                active: false
+                                            });
+                                            this.forceUpdate();
+                                        }
+                                    } />
+                                    Blue Noise
+                                </label>
+                            </th>
+                            <th key="2"
+                            style={{
+                                padding: "1px 8px",
+                                textAlign: 'left'
+                            }} >
                                 <label key="this_paper"
                                 style={{
                                     display: 'block',
@@ -219,36 +175,19 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                                     Ours
                                 </label>
                             </th>
+                            <th key="="
+                            style={{
+                                padding: "1px 8px",
+                                width: "7%"
+                            }} />
                             <th key="3"
                             style={{
-                                width: "20%",
-                                padding: "2px 0"
+                                padding: "2px 0px 2px 6px"
                             }} >
-                                Sample
-                            </th>
-                            <th key="4"
-                            style={{
-                                width: "20%",
-                                padding: "2px 0"
-                            }} >
-                                Update
-                            </th>
-                        </tr>
-                        <tr key="buttons" >
-                            <td key="3"
-                            style={{
-                                padding: "6px 0"
-                            }} >
-                                <SyncButton theme="Caffee" text={ "▶" }
-                                    executer={ this.executer.bind(this) } />
-                            </td>
-                            <td key="4"
-                            style={{
-                                padding: "6px 0"
-                            }} >
-                                <SyncButton theme="Caffee" text={ "▶" } ref="btnBetter"
+                                <SyncButton text={ "Update" } ref="btnBetter"
                                     executer={ this.props.better } />
-                            </td>
+                            </th>
+                            <th key="4" />
                         </tr>
                     </tbody>
                 </table>
@@ -263,7 +202,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                     overflow: "hidden scroll",
                     display: "grid"
                 }} >
-                    <div key="1" ref="radiusDiv"
+                    <div key="3" ref="rateDiv"
                     style={{
                         width: "100%",
                         height: "80%",
@@ -271,25 +210,25 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         display: "inline-flex",
                         opacity: (() => {
                             const val: string = $("input[name=algo]:checked").val()! as string;
-                            return val === "blue_noise_sampling" ? 1 : 0.4;
+                            return val !== "blue_noise_sampling" ? 1 : 0.4;
                         })(),
                         pointerEvents: (() => {
                             const val: string = $("input[name=algo]:checked").val()! as string;
-                            return val === "blue_noise_sampling" ? "unset" : "none";
+                            return val !== "blue_noise_sampling" ? "unset" : "none";
                         })()
                     }} >
-                        <ValueBar width={ 160 } height={ 18 } label="radius"
-                        min={ 0.005 } max={ 0.05 } step={ 0.005 } defaultValue={ 0.02 }
+                        <ValueBar width={ 160 } height={ 18 } label="sample_rate"
+                        min={ 0.01 } max={ 1.00 } step={ 0.01 } defaultValue={ 0.10 }
                         style={{
                             transform: "unset",
                             alignItems: ""
                         }}
                         valueFormatter={
-                            (value: number) => `${ value.toFixed(3) }`
+                            (value: number) => `${ value.toFixed(2) }`
                         }
                         onValueChange={
                             (value: number) => {
-                                System.params.radius = parseFloat(value.toFixed(2));
+                                System.params.rate = parseFloat(value.toFixed(2));
                             }
                         } />
                     </div>
@@ -323,7 +262,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             }
                         } />
                     </div>
-                    <div key="3" ref="rateDiv"
+                    <div key="1" ref="radiusDiv"
                     style={{
                         width: "100%",
                         height: "80%",
@@ -331,25 +270,25 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         display: "inline-flex",
                         opacity: (() => {
                             const val: string = $("input[name=algo]:checked").val()! as string;
-                            return val !== "blue_noise_sampling" ? 1 : 0.4;
+                            return val === "blue_noise_sampling" ? 1 : 0.4;
                         })(),
                         pointerEvents: (() => {
                             const val: string = $("input[name=algo]:checked").val()! as string;
-                            return val !== "blue_noise_sampling" ? "unset" : "none";
+                            return val === "blue_noise_sampling" ? "unset" : "none";
                         })()
                     }} >
-                        <ValueBar width={ 160 } height={ 18 } label="sample_rate"
-                        min={ 0.01 } max={ 1.00 } step={ 0.01 } defaultValue={ 0.10 }
+                        <ValueBar width={ 160 } height={ 18 } label="radius"
+                        min={ 0.005 } max={ 0.05 } step={ 0.005 } defaultValue={ 0.02 }
                         style={{
                             transform: "unset",
                             alignItems: ""
                         }}
                         valueFormatter={
-                            (value: number) => `${ value.toFixed(2) }`
+                            (value: number) => `${ value.toFixed(3) }`
                         }
                         onValueChange={
                             (value: number) => {
-                                System.params.rate = parseFloat(value.toFixed(2));
+                                System.params.radius = parseFloat(value.toFixed(2));
                             }
                         } />
                     </div>
@@ -392,7 +331,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
         });
 
         $("#params").animate({
-            scrollTop: 32
+            scrollTop: 0
         }, 120);
     }
 
@@ -400,15 +339,8 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
         const val: string = $("input[name=algo]:checked").val()! as string;
         
         $("#params").animate({
-            scrollTop: val === "blue_noise_sampling" ? 0 : val === "this_paper" ? 12 : 32
+            scrollTop: val === "blue_noise_sampling" ? 24 : 0
         }, 120);
-    }
-
-    private onSelected(path: string): void {
-        System.filepath = path;
-        this.setState({
-            filepath: path
-        });
     }
 
     private executer(resolve: (value?: void | PromiseLike<void> | undefined) => void, reject: (reason?: any) => void): void {

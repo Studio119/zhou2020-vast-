@@ -19,9 +19,10 @@ int main(int argc, char const *argv[]) {
     // argv[2]  替换后 id
     // argv[3]  采样 _o.json 文件
     // stdin    .csv 文件
-    // file out 采样 _o.json 文件
+    // argv[4]  输出文件
 
     const string filename = argv[3];
+    const string filename_out = argv[4];
     const uint16_t indexEd = toInt16(argv[1]);
     const uint16_t indexEr = toInt16(argv[2]);
     
