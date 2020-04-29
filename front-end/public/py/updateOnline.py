@@ -82,13 +82,9 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
             #     num 1 =
             #     T1 = True
             if oriData[int(selected_point_index)]['type'][0] == SIGN(oriData[int(selected_point_index)]['value'] - mean1):
-                if after_wrong_num <= before_wrong_num:
-                    num1 = before_wrong_num - after_wrong_num
-                    T1 = True
+                num1 = before_wrong_num - after_wrong_num
             else:
-                if after_wrong_num <= before_wrong_num - 1:
-                    num1 = before_wrong_num - 1 - after_wrong_num
-                    T1 = True
+                num1 = before_wrong_num - 1 - after_wrong_num
 
 
             ## 判断自身的local 和neighbouring 特征都能保持住 ，即T3任务
@@ -124,9 +120,9 @@ def onlineUpdate(filename, p_list, ori_filename, selected_point_index, m):
                     if j == z['id']:
                         continue
                     else:
-                        distance = math.sqrt((oriData[j]['lat'] - oriData[i]['lat']) ** 2 + (oriData[j]['lng'] - oriData[i]['lng']) ** 2)
+                        distance = math.sqrt((oriData[j]['lat'] - oriData[z['id']]['lat']) ** 2 + (oriData[j]['lng'] - oriData[z['id']]['lng']) ** 2)
                         verse_distance = 1 / distance
-                        dis_dict[str(j)] = verse_distance
+                        dis_dict[str(z['id'])] = verse_distance
                 c = sorted(dis_dict.items(), key=lambda item: item[1], reverse=True)
                 target = [ int(d[0]) for d in c[:m.k]]
                 if i in target:

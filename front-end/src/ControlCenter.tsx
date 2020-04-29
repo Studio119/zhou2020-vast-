@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-27 21:17:00
+ * @Last Modified time: 2020-04-29 19:01:11
  */
 
 import React, { Component } from "react";
@@ -102,21 +102,27 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="="
                             style={{
                                 padding: "1px 8px",
-                                width: "7%"
+                                width: "5%"
                             }} />
                             <th key="3"
                             style={{
                                 padding: "2px 0px 2px 6px"
                             }} >
                                 <SyncButton text={ "Sample" }
-                                    executer={ this.executer.bind(this) } />
+                                    executer={ this.executer.bind(this) } style={{
+                                        width: "60px",
+										padding: "1px 0 4px"
+                                    }} />
                             </th>
                             <th key="4"
                             style={{
-                                padding: "2px 6px"
+                                padding: "2px 0px 2px 6px"
                             }} >
                                 <SyncButton text={ "Reset" }
-                                    executer={ this.props.reset.bind(this) } />
+                                    executer={ this.props.reset.bind(this) } style={{
+                                        width: "60px",
+										padding: "1px 0 4px"
+                                    }} />
                             </th>
                         </tr>
                         <tr key="2"
@@ -178,16 +184,22 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                             <th key="="
                             style={{
                                 padding: "1px 8px",
-                                width: "7%"
+                                width: "5%"
                             }} />
                             <th key="3"
                             style={{
                                 padding: "2px 0px 2px 6px"
                             }} >
-                                <SyncButton text={ "Update" } ref="btnBetter"
-                                    executer={ this.props.better } />
+                                <SyncButton text={ "Optimize" } ref="btnBetter"
+                                    executer={ this.props.better } style={{
+                                        width: "60px",
+										padding: "1px 0 4px"
+                                    }} />
                             </th>
-                            <th key="4" />
+                            <th key="4"
+                            style={{
+                                padding: "2px 0px 2px 6px"
+                            }} />
                         </tr>
                     </tbody>
                 </table>
@@ -278,7 +290,7 @@ export class ControlCenter extends Component<ControlCenterProps, ControlCenterSt
                         })()
                     }} >
                         <ValueBar width={ 160 } height={ 18 } label="radius"
-                        min={ 0.005 } max={ 0.05 } step={ 0.005 } defaultValue={ 0.02 }
+                        min={ 0.005 } max={ 0.01 } step={ 0.001 } defaultValue={ 0.007 }
                         style={{
                             transform: "unset",
                             alignItems: ""

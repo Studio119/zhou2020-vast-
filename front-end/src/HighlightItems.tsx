@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-13 21:26:18 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-26 20:02:17
+ * @Last Modified time: 2020-04-29 19:05:16
  */
 
 import React, { Component } from "react";
@@ -862,7 +862,7 @@ export class HighlightItems extends Component<HighlightItemsProps, HighlightItem
                                 count += this.state.after.LL.all - this.state.after.LL.LL;
                                 count += this.state.after.HL.all - this.state.after.HL.HL;
                                 
-                                return "deviation: " + count;
+                                return "Ambiguity: " + count;
                             })() : ""
                         }
                     </label>

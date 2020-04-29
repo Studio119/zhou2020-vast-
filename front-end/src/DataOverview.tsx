@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-02-05 12:07:29 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-27 21:17:00
+ * @Last Modified time: 2020-04-29 18:55:26
  */
 
 import React, { Component } from "react";
@@ -100,7 +100,7 @@ export class DataOverview extends Component<DataOverviewProps, DataOverviewState
                         style={{
                             display: "inline-block",
                             position: "absolute",
-                            left: "304px",
+                            left: "277px",
                             fontSize: "14px"
                         }}
                         onClick={
@@ -136,9 +136,18 @@ export class DataOverview extends Component<DataOverviewProps, DataOverviewState
                                 width: "140px",
                                 textAlign: "left"
                             }} >
-                                Original Data Size
+                                Original Data Size:
                             </td>
-                            <td key="2" >
+                            <td key="spring" style={{
+                                display: "inline-block",
+                                width: "110px"
+                            }} />
+                            <td key="2"
+                            style={{
+                                display: "inline-block",
+                                textAlign: "left",
+                                width: "80px"
+                            }} >
                                 { this.state.count }
                             </td>
                         </tr>
@@ -147,9 +156,18 @@ export class DataOverview extends Component<DataOverviewProps, DataOverviewState
                                 width: "140px",
                                 textAlign: "left"
                             }} >
-                                Sampled Data Size
+                                Sampled Data Size:
                             </td>
-                            <td key="2" >
+                            <td key="spring" style={{
+                                display: "inline-block",
+                                width: "110px"
+                            }} />
+                            <td key="2"
+                            style={{
+                                display: "inline-block",
+                                textAlign: "left",
+                                width: "80px"
+                            }} >
                                 {
                                     this.state.filepath && System.tail
                                         ? this.state.countAfter : "-"

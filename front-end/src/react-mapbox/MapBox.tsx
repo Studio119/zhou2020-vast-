@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-01-16 22:19:20 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-02-08 15:53:02
+ * @Last Modified time: 2020-04-29 21:02:20
  */
 
 import React, {Component} from 'react';
@@ -99,22 +99,22 @@ class MapBox extends Component<MapProps, {}, {}> {
         }
     }
 
-    public updateHeatMap(points: Array<[number, number]>): void {
+    public updateHeatMap(points: Array<[number, number, number]>, des?: Array<[number, number]>): void {
         if (!this.loaded || (!this.map!.getSource("heatmap"))) {
             if (this.loaded && !this.heatmap) {
                 this.callHeatMap();
             }
             setTimeout(() => {
-                this.updateHeatMap(points);
+                this.updateHeatMap(points, des);
             }, 400);
             return;
         }
         let data: any = [];
-        points.forEach((p: [number, number]) => {
+        points.forEach((p: [number, number, number]) => {
             data.push({
                 "type": "Feature",
                 "properties": {
-                    "mag": 1
+                    "mag": p[2]
                 },
                 "geometry": {
                     "type": "Point",
@@ -122,6 +122,20 @@ class MapBox extends Component<MapProps, {}, {}> {
                 }
             });
         });
+        if (des) {
+            des.forEach((p: [number, number]) => {
+                data.push({
+                    "type": "Feature",
+                    "properties": {
+                        "mag": -1
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [ p[0], p[1], 0.0 ]
+                    }
+                });
+            });
+        }
         
         (this.map!.getSource("heatmap") as mapboxgl.GeoJSONSource).setData({
             "type": "FeatureCollection",
@@ -145,56 +159,59 @@ class MapBox extends Component<MapProps, {}, {}> {
                 type: "heatmap",
                 // maxzoom: 9,
                 paint: {
-                  // Increase the heatmap weight based on frequency and property magnitude
-                  "heatmap-weight": [
-                    "interpolate", ["linear"],
-                    ["get", "mag"],
-                    0, 0,
-                    5, 0.2,
-                    20, 0.4,
-                    400, 0.6,
-                    8000, 0.8,
-                    60000, 1
-                  ],
-                  // Increase the heatmap color weight weight by zoom level
-                  // heatmap-intensity is a multiplier on top of heatmap-weight
-                  "heatmap-intensity": [
-                    "interpolate", ["linear"],
-                    ["zoom"],
-                    0, 1,
-                    10, 3,
-                  ],
-                  // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
-                  // Begin color ramp at 0-stop with a 0-transparancy color
-                  // to create a blur-like effect.
-                  "heatmap-color": [
-                    "interpolate", ["linear"],
-                    ["heatmap-density"],
-                    0, 'rgba(34,125,81,0)',
-                    0.2, 'rgba(119,147,233,0.5)',
-                    0.4, 'rgba(106,242,247,0.64)',
-                    0.6, 'rgba(66,248,109,0.8)',
-                    0.8, 'rgba(220,254,11,0.89)',
-                    1, 'rgba(247,46,8,1)',
-                  ],
-                  // Adjust the heatmap radius by zoom level
-                  "heatmap-radius": [
-                    "interpolate", ["linear"],
-                    ["zoom"],
-                    0, 39,
-                    100, 28,
-                    5000, 20,
-                    10000, 14,
-                    500000, 10
-                  ],
-                  // Transition from heatmap to circle layer by zoom level
-                  "heatmap-opacity": [
-                    "interpolate", ["linear"],
-                    ["zoom"],
-                    9, 1,
-                    15, 0.2,
-                  ],
-                },
+                    // Increase the heatmap weight based on frequency and property magnitude
+                    'heatmap-weight': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'mag'],
+                        0, 0,
+                        1, 0.4,
+                        10, 0.8,
+                        100, 1
+                    ],
+                    // Increase the heatmap color weight weight by zoom level
+                    // heatmap-intensity is a multiplier on top of heatmap-weight
+                    'heatmap-intensity': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        0, 1,
+                        7, 1.5,
+                        13, 3
+                    ],
+                    // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+                    // Begin color ramp at 0-stop with a 0-transparancy color
+                    // to create a blur-like effect.
+                    'heatmap-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['heatmap-density'],
+                        0, 'rgba(34,125,81,0)',
+                        0.2, 'rgba(119,147,233,0.55)',
+                        0.4, 'rgba(106,242,247,0.7)',
+                        0.6, 'rgba(59,252,100,0.85)',
+                        0.8, 'rgba(198,254,11,0.94)',
+                        1, 'rgba(255,0,0,1)',
+                    ],
+                    // Adjust the heatmap radius by zoom level
+                    'heatmap-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        0, 2,
+                        7, 16,
+                        13, 28
+                    ],
+                    // Transition from heatmap to circle layer by zoom level
+                    'heatmap-opacity': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        0, 1,
+                        9, 1,
+                        13, 0.5
+                    ]
+                }
               });
             this.heatmap = true;
             this.callHeatMap();

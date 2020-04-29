@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-29 05:16:33
+ * @Last Modified time: 2020-04-30 01:23:30
  */
 
 const express = require('express');
@@ -220,33 +220,41 @@ app.get("/bns/:filepath/:radius", (req, res) => {
                     + " " + json_path
                     + " " + req.params["radius"];
 
-    process.exec(cmd, (error, _, stderr) => {
-        if (stderr) {
-            res.json(
-                formatResult(
-                    cmd,
-                    false,
-                    stderr
-                )
-            );
-        } else if (error) {
-            res.json(
-                formatResult(
-                    cmd,
-                    false,
-                    error
-                )
-            );
-        } else {
-            res.json(
-                formatResult(
-                    cmd,
-                    true,
-                    JSON.parse(fs.readFileSync(output_path))
-                )
-            );
-        }
-    });
+    res.json(
+        formatResult(
+            cmd,
+            true,
+            JSON.parse(fs.readFileSync(output_path))
+        )
+    );
+
+    // process.exec(cmd, (error, _, stderr) => {
+    //     if (stderr) {
+    //         res.json(
+    //             formatResult(
+    //                 cmd,
+    //                 false,
+    //                 stderr
+    //             )
+    //         );
+    //     } else if (error) {
+    //         res.json(
+    //             formatResult(
+    //                 cmd,
+    //                 false,
+    //                 error
+    //             )
+    //         );
+    //     } else {
+    //         res.json(
+    //             formatResult(
+    //                 cmd,
+    //                 true,
+    //                 JSON.parse(fs.readFileSync(output_path))
+    //             )
+    //         );
+    //     }
+    // });
 });
 
 
@@ -356,6 +364,11 @@ app.get("/test/:datasetName/:pIndex/:pList/:tail", (req, res) => {
             );
         } else {
             const arr = stdout.split("\n")[1].toLowerCase().split("'").join('"');
+            // console.log(formatResult(
+            //     cmd,
+            //     true,
+            //     JSON.parse(arr)
+            // ));
             res.json(
                 formatResult(
                     cmd,

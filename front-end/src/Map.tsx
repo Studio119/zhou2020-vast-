@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-29 06:04:02
+ * @Last Modified time: 2020-04-30 02:42:52
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -95,6 +95,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private ambType: "Replace" | "AmbiguityVis";
     private heatmapType: "Origin" | "Sample" | "Difference";
     private replaceFrom: number;
+    private replaceTo: number;
     private toReplace: Array<{
         x: number;
         y: number;
@@ -140,6 +141,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         this.ambType = "AmbiguityVis";
         this.heatmapType = "Sample";
         this.replaceFrom = NaN;
+        this.replaceTo = NaN;
         this.toReplace = [];
     }
 
@@ -705,6 +707,83 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 //     }} />
                 // </div>
             }
+            {
+                <div key="ambVisDetail" ref="ambVisDetail"
+                style={{
+                    position: "relative",
+                    top: "-743px",
+                    right: "-790px",
+                    width: "auto",
+                    display: "none",
+                    padding: "6px 28px 8px",
+                    marginBottom: "-103px",
+                    color: "black",
+                    background: ColorThemes.NakiriAyame.OuterBackground,
+                    border: "1px solid " + ColorThemes.NakiriAyame.InnerBackground,
+                    borderRadius: "4px"
+                }} >
+                    <label key="w2r" style={{
+                        width: "140px",
+                        display: "inline-block"
+                    }} >
+                        Wrong to right:
+                    </label>
+                    <label key="spring1" style={{
+                        width: "47px",
+                        display: "inline-block"
+                    }} />
+                    <label key="w2r__" ref="w2r__" style={{
+                        width: "100px",
+                        display: "inline-block"
+                    }} >
+                        0
+                    </label>
+                    <br />
+                    <label key="r2w" style={{
+                        width: "140px",
+                        display: "inline-block"
+                    }} >
+                        Right to wrong:
+                    </label>
+                    <label key="spring2" style={{
+                        width: "47px",
+                        display: "inline-block"
+                    }} />
+                    <label key="r2w__" ref="r2w__" style={{
+                        width: "100px",
+                        display: "inline-block"
+                    }} >
+                        0
+                    </label>
+                    <hr />
+                    <SyncButton text="Apply" executer={
+                        (resolve: () => void, reject: (reason?: any) => void) => {
+                            if (isNaN(this.replaceFrom) || isNaN(this.replaceTo)) {
+                                reject("Got NaN for params");
+                                return;
+                            }
+                            this.props.runReplace(this.replaceFrom, this.replaceTo);
+                            this.replaceFrom = NaN;
+                            this.toReplace = [];
+                            this.replaceTo = NaN;
+                            resolve();
+                            $(this.refs["ambVisDetail"]).css("display", "none");
+                        }
+                    } />
+                    <label key="spring3" style={{
+                        width: "80px",
+                        display: "inline-block"
+                    }} />
+                    <SyncButton text="Cancel" executer={
+                        (resolve: () => void) => {
+                            this.replaceTo = NaN;
+                            resolve();
+                            $(this.refs["ambVisDetail"]).css("display", "none");
+                            this.redraw();
+                        }
+                    } />
+                </div>
+            }
         </>)
     }
 
@@ -889,6 +968,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     private testCandidate(points: {
         [id: number]: [boolean, number];
     }, center: [number, number, number]): void {
+        // console.log(points);
         this.toReplace = [];
         const len: number = Object.entries(points).length;
         const step: number = 2 * Math.PI / len;
@@ -954,7 +1034,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 p.available,
                 p.contribution
             );
-            if (p.available) {
+            if (p.available || this.ambType === "AmbiguityVis") {
                 this.toReplace.push({
                     x: x,
                     y: y,
@@ -965,38 +1045,53 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     }
 
     private drawCircle(x: number, y: number, available: boolean, val: number): void {
+        const p: (a: number) => number = (a: number) => {
+            return 5 - (a + 1) / 4 * 10;
+        };
         const color: string = `rgb(${
-            available ? "139,198,238" : "185,185,185"
+            available ? "255,0,230" : "0,205,250"
         })`;
         this.ctx_r!.beginPath();
-        const r1: number = 10;
-        const r2: number = r1 * (0.36 + 0.64 / (1 + Math.pow(Math.E, val * 10)));
+        const r1: number = 12;
+        const r2: number = r1 * (0.36 + 0.64 / (1 + Math.pow(Math.E, p(val))));
         this.ctx_r!.moveTo(x, y - r1);
         const step: number = 32;
-        let lastDeg: number = 0;
+        // let lastDeg: number = 0;
         for (let a: number = 1; a <= step; a++) {
             const deg: number = Math.PI * 2 / step * a;
             if (a % 2 === 0) {
-                this.ctx_r!.bezierCurveTo(
-                    x + Math.sin(deg) * r2,
-                    y - Math.cos(deg) * r2,
-                    x + Math.sin(lastDeg) * r1,
-                    y - Math.cos(lastDeg) * r1,
+                this.ctx_r!.lineTo(
                     x + Math.sin(deg) * r1,
                     y - Math.cos(deg) * r1
                 );
+                // this.ctx_r!.bezierCurveTo(
+                //     x + Math.sin(deg) * r2,
+                //     y - Math.cos(deg) * r2,
+                //     x + Math.sin(lastDeg) * r1,
+                //     y - Math.cos(lastDeg) * r1,
+                //     x + Math.sin(deg) * r1,
+                //     y - Math.cos(deg) * r1
+                // );
             } else {
-                this.ctx_r!.bezierCurveTo(
-                    x + Math.sin(deg) * r1,
-                    y - Math.cos(deg) * r1,
-                    x + Math.sin(lastDeg) * r2,
-                    y - Math.cos(lastDeg) * r2,
+                this.ctx_r!.lineTo(
                     x + Math.sin(deg) * r2,
                     y - Math.cos(deg) * r2
                 );
+                // this.ctx_r!.bezierCurveTo(
+                //     x + Math.sin(deg) * r1,
+                //     y - Math.cos(deg) * r1,
+                //     x + Math.sin(lastDeg) * r2,
+                //     y - Math.cos(lastDeg) * r2,
+                //     x + Math.sin(deg) * r2,
+                //     y - Math.cos(deg) * r2
+                // );
             }
-            lastDeg = deg;
+            // lastDeg = deg;
         }
+        this.ctx_r!.lineTo(
+            x + Math.sin(0) * r2,
+            y - Math.cos(0) * r2
+        );
         this.ctx_r!.lineWidth = 1;
         this.ctx_r!.fillStyle = color;
         this.ctx_r!.strokeStyle = "rgb(118,92,116)";
@@ -1021,14 +1116,16 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 ) + Math.pow(
                     y - this.toReplace[i].y, 2
                 ) <= 100) {
+                    this.replaceTo = this.toReplace[i].to;
                     if (this.ambType === "Replace") {
-                        this.props.runReplace(this.replaceFrom, this.toReplace[i].to);
+                        this.props.runReplace(this.replaceFrom, this.replaceTo);
                         this.replaceFrom = NaN;
                         this.toReplace = [];
+                        this.replaceTo = NaN;
                     } else {
                         this.props.tryReplace(
                             this.replaceFrom,
-                            this.toReplace[i].to,
+                            this.replaceTo,
                             this.ambiguityVis.bind(this)
                         );
                     }
@@ -1082,6 +1179,8 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         
         this.process();
 
+        $(this.refs["ambVisDetail"]).css("display", "table");
+
         let nParts = Math.floor(Math.pow((this.state.data.length - 400) / 100, 0.8));
         if (!nParts || nParts < 1) {
             nParts = 1;
@@ -1095,15 +1194,17 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
         }
 
         let box: Array<{
+            id: number;
             lng: number;
             lat: number;
             value: {
                 origin: LISAtype;
                 before: LISAtype | null;
                 after: LISAtype | null;
-            }
-        }> = System.data.map((d: DataItem) => {
+            };
+        }> = System.data.map((d: DataItem, i: number) => {
             return {
+                id: i,
                 lng: d.lng,
                 lat: d.lat,
                 value: {
@@ -1112,11 +1213,37 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                     after: null
                 }
             };
-        });
+        }).filter(a => {
+            return a.value.before;
+        }).sort((a, b) => {
+            return Math.pow(a.lng - System.data[this.replaceTo].lng, 2)
+                + Math.pow(a.lat - System.data[this.replaceTo].lat, 2)
+                - Math.pow(b.lng - System.data[this.replaceTo].lng, 2)
+                - Math.pow(b.lat - System.data[this.replaceTo].lat, 2);
+        }).slice(0, 100);
 
         data.forEach((d: { id: number; type: LISAtype; }) => {
-            box[d.id].value.after = d.type;
+            for (let i: number = 0; i < 100; i++) {
+                if (d.id === box[i].id) {
+                    box[i].value.after = d.type;
+                    break;
+                }
+            }
         });
+
+        let count: {
+            RightToWrong: number;
+            WrongToRight: number;
+        } = {
+            RightToWrong: 0,
+            WrongToRight: 0
+        };
+
+        // if (this.replaceFrom !== this.replaceTo) {
+        //     if (box[this.replaceTo].value.origin === box[this.replaceTo].value.after) {
+        //         count.WrongToRight ++;
+        //     }
+        // }
 
         box.forEach((d: {
             lng: number;
@@ -1125,44 +1252,44 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 origin: LISAtype;
                 before: LISAtype | null;
                 after: LISAtype | null;
-            }
+            };
         }, i: number) => {
-            if (d.value.before) {
-                if (d.value.after) {
-                    if (d.value.before === d.value.after) {
-                        // 没有发生变化
+            if (d.value.before && d.value.after) {
+                if (d.value.before === d.value.after) {
+                    // 没有发生变化
+                    ready[i % nParts].push([
+                        d.lng,
+                        d.lat,
+                        ["#3C3C3C18", "#1D1D1D"],
+                        2.5
+                    ]);
+                } else {
+                    if (d.value.before === d.value.origin) {
+                        // 好的变坏
                         ready[i % nParts].push([
                             d.lng,
                             d.lat,
-                            ["#3C3C3C18", "#1D1D1D"],
-                            2.5
+                            ["rgb(255,69,48)", "#402020"],
+                            4
                         ]);
+                        count.RightToWrong ++;
+                    } else if (d.value.after === d.value.origin) {
+                        // 坏的变好
+                        ready[i % nParts].push([
+                            d.lng,
+                            d.lat,
+                            ["rgb(106,225,85)", "#202024"],
+                            4
+                        ]);
+                        count.WrongToRight ++;
                     } else {
-                        if (d.value.before === d.value.origin) {
-                            // 好的变坏
-                            ready[i % nParts].push([
-                                d.lng,
-                                d.lat,
-                                ["rgb(255,69,48)", "#402020"],
-                                4
-                            ]);
-                        } else if (d.value.after === d.value.origin) {
-                            // 坏的变好
-                            ready[i % nParts].push([
-                                d.lng,
-                                d.lat,
-                                ["rgb(106,225,85)", "#202024"],
-                                4
-                            ]);
-                        } else {
-                            // 变了没意义
-                            ready[i % nParts].push([
-                                d.lng,
-                                d.lat,
-                                ["#3C3C3C80", "#1D1D1D"],
-                                4
-                            ]);
-                        }
+                        // 变了没意义
+                        ready[i % nParts].push([
+                            d.lng,
+                            d.lat,
+                            ["#3C3C3C80", "#1D1D1D"],
+                            4
+                        ]);
                     }
                 }
             }
@@ -1196,6 +1323,9 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 }, index * 10)
             );
         });
+
+        $(this.refs["w2r__"]).text(count.WrongToRight);
+        $(this.refs["r2w__"]).text(count.RightToWrong);
     }
 
     private shift(b: "Scatterplots" | "Ambiguity" | "heatmap"): void {
@@ -1996,6 +2126,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
     // }
 
     private redraw(source: "2" | "all" = "all"): void {
+        $(this.refs["ambVisDetail"]).css("display", "none");
         this.ready_r = [];
         this.ctx_base!.clearRect(0, 0, this.props.width, this.props.height);
         (this.refs["map"] as MapBox).updateHeatMap([]);
@@ -2005,25 +2136,30 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
             this.ctx_r!.clearRect(-2, -2, this.props.width + 4, this.props.height + 4);
             this.ready = [];
             this.ready2 = [];
-            let box: Array<[number, number]> = [];
+            let box: Array<[number, number, number]> = [];
+            let box2: Array<[number, number]> = [];
+            let box3: Array<[number, number, number]> = [];
             System.data.forEach((d: DataItem, i: number) => {
-                switch (this.heatmapType) {
-                    case "Origin":
-                        box.push([d.lng, d.lat]);
-                        break;
-                    case "Sample":
-                        if (System.active[i]) {
-                            box.push([d.lng, d.lat]);
-                        }
-                        break;
-                    case "Difference":
-                        if (!System.active[i]) {
-                            box.push([d.lng, d.lat]);
-                        }
-                        break;
+                box2.push([d.lng, d.lat]);
+                if (System.active[i]) {
+                    box.push([d.lng, d.lat, 1]);
+                } else {
+                    box3.push([d.lng, d.lat, 1]);
                 }
             });
-            (this.refs["map"] as MapBox).updateHeatMap(box);
+            if (this.heatmapType === "Difference") {
+                (this.refs["map"] as MapBox).updateHeatMap(box3.map(d => {
+                    return [d[0], d[1], 0.2 * d[2] * box2.length / box3.length];
+                }));
+            } else if (this.heatmapType === "Origin") {
+                (this.refs["map"] as MapBox).updateHeatMap(box2.map(d => {
+                    return [d[0], d[1], 0.2];
+                }));
+            } else {
+                (this.refs["map"] as MapBox).updateHeatMap(box.map(d => {
+                    return [d[0], d[1], 0.2 * box2.length / box.length];
+                }));
+            }
             return;
         }
         // if (this.state.behavior !== "Scatterplots" && System.filepath) {
