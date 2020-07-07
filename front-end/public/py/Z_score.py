@@ -62,13 +62,14 @@ class Z_score:
         lon2 = b['lng']
         lat1 = a['lat']
         lat2 = b['lat']
-        lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
-        a = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * \
-            math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
-        c = 2 * math.asin(math.sqrt(a))
-        r = 6371
-        dis = c * r * 1000
-        return dis
+        # lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+        # a = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * \
+        #     math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+        # c = 2 * math.asin(math.sqrt(a))
+        # r = 6371
+        # dis = c * r * 1000
+        return math.sqrt(math.pow(lon1 - lon2, 2) + math.pow(lat1 - lat2, 2))
+        # return dis
 
 
     """
@@ -226,17 +227,28 @@ if __name__ == "__main__":
         input_name = sys.argv[1]
         output_name = sys.argv[2]
 
-    with open("../../../back-end/healthy_data1K.json", mode='r', encoding='utf8') as f:
-        A = [{
-            "lng": d["lng"],
-            "lat": d["lat"],
-            "value": d["value"]
-        } for d in json.load(f)]
-
     if input_name:
-        with open("../../../back-end/{}.json".format(input_name), mode='r', encoding='utf8') as f:
-            indexes = json.load(f)
-            A = [A[i] for i in range(len(A)) if i in indexes]
+        if not input_name.endswith(".json"):
+            input_name = "../../../back-end/{}.json".format(input_name)
+            with open(input_name, mode='r', encoding='utf8') as f:
+                indexes = json.load(f)
+                A = [A[i] for i in range(len(A)) if i in indexes]
+        else:
+            with open(input_name, mode='r', encoding='utf8') as f:
+                data = json.load(f)
+                A = [{
+                    "lng": d["lng"],
+                    "lat": d["lat"],
+                    "value": d["value"]
+                } for d in data]
+                indexes = [d["id"] for d in data]
+    else:
+        with open("../../../back-end/healthy_data1K.json", mode='r', encoding='utf8') as f:
+            A = [{
+                "lng": d["lng"],
+                "lat": d["lat"],
+                "value": d["value"]
+            } for d in json.load(f)]
     
     m.fit(A)
 
@@ -245,20 +257,38 @@ if __name__ == "__main__":
     # print(transform)
 
     if output_name:
-        with open("../../../back-end/{}.json".format(output_name), mode='w', encoding='utf8') as f:
-            res = []
-            for i in range(len(A)):
-                neighbors = m.neighbors[i]
-                res.append({
-                    "type": transform[i],
-                    "lng": A[i]["lng"],
-                    "lat": A[i]["lat"],
-                    "value": A[i]["value"],
-                    "mx": m.score[i][0],
-                    "my": m.score[i][1],
-                    "neighbors": neighbors
-                })
-            json.dump(res, f)
+        if not output_name.endswith(".json"):
+            output_name = "../../../back-end/{}.json".format(output_name)
+            with open(output_name, mode='w', encoding='utf8') as f:
+                res = []
+                for i in range(len(A)):
+                    neighbors = m.neighbors[i]
+                    res.append({
+                        "type": transform[i],
+                        "lng": A[i]["lng"],
+                        "lat": A[i]["lat"],
+                        "value": A[i]["value"],
+                        "mx": m.score[i][0],
+                        "my": m.score[i][1],
+                        "neighbors": neighbors
+                    })
+                json.dump(res, f)
+        else:
+            with open(output_name, mode='w', encoding='utf8') as f:
+                res = []
+                for i in range(len(A)):
+                    neighbors = m.neighbors[i]
+                    res.append({
+                        "id": indexes[i],
+                        "type": transform[i],
+                        "lng": A[i]["lng"],
+                        "lat": A[i]["lat"],
+                        "value": A[i]["value"],
+                        "mx": m.score[i][0],
+                        "my": m.score[i][1],
+                        "neighbors": neighbors
+                    })
+                json.dump(res, f)
     else:
         with open("../../public/data/healthy_output_{}_1K.json".format(m.k), mode='w', encoding='utf8') as f:
             res = []

@@ -18,8 +18,8 @@ int main(int argc, char const *argv[]) {
     // argv[1]  替换前 id
     // argv[2]  替换后 id
     // argv[3]  采样 _o.json 文件
-    // stdin    .csv 文件
     // argv[4]  输出文件
+    // stdin    .csv 文件
 
     const string filename = argv[3];
     const string filename_out = argv[4];
@@ -29,7 +29,7 @@ int main(int argc, char const *argv[]) {
     // 读取 csv 文件
     unique_ptr< vector<Point> > ptr_origin = loadFromCSV();
 
-    unique_ptr<Z_Score> z_score(new Z_Score(8));
+    // unique_ptr<Z_Score> z_score(new Z_Score(8));
 
     // 索引
     unique_ptr< vector<uint16_t> > box = getJSON(filename, indexEd, indexEr);
@@ -38,11 +38,39 @@ int main(int argc, char const *argv[]) {
 
     box = nullptr;
 
-    // 计算 Z_Score
-    z_score->fit(*ptr_origin, filename);
+    // // 计算 Z_Score
+    // z_score->fit(*ptr_origin, filename_out);
+
+    ofstream fout;
+    fout.open(filename_out);
+    if (!fout.is_open()) {
+        exit(-1);
+    }
+
+    fout << "[";
+
+    for (vector<Point>::iterator iter = ptr_origin->begin(); iter < ptr_origin->end(); iter++) {
+        if (iter > ptr_origin->begin()) {
+            fout << ",\n";
+        }
+
+        fout << "{"
+            << "\"id\": " << iter->id << ", "
+            << "\"type\": \"" << "undefined" << "\", ";
+        fout << "\"lng\": " << setprecision(8) << iter->lng << ", ";
+        fout << "\"lat\": " << setprecision(8) << iter->lat << ", ";
+        fout << "\"value\": " << setprecision(8) << iter->value << ", ";
+        fout << "\"mx\": " << setprecision(12) << 0 << ", ";
+        fout << "\"my\": " << setprecision(12) << 0 << ", ";
+        fout
+            << "\"neighbors\": " << "[]"
+        << "}";
+    }
+
+    fout << "]";
 
     ptr_origin = nullptr;
-    z_score = nullptr;
+    // z_score = nullptr;
 
     return 0;
 }

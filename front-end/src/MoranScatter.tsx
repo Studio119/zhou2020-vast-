@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2020-03-11 21:17:33 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-27 04:16:38
+ * @Last Modified time: 2020-07-07 16:42:54
  */
 
 import React, { Component } from "react";
@@ -747,7 +747,8 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                             transform: `translateX(6px)`,
                             fontWeight: 'bold'
                         }} >
-                            { Math.abs(ticks[0]) < 1 ? ticks[0].toFixed(2) : ticks[0] }
+                            { Math.abs(ticks[ticks.length - 1]) < 1
+                                ? ticks[ticks.length - 1].toFixed(2) : ticks[ticks.length - 1] }
                         </text>
                         <text key="2"
                         x={ fx(0) + "%" } y={ 100 - this.props.padding + "%" }
@@ -757,8 +758,7 @@ export class MoranScatter extends Component<MoranScatterProps, MoranScatterState
                             transform: `translateX(6px)`,
                             fontWeight: 'bold'
                         }} >
-                            { Math.abs(ticks[ticks.length - 1]) < 1
-                                ? ticks[ticks.length - 1].toFixed(2) : ticks[ticks.length - 1] }
+                            { Math.abs(ticks[0]) < 1 ? ticks[0].toFixed(2) : ticks[0] }
                         </text>
                     </g>
                     {

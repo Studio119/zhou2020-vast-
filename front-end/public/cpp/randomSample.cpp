@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
     // 重置种子
     srand(time(NULL));
 
-    unique_ptr<Z_Score> z_score(new Z_Score(8));
+    // unique_ptr<Z_Score> z_score(new Z_Score(8));
 
     // 所有的索引
     unique_ptr< vector<int> > box(new vector<int>);
@@ -44,11 +44,33 @@ int main(int argc, char const *argv[]) {
 
     list = nullptr;
 
-    // 计算 Z_Score
-    z_score->fit(*ptr_origin);
+    // // 计算 Z_Score
+    // z_score->fit(*ptr_origin);
+
+    cout << "[";
+
+    for (vector<Point>::iterator iter = ptr_origin->begin(); iter < ptr_origin->end(); iter++) {
+        if (iter > ptr_origin->begin()) {
+            cout << ",\n";
+        }
+
+        cout << "{"
+            << "\"id\": " << iter->id << ", "
+            << "\"type\": \"" << "undefined" << "\", ";
+        cout << "\"lng\": " << setprecision(8) << iter->lng << ", ";
+        cout << "\"lat\": " << setprecision(8) << iter->lat << ", ";
+        cout << "\"value\": " << setprecision(8) << iter->value << ", ";
+        cout << "\"mx\": " << setprecision(12) << 0 << ", ";
+        cout << "\"my\": " << setprecision(12) << 0 << ", ";
+        cout
+            << "\"neighbors\": " << "[]"
+        << "}";
+    }
+
+    cout << "]";
 
     ptr_origin = nullptr;
-    z_score = nullptr;
+    // z_score = nullptr;
 
     return 0;
 }

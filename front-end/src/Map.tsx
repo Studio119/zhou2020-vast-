@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-09-23 18:41:23 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-30 02:42:52
+ * @Last Modified time: 2020-07-04 17:42:47
  */
 import React, { Component } from 'react';
 import $ from 'jquery';
@@ -38,6 +38,7 @@ export interface MapViewProps {
     ) => Promise<AxiosResponse<CommandResult<Array<number[]>|CommandError>>>;
     runReplace: (from: number, to: number) => void;
     tryReplace: (from: number, to: number, callback: (data: FileData.Mode) => void) => void;
+    applyReplace: () => void;
 }
 
 export interface MapViewState<T> {
@@ -762,7 +763,7 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                                 reject("Got NaN for params");
                                 return;
                             }
-                            this.props.runReplace(this.replaceFrom, this.replaceTo);
+                            this.props.applyReplace();
                             this.replaceFrom = NaN;
                             this.toReplace = [];
                             this.replaceTo = NaN;
@@ -1220,10 +1221,23 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                 + Math.pow(a.lat - System.data[this.replaceTo].lat, 2)
                 - Math.pow(b.lng - System.data[this.replaceTo].lng, 2)
                 - Math.pow(b.lat - System.data[this.replaceTo].lat, 2);
-        }).slice(0, 100);
+        });
 
         data.forEach((d: { id: number; type: LISAtype; }) => {
-            for (let i: number = 0; i < 100; i++) {
+            for (let i: number = 0; i <= box.length; i++) {
+                if (i === box.length) {
+                    box.push({
+                        id: d.id,
+                        lng: System.data[d.id].lng,
+                        lat: System.data[d.id].lat,
+                        value: {
+                            origin: System.data[d.id].type,
+                            before: null,
+                            after: d.type
+                        }
+                    });
+                    return;
+                }
                 if (d.id === box[i].id) {
                     box[i].value.after = d.type;
                     break;
@@ -1292,6 +1306,17 @@ export class Map extends Component<MapViewProps, MapViewState<LISAtype>, {}> {
                         ]);
                     }
                 }
+            } else if (d.value.after && d.value.after === d.value.origin) {
+                // console.log("new", d);
+                ready[i % nParts].push([
+                    d.lng,
+                    d.lat,
+                    ["rgb(106,225,85)", "#202024"],
+                    5.6
+                ]);
+                count.WrongToRight ++;
+            } else if (d.value.before) {
+                // console.log("old", d);
             }
         });
 

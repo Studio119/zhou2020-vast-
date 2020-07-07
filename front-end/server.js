@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-04-30 01:23:30
+ * @Last Modified time: 2020-07-07 16:55:43
  */
 
 const express = require('express');
@@ -140,7 +140,7 @@ app.get("/random/:filepath/:rate", (req, res) => {
     const output_path = path.replace(".csv", "_r.json").replace(pathInput, pathOutput);
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
     const cmd = "CHCP 65001 & .\\public\\cpp\\randomSample "
-                    + req.params["rate"] + " < " + path + " > " + output_path;
+                    + req.params["rate"] + " < " + path + " > " + output_path.replace("_r.json", "_r_c.json");
 
     process.exec(cmd, (error, _, stderr) => {
         if (stderr) {
@@ -160,13 +160,36 @@ app.get("/random/:filepath/:rate", (req, res) => {
                 )
             );
         } else {
-            res.json(
-                formatResult(
-                    cmd,
-                    true,
-                    JSON.parse(fs.readFileSync(output_path))
-                )
-            );
+            const cmd2 = "CHCP 65001 & conda activate base & python .\\public\\py\\Z_score.py "
+                + " " + output_path.replace("_r.json", "_r_c.json")
+                + " " + output_path;
+            process.exec(cmd2, (error, _, stderr) => {
+                if (stderr) {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            false,
+                            stderr
+                        )
+                    );
+                } else if (error) {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            false,
+                            error
+                        )
+                    );
+                } else {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            true,
+                            JSON.parse(fs.readFileSync(output_path))
+                        )
+                    );
+                }
+            });
         }
     });
 });
@@ -175,39 +198,47 @@ app.get("/random/:filepath/:rate", (req, res) => {
 app.get("/zorder/:filepath/:rate", (req, res) => {
     const path = pathInput + req.params["filepath"].split("_dot").join(".");
     const json_path = path.replace(".csv", ".json").replace(pathInput, pathOutput);
-    const output_path = path.replace(".csv", "_z.json").replace(pathInput, pathOutput);
+    const output_path = path.replace(".csv", "_z5.json").replace(pathInput, pathOutput);
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
     const cmd = "CHCP 65001 & .\\public\\cpp\\nativeZOrder "
                     + req.params["rate"]
                     + " " + path + " < " + json_path + " > " + output_path;
 
-    process.exec(cmd, (error, _, stderr) => {
-        if (stderr) {
-            res.json(
-                formatResult(
-                    cmd,
-                    false,
-                    stderr
-                )
-            );
-        } else if (error) {
-            res.json(
-                formatResult(
-                    cmd,
-                    false,
-                    error
-                )
-            );
-        } else {
-            res.json(
-                formatResult(
-                    cmd,
-                    true,
-                    JSON.parse(fs.readFileSync(output_path))
-                )
-            );
-        }
-    });
+    res.json(
+        formatResult(
+            cmd,
+            true,
+            JSON.parse(fs.readFileSync(output_path))
+        )
+    );
+
+    // process.exec(cmd, (error, _, stderr) => {
+    //     if (stderr) {
+    //         res.json(
+    //             formatResult(
+    //                 cmd,
+    //                 false,
+    //                 stderr
+    //             )
+    //         );
+    //     } else if (error) {
+    //         res.json(
+    //             formatResult(
+    //                 cmd,
+    //                 false,
+    //                 error
+    //             )
+    //         );
+    //     } else {
+    //         res.json(
+    //             formatResult(
+    //                 cmd,
+    //                 true,
+    //                 JSON.parse(fs.readFileSync(output_path))
+    //             )
+    //         );
+    //     }
+    // });
 });
 
 
@@ -364,11 +395,6 @@ app.get("/test/:datasetName/:pIndex/:pList/:tail", (req, res) => {
             );
         } else {
             const arr = stdout.split("\n")[1].toLowerCase().split("'").join('"');
-            // console.log(formatResult(
-            //     cmd,
-            //     true,
-            //     JSON.parse(arr)
-            // ));
             res.json(
                 formatResult(
                     cmd,
@@ -389,7 +415,7 @@ app.get("/replace/:datasetName/:from/:to", (req, res) => {
     const cmd = "CHCP 65001 & .\\public\\cpp\\replace.exe "
                     + " " + from + " " + to
                     + " " + "..\\storage\\" + datasetName + "_o.json"
-                    + " " + "..\\storage\\" + datasetName + "_o.json"
+                    + " " + "..\\storage\\" + datasetName + "_o_c.json"
                     + " < .\\public\\data\\" + datasetName + ".csv";
 
     process.exec(cmd, (error, _, stderr) => {
@@ -410,13 +436,36 @@ app.get("/replace/:datasetName/:from/:to", (req, res) => {
                 )
             );
         } else {
-            res.json(
-                formatResult(
-                    cmd,
-                    true,
-                    JSON.parse(fs.readFileSync("..\\storage\\" + datasetName + "_o.json"))
-                )
-            );
+            const cmd2 = "CHCP 65001 & conda activate base & python .\\public\\py\\Z_score.py "
+                + " " + "..\\storage\\" + datasetName + "_o_c.json"
+                + " " + "..\\storage\\" + datasetName + "_o.json";
+            process.exec(cmd2, (error, _, stderr) => {
+                if (stderr) {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            false,
+                            stderr
+                        )
+                    );
+                } else if (error) {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            false,
+                            error
+                        )
+                    );
+                } else {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            true,
+                            JSON.parse(fs.readFileSync("..\\storage\\" + datasetName + "_o.json"))
+                        )
+                    );
+                }
+            });
         }
     });
 });
@@ -430,7 +479,7 @@ app.get("/noreplace/:datasetName/:from/:to", (req, res) => {
     const cmd = "CHCP 65001 & .\\public\\cpp\\replace.exe "
                     + " " + from + " " + to
                     + " " + "..\\storage\\" + datasetName + "_o.json"
-                    + " " + "..\\storage\\" + datasetName + "_o_temp.json"
+                    + " " + "..\\storage\\" + datasetName + "_o_c.json"
                     + " < .\\public\\data\\" + datasetName + ".csv";
 
     process.exec(cmd, (error, _, stderr) => {
@@ -451,15 +500,68 @@ app.get("/noreplace/:datasetName/:from/:to", (req, res) => {
                 )
             );
         } else {
-            res.json(
-                formatResult(
-                    cmd,
-                    true,
-                    JSON.parse(fs.readFileSync("..\\storage\\" + datasetName + "_o.json"))
-                )
-            );
+            const cmd2 = "CHCP 65001 & conda activate base & python .\\public\\py\\Z_score.py "
+                + " " + "..\\storage\\" + datasetName + "_o_c.json"
+                + " " + "..\\storage\\" + datasetName + "_o_temp.json";
+            process.exec(cmd2, (error, _, stderr) => {
+                if (stderr) {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            false,
+                            stderr
+                        )
+                    );
+                } else if (error) {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            false,
+                            error
+                        )
+                    );
+                } else {
+                    res.json(
+                        formatResult(
+                            cmd2,
+                            true,
+                            JSON.parse(fs.readFileSync("..\\storage\\" + datasetName + "_o_temp.json"))
+                        )
+                    );
+                }
+            });
         }
     });
+});
+
+
+app.get("/applyReplace/:datasetName/", (req, res) => {
+    const datasetName = req.params["datasetName"];
+    res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+
+    fs.writeFile(
+        "..\\storage\\" + datasetName + "_o.json",
+        fs.readFileSync("..\\storage\\" + datasetName + "_o_temp.json"),
+        e => {
+            if (e) {
+                res.json(
+                    formatResult(
+                        "..\\storage\\" + datasetName + "_o_temp.json",
+                        false,
+                        e
+                    )
+                );
+            } else {
+                res.json(
+                    formatResult(
+                        "..\\storage\\" + datasetName + "_o_temp.json",
+                        true,
+                        JSON.parse(fs.readFileSync("..\\storage\\" + datasetName + "_o.json"))
+                    )
+                );
+            }
+        }
+    );
 });
 
 
