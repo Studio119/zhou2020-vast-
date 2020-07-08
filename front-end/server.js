@@ -2,7 +2,7 @@
  * @Author: Antoine YANG 
  * @Date: 2019-11-15 21:47:38 
  * @Last Modified by: Antoine YANG
- * @Last Modified time: 2020-07-07 16:55:43
+ * @Last Modified time: 2020-07-08 16:00:32
  */
 
 const express = require('express');
@@ -197,48 +197,39 @@ app.get("/random/:filepath/:rate", (req, res) => {
 
 app.get("/zorder/:filepath/:rate", (req, res) => {
     const path = pathInput + req.params["filepath"].split("_dot").join(".");
-    const json_path = path.replace(".csv", ".json").replace(pathInput, pathOutput);
-    const output_path = path.replace(".csv", "_z5.json").replace(pathInput, pathOutput);
+    const output_path = path.replace(".csv", "_z.json").replace(pathInput, pathOutput);
     res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
-    const cmd = "CHCP 65001 & .\\public\\cpp\\nativeZOrder "
+    const cmd = "CHCP 65001 & conda activate base & python .\\public\\py\\zorder.py "
                     + req.params["rate"]
-                    + " " + path + " < " + json_path + " > " + output_path;
+                    + " " + path + " " + output_path;
 
-    res.json(
-        formatResult(
-            cmd,
-            true,
-            JSON.parse(fs.readFileSync(output_path))
-        )
-    );
-
-    // process.exec(cmd, (error, _, stderr) => {
-    //     if (stderr) {
-    //         res.json(
-    //             formatResult(
-    //                 cmd,
-    //                 false,
-    //                 stderr
-    //             )
-    //         );
-    //     } else if (error) {
-    //         res.json(
-    //             formatResult(
-    //                 cmd,
-    //                 false,
-    //                 error
-    //             )
-    //         );
-    //     } else {
-    //         res.json(
-    //             formatResult(
-    //                 cmd,
-    //                 true,
-    //                 JSON.parse(fs.readFileSync(output_path))
-    //             )
-    //         );
-    //     }
-    // });
+    process.exec(cmd, (error, _, stderr) => {
+        if (stderr) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    stderr
+                )
+            );
+        } else if (error) {
+            res.json(
+                formatResult(
+                    cmd,
+                    false,
+                    error
+                )
+            );
+        } else {
+            res.json(
+                formatResult(
+                    cmd,
+                    true,
+                    JSON.parse(fs.readFileSync(output_path))
+                )
+            );
+        }
+    });
 });
 
 

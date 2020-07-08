@@ -218,7 +218,7 @@ class Z_score:
 
 
 if __name__ == "__main__":
-    m = Z_score(k=10, mode="euclidean", equal=False)
+    m = Z_score(k=8, mode="euclidean", equal=False)
 
     input_name = None
     output_name = None
