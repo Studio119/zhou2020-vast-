@@ -150,7 +150,7 @@ def Zorder_auto_voting(filename, m, N, alpha, dirname, outputname):
         c = random.sample(b, 1)
         sample_list.append(c[0][0])
 
-    with open("../storage/zorder_temp.json", mode='w', encoding='utf8') as f:
+    with open("../../../storage/zorder_temp.json", mode='w', encoding='utf8') as f:
         obj = []
         for g in z_lsit:
             obj.append([

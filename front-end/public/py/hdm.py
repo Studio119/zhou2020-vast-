@@ -71,12 +71,57 @@ if __name__ == "__main__":
     # A = np.array([rand() * 100 for _ in range(100)])
     # B = np.array([A[int(rand() * 100)] for _ in range(40)])
 
-    with open(sys.argv[1], mode='r') as f:
+    # with open(sys.argv[1], mode='r') as f:
+    #     A = np.array([d["value"] for d in json.load(f)])
+
+    # with open(sys.argv[2], mode='r') as f:
+    #     B = np.array([d["value"] for d in json.load(f)])
+
+    # print(B.size, A.size, B.size / A.size)
+    
+    # print(
+    #     contrast(A, B, method='CV_COMP_BHATTACHARYYA', width=float(sys.argv[3]))
+    # )
+
+    from tqdm import tqdm as tqdm
+    import os
+
+    dataset = sys.argv[1]                                           # 数据集名称
+    mode = sys.argv[2]                                              # r - 随机 o - 我们的 z - zorder
+    rate = sys.argv[3] if len(sys.argv) >= 4 else "0.1"             # 采样率
+    repeat = int(sys.argv[4]) if len(sys.argv) >= 5 else 100        # 运行次数
+
+    t = []
+
+    with open("..\\..\\..\\storage\\" + dataset + ".json", mode='r') as f:
         A = np.array([d["value"] for d in json.load(f)])
 
-    with open(sys.argv[2], mode='r') as f:
-        B = np.array([d["value"] for d in json.load(f)])
-    
-    print(
-        contrast(A, B, method='CV_COMP_BHATTACHARYYA', width=sys.argv[3])
-    )
+    if mode == 'r':
+        for i in tqdm(range(repeat), leave=True, ncols=40):
+            if os.system("..\\cpp\\randomSample " + rate + " < ..\\data\\" + dataset + ".csv > ..\\..\\..\\storage\\" + dataset + "_r_c.json") == 0:
+                if os.system("conda activate base & python Z_score.py ..\\..\\..\\storage\\" + dataset + "_r_c.json ..\\..\\..\\storage\\" + dataset + "_r.json") == 0:
+                    with open("..\\..\\..\\storage\\" + dataset + "_r.json", mode='r') as f:
+                        B = np.array([d["value"] for d in json.load(f)])
+                        val = contrast(A, B, method='CV_COMP_BHATTACHARYYA', width=0.1)
+                        tqdm.write("{} - {}".format(i + 1, val))
+                        t.append(val)
+    elif mode == 'o':
+        for i in tqdm(range(repeat), leave=True, ncols=40):
+            if os.system("conda activate base & python ours.py ..\\..\\..\\storage\\" + dataset + ".json 0.6 " + rate) == 0:
+                with open("..\\..\\..\\storage\\" + dataset + "_o.json", mode='r') as f:
+                    B = np.array([d["value"] for d in json.load(f)])
+                    val = contrast(A, B, method='CV_COMP_BHATTACHARYYA', width=0.1)
+                    tqdm.write("{} - {}".format(i + 1, val))
+                    t.append(val)
+    elif mode == 'z':
+        for i in tqdm(range(repeat), leave=True, ncols=40):
+            if os.system("conda activate base & python zorder.py " + rate + " ..\\data\\" + dataset + ".csv ..\\..\\..\\storage\\" + dataset + "_z.json") == 0:
+                if os.system("conda activate base & python better.py ..\\..\\..\\storage\\" + dataset + "_o.json ..\\..\\..\\storage\\" + dataset + ".json 0.6 1") == 0:
+                    with open("..\\..\\..\\storage\\" + dataset + "_ob.json", mode='r') as f:
+                        B = np.array([d["value"] for d in json.load(f)])
+                        val = contrast(A, B, method='CV_COMP_BHATTACHARYYA', width=0.1)
+                        tqdm.write("{} - {}".format(i + 1, val))
+                        t.append(val)
+
+    print()
+    print(t)
